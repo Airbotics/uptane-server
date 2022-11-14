@@ -1,0 +1,13 @@
+node_modules/
+*.tsbuildinfo
+.eslintcache
+.env
+*.log
+dist/
+.vscode/
+.scratch
+coverage
+.DS_Store
+lerna-debug.log
+**/.DS_Store
+**/.DS_Store

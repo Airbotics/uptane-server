@@ -1,0 +1,31 @@
+{
+    "root": true,
+    "parser": "@typescript-eslint/parser",
+    "plugins": [
+        "@typescript-eslint"
+    ],
+    "extends": [
+        "eslint:recommended",
+        "plugin:@typescript-eslint/eslint-recommended",
+        "plugin:@typescript-eslint/recommended",
+        "google"
+    ],
+    "rules": {
+        "indent": [
+            "error",
+            4
+        ],
+        "max-len": [
+            "error",
+            {
+                "code": 120
+            }
+        ],
+        "padded-blocks": "off",
+        "new-cap": "off",
+        "comma-dangle": "off",
+        "eol-last": "off",
+        "no-trailing-spaces": "off",
+        "object-curly-spacing": "off"
+    }
+}

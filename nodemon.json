@@ -1,0 +1,16 @@
+{
+    "restartable": "restart",
+    "ignore": [
+        ".git",
+        "node_modules/",
+        "dist/",
+        "tests/"
+    ],
+    "watch": [
+        "src/"
+    ],
+    "execMap": {
+        "ts": "node -r ts-node/register"
+    },
+    "ext": "js,json,ts"
+}

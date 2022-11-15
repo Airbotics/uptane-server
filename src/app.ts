@@ -17,7 +17,7 @@ app.get('/', (req, res) => {
     return res.status(200).end();
 });
 
-app.use('/api/treehub', treehub);
+app.use('/api/v1/treehub', treehub);
 
 
 // handle 404

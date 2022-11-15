@@ -1,5 +1,6 @@
 import express, { Request, Response, NextFunction } from 'express';
 import treehub from './modules/treehub';
+import admin from './modules/admin';
 
 
 const app = express();
@@ -14,10 +15,13 @@ app.use((req, res, next) => {
 
 // health check
 app.get('/', (req, res) => {
-    return res.status(200).end();
+    return res.status(200).send('Welcome to the Airbotics API');
 });
 
+
 app.use('/api/v1/treehub', treehub);
+app.use('/api/v1/admin', admin);
+
 
 
 // handle 404

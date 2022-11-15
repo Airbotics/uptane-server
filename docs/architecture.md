@@ -4,6 +4,29 @@ For now, we're building a monolithic backend to perform all functions (Uptane di
 
 ## Modules
 
+### Admin
+
+Description: Actions taken by human adminstrators.
+
+Base URL: `/api/<version>/admin`
+
+
 ### Treehub
 
-A remote ostree repository.
+Description: A remote ostree repository.
+
+Base URL: `/api/<version>/treehub`
+
+### Image repo
+
+Description: The Uptane image repository.
+
+Base URL: `/api/<version>/image`
+
+
+## Concepts
+
+
+### Namespace
+
+A namespace is a logical collection of all resources related to a project. Resources could be TUF metadata, ecus, manifests, images, etc.

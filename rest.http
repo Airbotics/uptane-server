@@ -1,0 +1,30 @@
+# vs code extension to make http requests easily
+
+@BASE_URL=http://localhost:8001
+@API_VERSION=v1
+@NAMESPACE=ac3e90bb-7ebd-4acb-92a4-eb4316c7b538
+
+
+# -----------------------------------------
+# Misc
+# -----------------------------------------
+
+### healthcheck
+GET {{BASE_URL}} HTTP/1.1
+
+
+
+# -----------------------------------------
+# Admin
+# -----------------------------------------
+
+### create a namespace
+POST {{BASE_URL}}/api/{{API_VERSION}}/admin/namespaces HTTP/1.1
+
+
+### list namespaces
+GET {{BASE_URL}}/api/{{API_VERSION}}/admin/namespaces HTTP/1.1
+
+### delete a namespace
+DELETE {{BASE_URL}}/api/{{API_VERSION}}/admin/namespaces/{{NAMESPACE}} HTTP/1.1
+

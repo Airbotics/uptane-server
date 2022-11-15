@@ -13,6 +13,18 @@ enum ObjectStatus {
     uploaded
 }
 
+// namespace to contain all resources (metadata, ecus, manifests, images, etc.) related to the same project
+model Namespace {
+    id                  String          @id @default(uuid()) @unique
+
+    created_at          DateTime        @default(now())
+    updated_at          DateTime        @updatedAt
+
+    @@map("namespaces")
+}
+
+
+// ostree references
 model Ref {
     namespace           String
     name                String
@@ -28,6 +40,7 @@ model Ref {
     @@map("refs")
 }
 
+// ostree object
 model Object {
     object_id           String
     namespace           String

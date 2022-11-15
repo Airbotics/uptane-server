@@ -8,15 +8,18 @@
         "start": "nodemon --config ./nodemon.json src/index.ts"
     },
     "dependencies": {
+        "@prisma/client": "^4.6.1",
         "dotenv": "^16.0.3",
         "express": "^4.17.3",
         "http": "0.0.1-security",
+        "prisma": "^4.6.1",
         "tsc": "^2.0.4"
     },
     "devDependencies": {
         "@types/express": "^4.17.13",
         "@types/node": "^18.8.1",
         "@typescript-eslint/eslint-plugin": "^5.0.0",
+        "@typescript-eslint/parser": "^5.43.0",
         "eslint": "^8.0.1",
         "eslint-config-google": "^0.14.0",
         "nodemon": "^2.0.13",

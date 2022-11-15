@@ -23,7 +23,7 @@ class BlobStorageProvider implements IBlobStorageProvider {
         return this.strategy.putObject(bucketId, content);
     }
 
-    async getObject(bucketId: string): Promise<any> {
+    async getObject(bucketId: string): Promise<Buffer | string> {
         return this.strategy.getObject(bucketId);
     }
 

@@ -16,7 +16,10 @@ const config = {
 
     // ostree
     BLOB_STORAGE_PROVIDER: EBlobStorageProvider.Fs,                             // blob storage provider to use
-    FS_STORAGE_DIR: './.blobs'                                                  // where ostree blobs are stored when filesystem provider is being used
+    BLOB_FS_STORAGE_DIR: './.blobs',                                            // where ostree blobs are stored when filesystem provider is being used
+
+    // key storage
+    KEYS_FS_STORAGE_DIR: './.keys'                                              // where private keys are stored when filesystem provider is being used
 
 };
 

@@ -58,6 +58,7 @@
 ## Contents
 
 - [Features](#features)
+- [Docs](#docs)
 - [Project status](#project-status)
 - [Community](#community)
 - [Contributing](#contributing)
@@ -121,6 +122,12 @@ Along with these, we're building the usual features you would expect from a OTA 
 
 
 
+
+
+
+## Docs
+
+Documentation is available [here](docs/index.md).
 
 
 

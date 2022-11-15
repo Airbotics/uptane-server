@@ -1,4 +1,4 @@
-# Guide to developing Airbotics
+# Developers guide
 
 ## Including a license notice
 

@@ -1,0 +1,44 @@
+generator client {
+    provider            = "prisma-client-js"
+    previewFeatures     = ["interactiveTransactions"]
+}
+
+datasource db {
+    provider            = "postgresql"
+    url                 = env("POSTGRES_CONN_STR")
+}
+
+enum ObjectStatus {
+    uploading
+    uploaded
+}
+
+model Ref {
+    repo_id             String
+    name                String
+    commit              String
+    object_id           String
+
+    created_at          DateTime        @default(now())
+    updated_at          DateTime        @updatedAt
+
+    object              Object          @relation(fields: [repo_id, object_id], references: [repo_id, object_id], onDelete: Cascade)
+
+    @@id([repo_id, name])
+    @@map("refs")
+}
+
+model Object {
+    object_id           String
+    repo_id             String
+    size                BigInt
+    status              ObjectStatus
+
+    created_at          DateTime        @default(now())
+    updated_at          DateTime        @updatedAt
+
+    refs                Ref[]
+
+    @@id([repo_id, object_id])
+    @@map("objects")
+}

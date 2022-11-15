@@ -7,7 +7,7 @@ const router = express.Router();
 /**
  * Gets ostree config.
  */
-router.get('/:repo_id/config', (req, res) => {
+router.get('/:namespace/config', (req, res) => {
     res.set('content-type', 'text/plain');
     return res.status(200).send(OSTREE_CONFIG);
 });

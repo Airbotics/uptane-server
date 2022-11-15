@@ -7,12 +7,12 @@ const router = express.Router();
 /**
  * Upload summary.
  */
-router.put('/:repo_id/summary', express.raw({ type: '*/*' }), async (req, res) => {
+router.put('/:namespace/summary', express.raw({ type: '*/*' }), async (req, res) => {
 
-    const repo_id = req.params.repo_id;
+    const namespace = req.params.namespace;
     const content = req.body;
 
-    const bucketId = repo_id + '/summary';
+    const bucketId = namespace + '/summary';
 
     await blobStorage.putObject(bucketId, content);
 
@@ -23,11 +23,11 @@ router.put('/:repo_id/summary', express.raw({ type: '*/*' }), async (req, res) =
 /**
  * Download summary.
  */
-router.get('/:repo_id/summary', async (req, res) => {
+router.get('/:namespace/summary', async (req, res) => {
 
-    const repo_id = req.params.repo_id;
+    const namespace = req.params.namespace;
 
-    const bucketId = repo_id + '/summary';
+    const bucketId = namespace + '/summary';
 
     const content = await blobStorage.getObject(bucketId);
 

@@ -11,9 +11,9 @@ const router = express.Router();
  * 
  * Will store in s3 or local filesystem depending on config.
  */
-router.put('/:repo_id/objects/:prefix/:suffix', express.raw({ type: '*/*' }), async (req, res) => {
+router.put('/:namespace/objects/:prefix/:suffix', express.raw({ type: '*/*' }), async (req, res) => {
 
-    const repo_id = req.params.repo_id;
+    const namespace = req.params.namespace;
     const prefix = req.params.prefix;
     const suffix = req.params.suffix;
     const content = req.body;
@@ -26,14 +26,14 @@ router.put('/:repo_id/objects/:prefix/:suffix', express.raw({ type: '*/*' }), as
     }
 
     const object_id = prefix + suffix;
-    const bucketId = repo_id + '/' + prefix + '/' + suffix;
+    const bucketId = namespace + '/' + prefix + '/' + suffix;
 
     // do persistence layer ops in a transaction
     await prisma.$transaction(async tx => {
 
         await tx.object.upsert({
             create: {
-                repo_id,
+                namespace,
                 object_id,
                 size,
                 status: ObjectStatus.uploading
@@ -43,8 +43,8 @@ router.put('/:repo_id/objects/:prefix/:suffix', express.raw({ type: '*/*' }), as
                 status: ObjectStatus.uploading
             },
             where: {
-                repo_id_object_id: {
-                    repo_id,
+                _object_id: {
+                    namespace,
                     object_id
                 }
             }
@@ -54,8 +54,8 @@ router.put('/:repo_id/objects/:prefix/:suffix', express.raw({ type: '*/*' }), as
 
         await tx.object.update({
             where: {
-                repo_id_object_id: {
-                    repo_id,
+                namespace_object_id: {
+                    namespace,
                     object_id
                 }
             },
@@ -75,19 +75,19 @@ router.put('/:repo_id/objects/:prefix/:suffix', express.raw({ type: '*/*' }), as
  * 
  * Will fetch from s3 or local filesystem depending on config.
  */
-router.get('/:repo_id/objects/:prefix/:suffix', async (req, res) => {
+router.get('/:namespace/objects/:prefix/:suffix', async (req, res) => {
 
-    const repo_id = req.params.repo_id;
+    const namespace = req.params.namespace;
     const prefix = req.params.prefix;
     const suffix = req.params.suffix;
 
     const object_id = prefix + suffix;
-    const bucketId = repo_id + '/' + prefix + '/' + suffix;
+    const bucketId = namespace + '/' + prefix + '/' + suffix;
 
     const object = await prisma.object.findUnique({
         where: {
-            repo_id_object_id: {
-                repo_id,
+            namespace_object_id: {
+                namespace,
                 object_id
             }
         }

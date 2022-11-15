@@ -6,9 +6,9 @@ const router = express.Router();
 /**
  * Creates a ref.
  */
-router.put('/:repo_id/refs/:name(*)', express.text(), async (req, res) => {
+router.put('/:namespace/refs/:name(*)', express.text(), async (req, res) => {
 
-    const repo_id = req.params.repo_id;
+    const namespace = req.params.namespace;
 
     // this evaluates to something like 'heads/main' so we prepend it with a forward slash
     let name = req.params.name;
@@ -30,7 +30,7 @@ router.put('/:repo_id/refs/:name(*)', express.text(), async (req, res) => {
 
     await prisma.ref.upsert({
         create: {
-            repo_id,
+            namespace,
             name,
             object_id,
             commit
@@ -39,8 +39,8 @@ router.put('/:repo_id/refs/:name(*)', express.text(), async (req, res) => {
             commit
         },
         where: {
-            repo_id_name: {
-                repo_id,
+            namespace_name: {
+                namespace,
                 name
             }
         }
@@ -53,9 +53,9 @@ router.put('/:repo_id/refs/:name(*)', express.text(), async (req, res) => {
 /**
  * Gets a ref.
  */
-router.get('/:repo_id/refs/:name(*)', async (req, res) => {
+router.get('/:namespace/refs/:name(*)', async (req, res) => {
 
-    const repo_id = req.params.repo_id;
+    const namespace = req.params.namespace;
 
     // this evaluates to something like 'heads/main' so we prepend it with a forward slash
     let name = req.params.name;
@@ -63,8 +63,8 @@ router.get('/:repo_id/refs/:name(*)', async (req, res) => {
 
     const ref = await prisma.ref.findUnique({
         where: {
-            repo_id_name: {
-                repo_id,
+            namespace_name: {
+                namespace,
                 name
             }
         }

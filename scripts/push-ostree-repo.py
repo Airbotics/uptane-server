@@ -6,8 +6,8 @@ import os
 import requests
 
 REPO_ROOT_DIR = 'repo'                                          # relative directory of local ostree repo
-REPO_ID = 'example-repo-id'                                     # id of the remote repo
-BASE_URL = f'http://localhost:8001/api/v1/treehub{REPO_ID}'     # base url of remote repo
+NAMESPACE = 'example-namespace'                                 # namespace to work with
+BASE_URL = f'http://localhost:8001/api/v1/treehub/{NAMESPACE}'  # base url of remote repo
 
 
 # helper to read a file and return its contents

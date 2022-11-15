@@ -2,7 +2,7 @@
 
 @BASE_URL=http://localhost:8001
 @API_VERSION=v1
-@NAMESPACE=ac3e90bb-7ebd-4acb-92a4-eb4316c7b538
+@NAMESPACE=3b30a210-48ab-4698-939e-25259aa33f33
 
 
 # -----------------------------------------
@@ -20,7 +20,6 @@ GET {{BASE_URL}} HTTP/1.1
 
 ### create a namespace
 POST {{BASE_URL}}/api/{{API_VERSION}}/admin/namespaces HTTP/1.1
-
 
 ### list namespaces
 GET {{BASE_URL}}/api/{{API_VERSION}}/admin/namespaces HTTP/1.1

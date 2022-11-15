@@ -1,6 +1,7 @@
 import { EKeyStorageProvider } from '../consts';
 import { IKeyStorageProvider } from '../../types';
 import { FilesystemProvider } from './fs-provider';
+import config from '../../config';
 
 
 class KeyStorageProvider implements IKeyStorageProvider {
@@ -17,13 +18,18 @@ class KeyStorageProvider implements IKeyStorageProvider {
         }
     }
 
-    async putKey(repoID: string, role: string, privKey: string): Promise<void> {
-        return this.strategy.putKey(repoID, role, privKey);
+    async putKey(id: string, privKey: string): Promise<void> {
+        return this.strategy.putKey(id, privKey);
     }
 
-    async getKey(repoID: string, role: string): Promise<string> {
-        return this.strategy.getKey(repoID, role);
+    async getKey(id: string): Promise<string> {
+        return this.strategy.getKey(id);
     }
 
+    async deleteKey(id: string): Promise<void> {
+        return this.strategy.deleteKey(id);
+    }
 
 }
+
+export const keyStorage = new KeyStorageProvider(config.KEY_STORAGE_PROVIDER);

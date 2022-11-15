@@ -15,21 +15,20 @@ export class FilesystemProvider implements IKeyStorageProvider {
 
     FILENAME = 'private.pem'
 
-    async putKey(repoID: string, role: string, privKey: string): Promise<void> {
-
-        const filePathKey = path.resolve(path.join(config.KEYS_FS_STORAGE_DIR, repoID, role, this.FILENAME));
-
+    async putKey(id: string, privKey: string): Promise<void> {
+        const filePathKey = path.resolve(path.join(config.KEYS_FS_STORAGE_DIR, id, this.FILENAME));
         fs.mkdirSync(path.dirname(filePathKey), { recursive: true });
-
         fs.writeFileSync(filePathKey, privKey);
     }
 
-    async getKey(repoID: string, role: string): Promise<string> {
-
-        const filePathKey = path.resolve(path.join(config.KEYS_FS_STORAGE_DIR, repoID, role, this.FILENAME));
-
+    async getKey(id: string): Promise<string> {
+        const filePathKey = path.resolve(path.join(config.KEYS_FS_STORAGE_DIR, id, this.FILENAME));
         return fs.readFileSync(filePathKey).toString();
+    }
 
+    async deleteKey(id: string): Promise<void> {
+        const filePathKey = path.resolve(path.join(config.KEYS_FS_STORAGE_DIR, id));
+        return fs.rmdirSync(filePathKey, { recursive: true });
     }
 
 }

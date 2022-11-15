@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-import { EBlobStorageProvider } from '../core/consts';
+import { EBlobStorageProvider, EKeyStorageProvider } from '../core/consts';
 
 dotenv.config();
 
@@ -18,8 +18,11 @@ const config = {
     BLOB_STORAGE_PROVIDER: EBlobStorageProvider.Fs,                             // blob storage provider to use
     BLOB_FS_STORAGE_DIR: './.blobs',                                            // where ostree blobs are stored when filesystem provider is being used
 
-    // key storage
-    KEYS_FS_STORAGE_DIR: './.keys'                                              // where private keys are stored when filesystem provider is being used
+    // key management
+    KEY_STORAGE_PROVIDER: EKeyStorageProvider.Filesystem,                       // key storage provider to use
+    KEYS_FS_STORAGE_DIR: './.keys',                                             // where private keys are stored when filesystem provider is being used
+    KEY_TYPE: 'rsa' as 'rsa',                                                   // the key type to use for all keys
+
 
 };
 

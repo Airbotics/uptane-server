@@ -2,7 +2,9 @@
 
 ## Limitations
 
-The following limitations will be addressed over time:
+The following limitations are likely be addressed over time:
+
+- Symmetric keys are not used.
 
 - Only uses online keys.
 

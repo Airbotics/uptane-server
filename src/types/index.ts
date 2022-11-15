@@ -4,6 +4,12 @@ export interface IBlobStorageProvider {
 }
 
 export interface IKeyStorageProvider {
-    putKey(repoID: string, role: string, privKey: string): Promise<void>;
-    getKey(repoID: string, role: string): Promise<string>;
+    putKey(id: string, privKey: string): Promise<void>;
+    getKey(id: string): Promise<string>;
+    deleteKey(id: string): Promise<void>;
+}
+
+export interface IKeyPair {
+    publicKey: string;
+    privateKey: string;
 }

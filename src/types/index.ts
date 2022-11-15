@@ -1,6 +1,7 @@
 export interface IBlobStorageProvider {
     putObject(bucketId: string, content: Buffer): Promise<void>;
     getObject(bucketId: string): Promise<Buffer | string>;
+    deleteObject(bucketId: string): Promise<void>;
 }
 
 export interface IKeyStorageProvider {

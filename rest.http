@@ -2,7 +2,7 @@
 
 @BASE_URL=http://localhost:8001
 @API_VERSION=v1
-@NAMESPACE=3b30a210-48ab-4698-939e-25259aa33f33
+@NAMESPACE=2e598068-e64b-438e-9462-f41dcd317305
 
 
 # -----------------------------------------
@@ -21,9 +21,58 @@ GET {{BASE_URL}} HTTP/1.1
 ### create a namespace
 POST {{BASE_URL}}/api/{{API_VERSION}}/admin/namespaces HTTP/1.1
 
+
 ### list namespaces
 GET {{BASE_URL}}/api/{{API_VERSION}}/admin/namespaces HTTP/1.1
+
 
 ### delete a namespace
 DELETE {{BASE_URL}}/api/{{API_VERSION}}/admin/namespaces/{{NAMESPACE}} HTTP/1.1
 
+
+
+# -----------------------------------------
+# Treehub
+# -----------------------------------------
+
+### get ostree config
+GET {{BASE_URL}}/api/{{API_VERSION}}/treehub/{{NAMESPACE}}/config HTTP/1.1
+
+
+
+### upload a summary
+PUT {{BASE_URL}}/api/{{API_VERSION}}/treehub/{{NAMESPACE}}/summary HTTP/1.1
+Content-Type: application/octet-stream
+
+this is a sample summary
+
+
+
+### download a summary
+GET {{BASE_URL}}/api/{{API_VERSION}}/treehub/{{NAMESPACE}}/summary HTTP/1.1
+
+
+
+### upload a object
+PUT {{BASE_URL}}/api/{{API_VERSION}}/treehub/{{NAMESPACE}}/objects/25/1dce54d8562166b23d69dd697ee5c136691478f4ae02787c2723fb66126cfc.commit HTTP/1.1
+Content-Type: application/octet-stream
+
+this is a sample ostree object
+
+
+
+### download a object
+GET {{BASE_URL}}/api/{{API_VERSION}}/treehub/{{NAMESPACE}}/objects/24/1dce54d8562166b23d69dd697ee5c136691478f4ae02787c2723fb66126cfc.commit HTTP/1.1
+
+
+
+### upload a ref
+PUT {{BASE_URL}}/api/{{API_VERSION}}/treehub/{{NAMESPACE}}/refs/head/main HTTP/1.1
+Content-Type: text/plain
+
+251dce54d8562166b23d69dd697ee5c136691478f4ae02787c2723fb66126cfc
+
+
+
+### get a ref
+GET {{BASE_URL}}/api/{{API_VERSION}}/treehub/{{NAMESPACE}}/refs/head/main HTTP/1.1

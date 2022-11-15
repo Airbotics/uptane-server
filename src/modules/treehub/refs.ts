@@ -1,14 +1,15 @@
 import express from 'express';
-import { prisma } from '../../core/drivers/postgres';
+import { prisma } from '../../core/postgres';
 
 const router = express.Router();
+
 
 /**
  * Creates a ref.
  */
 router.put('/:namespace/refs/:name(*)', express.text(), async (req, res) => {
 
-    const namespace = req.params.namespace;
+    const namespace_id = req.params.namespace;
 
     // this evaluates to something like 'heads/main' so we prepend it with a forward slash
     let name = req.params.name;
@@ -18,6 +19,18 @@ router.put('/:namespace/refs/:name(*)', express.text(), async (req, res) => {
 
     const object_id = `${commit}.commit`;
 
+    // check namespace exists
+    const namespaceCount = await prisma.namespace.count({
+        where: {
+            id: namespace_id
+        }
+    });
+
+    if (namespaceCount === 0) {
+        return res.status(400).send('could not upload ostree ref');
+    }
+
+    // check object exists
     const objectCount = await prisma.object.count({
         where: {
             object_id
@@ -25,12 +38,12 @@ router.put('/:namespace/refs/:name(*)', express.text(), async (req, res) => {
     });
 
     if (objectCount === 0) {
-        return res.status(400).end();
+        return res.status(400).send('could not upload ostree ref');
     }
 
     await prisma.ref.upsert({
         create: {
-            namespace,
+            namespace_id,
             name,
             object_id,
             commit
@@ -39,8 +52,8 @@ router.put('/:namespace/refs/:name(*)', express.text(), async (req, res) => {
             commit
         },
         where: {
-            namespace_name: {
-                namespace,
+            namespace_id_name: {
+                namespace_id,
                 name
             }
         }
@@ -55,7 +68,7 @@ router.put('/:namespace/refs/:name(*)', express.text(), async (req, res) => {
  */
 router.get('/:namespace/refs/:name(*)', async (req, res) => {
 
-    const namespace = req.params.namespace;
+    const namespace_id = req.params.namespace;
 
     // this evaluates to something like 'heads/main' so we prepend it with a forward slash
     let name = req.params.name;
@@ -63,15 +76,15 @@ router.get('/:namespace/refs/:name(*)', async (req, res) => {
 
     const ref = await prisma.ref.findUnique({
         where: {
-            namespace_name: {
-                namespace,
+            namespace_id_name: {
+                namespace_id,
                 name
             }
         }
     });
 
     if (!ref) {
-        return res.status(404).end();
+        return res.status(400).send('could not download ostree ref');
     }
 
     res.set('content-type', 'text/plain');

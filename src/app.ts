@@ -1,6 +1,6 @@
 import express, { Request, Response, NextFunction } from 'express';
-// import treehub from './modules/treehub';
 import admin from './modules/admin';
+import treehub from './modules/treehub';
 
 
 const app = express();
@@ -20,7 +20,7 @@ app.get('/', (req, res) => {
 
 
 app.use('/api/v1/admin', admin);
-// app.use('/api/v1/treehub', treehub);
+app.use('/api/v1/treehub', treehub);
 
 
 

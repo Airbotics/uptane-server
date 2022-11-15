@@ -20,30 +20,34 @@ model Namespace {
     created_at          DateTime        @default(now())
     updated_at          DateTime        @updatedAt
 
+    refs                Ref[]
+    objects             Object[]
+
     @@map("namespaces")
 }
 
 
 // ostree references
 model Ref {
-    namespace           String
     name                String
     commit              String
+    namespace_id        String
     object_id           String
 
     created_at          DateTime        @default(now())
     updated_at          DateTime        @updatedAt
 
-    object              Object          @relation(fields: [namespace, object_id], references: [namespace, object_id], onDelete: Cascade)
+    object              Object          @relation(fields: [namespace_id, object_id], references: [namespace_id, object_id], onDelete: Cascade)
+    namespace           Namespace       @relation(fields: [namespace_id], references: [id], onDelete: Cascade)
 
-    @@id([namespace, name])
+    @@id([namespace_id, name])
     @@map("refs")
 }
 
 // ostree object
 model Object {
     object_id           String
-    namespace           String
+    namespace_id        String
     size                BigInt
     status              ObjectStatus
 
@@ -51,7 +55,8 @@ model Object {
     updated_at          DateTime        @updatedAt
 
     refs                Ref[]
+    namespace           Namespace       @relation(fields: [namespace_id], references: [id], onDelete: Cascade)
 
-    @@id([namespace, object_id])
+    @@id([namespace_id, object_id])
     @@map("objects")
 }

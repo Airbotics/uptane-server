@@ -27,6 +27,10 @@ class BlobStorageProvider implements IBlobStorageProvider {
         return this.strategy.getObject(bucketId);
     }
 
+    async deleteObject(bucketId: string): Promise<void> {
+        return this.strategy.deleteObject(bucketId);
+    }
+
 }
 
 

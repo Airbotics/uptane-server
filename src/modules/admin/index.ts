@@ -1,8 +1,9 @@
 import express from 'express';
-import { prisma } from '../../core/drivers/postgres';
+import { prisma } from '../../core/postgres';
 import config from '../../config';
 import { generateKeyPair } from '../../core/crypto';
 import { keyStorage } from '../../core/key-storage';
+import { blobStorage } from '../../core/blob-storage';
 
 const router = express.Router();
 
@@ -85,6 +86,7 @@ router.get('/namespaces', async (req, res) => {
 });
 
 
+
 /**
  * Delete a namespace
  * 
@@ -111,11 +113,31 @@ router.delete('/namespaces/:namespace', async (req, res) => {
     await prisma.$transaction(async tx => {
 
         // delete namespace in db
-        await prisma.namespace.delete({
+        const namespaceObj = await prisma.namespace.delete({
             where: {
                 id: namespace
+            },
+            include: {
+                objects: true
             }
         });
+
+        // delete ostree objects in blob storage
+        // get the bucket id from all objects stored under this namespace, which depends on whether it is a summary object or not
+        const bucketIds = namespaceObj!.objects.map(object => {
+            if (object.object_id === 'summary') {
+                return `${object.namespace_id}/${object.object_id}`
+            } else {
+                return `${object.namespace_id}/${object.object_id.substring(0, 2)}/${object.object_id.substring(2)}`
+            }
+        });
+
+
+        for await (const bucketId of bucketIds) {
+            console.log(bucketId);
+            await blobStorage.deleteObject(bucketId)
+        }
+
 
         // delete keys under namespace
         await keyStorage.deleteKey(`${namespace}-image-root`);

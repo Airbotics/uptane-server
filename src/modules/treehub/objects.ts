@@ -1,6 +1,6 @@
 import express from 'express';
 import { ObjectStatus } from '@prisma/client';
-import { prisma } from '../../core/drivers/postgres';
+import { prisma } from '../../core/postgres';
 import { blobStorage } from '../../core/blob-storage';
 
 const router = express.Router();
@@ -13,10 +13,12 @@ const router = express.Router();
  */
 router.put('/:namespace/objects/:prefix/:suffix', express.raw({ type: '*/*' }), async (req, res) => {
 
-    const namespace = req.params.namespace;
+    const namespace_id = req.params.namespace;
     const prefix = req.params.prefix;
     const suffix = req.params.suffix;
     const content = req.body;
+    const object_id = prefix + suffix;
+    const bucketId = namespace_id + '/' + prefix + '/' + suffix;
 
     const size = parseInt(req.get('content-length')!);
 
@@ -25,15 +27,22 @@ router.put('/:namespace/objects/:prefix/:suffix', express.raw({ type: '*/*' }), 
         return res.status(400).end();
     }
 
-    const object_id = prefix + suffix;
-    const bucketId = namespace + '/' + prefix + '/' + suffix;
+    const namespaceCount = await prisma.namespace.count({
+        where: {
+            id: namespace_id
+        }
+    });
 
-    // do persistence layer ops in a transaction
+    if (namespaceCount === 0) {
+        return res.status(400).send('could not upload ostree object');
+    }
+
+
     await prisma.$transaction(async tx => {
 
         await tx.object.upsert({
             create: {
-                namespace,
+                namespace_id,
                 object_id,
                 size,
                 status: ObjectStatus.uploading
@@ -43,8 +52,8 @@ router.put('/:namespace/objects/:prefix/:suffix', express.raw({ type: '*/*' }), 
                 status: ObjectStatus.uploading
             },
             where: {
-                _object_id: {
-                    namespace,
+                namespace_id_object_id: {
+                    namespace_id,
                     object_id
                 }
             }
@@ -54,8 +63,8 @@ router.put('/:namespace/objects/:prefix/:suffix', express.raw({ type: '*/*' }), 
 
         await tx.object.update({
             where: {
-                namespace_object_id: {
-                    namespace,
+                namespace_id_object_id: {
+                    namespace_id,
                     object_id
                 }
             },
@@ -77,36 +86,37 @@ router.put('/:namespace/objects/:prefix/:suffix', express.raw({ type: '*/*' }), 
  */
 router.get('/:namespace/objects/:prefix/:suffix', async (req, res) => {
 
-    const namespace = req.params.namespace;
+    const namespace_id = req.params.namespace;
     const prefix = req.params.prefix;
     const suffix = req.params.suffix;
-
     const object_id = prefix + suffix;
-    const bucketId = namespace + '/' + prefix + '/' + suffix;
+    const bucketId = namespace_id + '/' + prefix + '/' + suffix;
 
     const object = await prisma.object.findUnique({
         where: {
-            namespace_object_id: {
-                namespace,
+            namespace_id_object_id: {
+                namespace_id,
                 object_id
             }
         }
     });
 
     if (!object) {
-        return res.status(404).end();
+        return res.status(400).send('could not download ostree object');
     }
 
-    const content = await blobStorage.getObject(bucketId);
+    try {
+        const content = await blobStorage.getObject(bucketId);
 
-    if (!content) {
+        res.set('content-type', 'application/octet-stream');
+        return res.status(200).send(content);
+
+    } catch (error) {
         // db and blob storage should be in sync
         // if an object exists in db but not blob storage something has gone wrong, bail on this request
         return res.status(500).end();
     }
 
-    res.set('content-type', 'application/octet-stream');
-    return res.status(200).send(content);
 
 });
 

@@ -1,5 +1,7 @@
 # Developers guide
 
+This guide is for developers that want to work on and develop Airbotics. Its recommended to start by reading the [user guide](user-guide.md) first to familiarise yourself with the system at a high level first.
+
 ## Including a license notice
 
 This notice should be included at the top of every source code file:
@@ -11,6 +13,17 @@ This notice should be included at the top of every source code file:
  */
 ```
 
+## Commit messages
+
+We don't use structured commit messages (yet) and keep our commit messages short, simple and description in lowercase present tense. We'll probably change this over time. 
+
+Examples:
+
+- _adding magic feature_
+
+- _fixing that problem_
+
+- _making infrastructure go brrrr_
 
 ## Environment variables
 

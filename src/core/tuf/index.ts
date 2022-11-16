@@ -20,6 +20,7 @@ export const generateTufKey = (publicKey: string): ITufKey => ({
  */
 export const genKeyId = (roleKey: ITufKey): string => generateHash(toCanonical(roleKey), { algorithm: 'SHA256' });
 
+
 // export the remaining tuf functions
 export {
     generateRoot

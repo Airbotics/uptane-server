@@ -82,11 +82,14 @@ model Image {
     @@map("images")
 }
 
-
+// tuf metadata
+// TODO should include which type of repo this belongs to, which should be an enum
+// TODO move this to mongo
+// TODO if we keep it in postgres then make type an enum
 model Metadata {
     id                  String          @default(uuid())
     namespace_id        String
-    type                String          // enum
+    type                String          // TODO enum
     version             Int
     value               Json            // holds entire signed metadata
 

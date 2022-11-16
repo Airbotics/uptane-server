@@ -3,9 +3,85 @@ import { ObjectStatus } from '@prisma/client';
 import { blobStorage } from '../../core/blob-storage';
 import { prisma } from '../../core/postgres';
 import { generateHash } from '../../core/crypto';
+import { ETUFRole } from '../../core/consts';
+import { toCanonical } from '../../core/utils';
 
 
 const router = express.Router();
+
+
+/**
+ * Fetch role metadata (apart from timestamp) in a namespace
+ * 
+ * Timestamp is not handled with this route because it isn't prepended
+ * with a dot, i.e. ``/timestamp.json`` instead not ``/1.timestamp.json``
+ */
+router.get('/:namespace/:version.:role.json', async (req, res) => {
+
+    const namespace_id = req.params.namespace;
+    const version = Number(req.params.version);
+    const role = req.params.role;
+
+    const metadata = await prisma.metadata.findUnique({
+        where: {
+            namespace_id_type_version: {
+                namespace_id,
+                type: role,
+                version
+            }
+        }
+    });
+
+    if(!metadata) {
+        return res.status(400).send('cannot get metadata');
+    }
+
+    // check it hasnt expired, it will only fail this if the worker has failed, so return 500
+    // TODO    
+
+    // canonicalise it and return it
+    const canonicalisedMetadata = toCanonical(metadata.value as object);
+
+    return res.status(200).send(canonicalisedMetadata);
+
+});
+
+
+
+/**
+ * Fetch timestamp metadata in a namespace
+ */
+router.get('/:namespace/timestamp.json', async (req, res) => {
+
+    const namespace_id = req.params.namespace;
+
+    // get the most recent timestamp
+    const timestamps = await prisma.metadata.findMany({
+        where: {
+            namespace_id,
+            type: ETUFRole.Timestamp
+        },
+        orderBy: {
+            created_at: 'desc'
+        }
+    });
+
+    if (timestamps.length === 0) {
+        return res.status(400).send('cannot get metadata');
+    }
+
+    const mostRecentTimestamp = timestamps[0];
+
+    // check it hasnt expired, it will only fail this if the worker has failed, so return 500
+    // TODO    
+
+    // canonicalise it and return it
+    // TODO
+
+    return res.status(200).end();
+
+});
+
 
 /**
  * Upload an image in a namespace.

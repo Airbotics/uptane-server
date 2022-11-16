@@ -3,19 +3,19 @@ import { ETUFRole } from '../consts';
 import { daysFromNow, formatDate, toCanonical } from '../utils';
 import { generateSignature } from '../crypto';
 import { generateTufKey, genKeyId } from './index';
-import { IRootSignedTUF, IRootTUF } from '../../types';
+import { IKeyPair, IRootSignedTUF, IRootTUF } from '../../types';
 
 
 /**
  * Creates a signed tuf root metadata object
  */
-export const generateRoot = (ttl: number, version: number, rootPk: string, targetsPk: string, snapshotPk: string, timestampPk: string): IRootTUF => {
+export const generateRoot = (ttl: number, version: number, rootPk: IKeyPair, targetsPk: IKeyPair, snapshotPk: IKeyPair, timestampPk: IKeyPair): IRootTUF => {
 
     // generate tuf key objects
-    const rootTufKey = generateTufKey(rootPk);
-    const targetsTufKey = generateTufKey(targetsPk);
-    const snapshotTufKey = generateTufKey(snapshotPk);
-    const timestampTufKey = generateTufKey(timestampPk);
+    const rootTufKey = generateTufKey(rootPk.publicKey);
+    const targetsTufKey = generateTufKey(targetsPk.publicKey);
+    const snapshotTufKey = generateTufKey(snapshotPk.publicKey);
+    const timestampTufKey = generateTufKey(timestampPk.publicKey);
 
     // get key ids for each role
     const rootKeyId = genKeyId(rootTufKey);
@@ -60,7 +60,7 @@ export const generateRoot = (ttl: number, version: number, rootPk: string, targe
     const canonicalSigned = toCanonical(signed);
 
     // sign it
-    const sig = generateSignature('rsa', canonicalSigned, rootPk);
+    const sig = generateSignature('rsa', canonicalSigned, rootPk.privateKey);
 
     // assemble the full metadata object and return it, phew
     return {

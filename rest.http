@@ -1,8 +1,8 @@
 # vs code extension to make http requests easily
 
 @BASE_URL=http://localhost:8001
-@API_VERSION=v1
-@NAMESPACE=f3f85a75-29fd-407f-9a7f-2276c4384ecf
+@API_VERSION=v0
+@NAMESPACE=4e39b199-5005-4a30-a873-82dc7e370670
 
 
 # -----------------------------------------
@@ -78,9 +78,23 @@ Content-Type: text/plain
 GET {{BASE_URL}}/api/{{API_VERSION}}/treehub/{{NAMESPACE}}/refs/head/main HTTP/1.1
 
 
+# -----------------------------------------
+# Image repo - tuf
+# -----------------------------------------
+
+### get metadata
+GET {{BASE_URL}}/api/{{API_VERSION}}/image/{{NAMESPACE}}/1.root.json HTTP/1.1
+
+
+
+### get timestamp
+GET {{BASE_URL}}/api/{{API_VERSION}}/image/{{NAMESPACE}}/timestamp.json HTTP/1.1
+
+
+
 
 # -----------------------------------------
-# Image repo
+# Image repo - images
 # -----------------------------------------
 
 ### upload an image

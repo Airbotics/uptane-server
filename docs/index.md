@@ -21,6 +21,7 @@
 
 - [Key management](key-management.md)
 
+- [API](api.md)
 
 
 ## Concepts / Glossary

@@ -20,9 +20,9 @@ app.get('/', (req, res) => {
 });
 
 
-app.use('/api/v1/admin', admin);
-app.use('/api/v1/treehub', treehub);
-app.use('/api/v1/image', imageRepo);
+app.use('/api/v0/admin', admin);
+app.use('/api/v0/treehub', treehub);
+app.use('/api/v0/image', imageRepo);
 
 
 

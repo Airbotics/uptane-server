@@ -35,11 +35,12 @@ router.post('/namespaces', async (req, res) => {
 
      const value = generateRoot(config.TUF_TTL.IMAGE.ROOT,
          version,
-         imageRootKey.privateKey,
-         imageTargetsKey.privateKey,
-         imageSnapshotKey.privateKey,
-         imageTimestampKey.privateKey
+         imageRootKey,
+         imageTargetsKey,
+         imageSnapshotKey,
+         imageTimestampKey
      ) as object;
+
 
     // do persistance layer operations in a transaction
     const namespace = await prisma.$transaction(async tx => {
@@ -114,11 +115,7 @@ router.get('/namespaces', async (req, res) => {
  * Delete a namespace
  * 
  * - Deletes namespace in db, this cascades to all resources.
- * - Deletes keys associated with this namespace.
- * 
- * TODO
- * - delete treehub objects in blob storage associated with this namespace.
- * - delete images stored in image repo associated with this namespace.
+ * - Deletes keys, images and treehub objects associated with this namespace.
  */
 router.delete('/namespaces/:namespace', async (req, res) => {
 
@@ -147,7 +144,7 @@ router.delete('/namespaces/:namespace', async (req, res) => {
             }
         });
 
-        // delete ostree objects in blob storage
+        // delete ostree objects in blob storage associated with this namespace.
         // get the bucket id from all objects stored under this namespace, which depends on whether it is a summary object or not
         const treehubBucketIds = namespaceObj!.objects.map(object => {
             if (object.object_id === 'summary') {
@@ -161,15 +158,14 @@ router.delete('/namespaces/:namespace', async (req, res) => {
             await blobStorage.deleteObject(bucketId);
         }
 
-        // TODO delete images in image repo
+        // delete images in image repo associated with this namespace.
         const imageBucketIds = namespaceObj.images.map(image => image.id);
 
         for await (const bucketId of imageBucketIds) {
             await blobStorage.deleteObject(bucketId);
         }
 
-
-        // delete keys under namespace
+        // delete keys associated with this namespace.
         await keyStorage.deleteKey(`${namespace}-image-root`);
         await keyStorage.deleteKey(`${namespace}-image-targets`);
         await keyStorage.deleteKey(`${namespace}-image-snapshot`);

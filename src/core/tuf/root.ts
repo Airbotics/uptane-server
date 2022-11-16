@@ -3,14 +3,13 @@ import { ETUFRole } from '../consts';
 import { daysFromNow, formatDate, toCanonical } from '../utils';
 import { generateSignature } from '../crypto';
 import { generateTufKey, genKeyId } from './index';
-
-
+import { IRootSignedTUF, IRootTUF } from '../../types';
 
 
 /**
- * Creates a version of the root metadata and adds it to the db.
+ * Creates a signed tuf root metadata object
  */
-export const generateRoot = (ttl: number, version: number, rootPk: string, targetsPk: string, snapshotPk: string, timestampPk: string) => {
+export const generateRoot = (ttl: number, version: number, rootPk: string, targetsPk: string, snapshotPk: string, timestampPk: string): IRootTUF => {
 
     // generate tuf key objects
     const rootTufKey = generateTufKey(rootPk);
@@ -25,7 +24,7 @@ export const generateRoot = (ttl: number, version: number, rootPk: string, targe
     const timestampKeyId = genKeyId(timestampTufKey);
 
     // generate the signed portion of the root metadata
-    const signed = {
+    const signed: IRootSignedTUF = {
         _type: ETUFRole.Root,
         consistent_snapshot: config.TUF_CONSISTENT_SNAPSHOT,
         expires: formatDate(daysFromNow(ttl)),

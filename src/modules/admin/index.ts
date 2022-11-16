@@ -68,7 +68,6 @@ router.post('/namespaces', async (req, res) => {
  */
 router.get('/namespaces', async (req, res) => {
 
-
     const namespaces = await prisma.namespace.findMany({
         orderBy: {
             created_at: 'desc'
@@ -94,7 +93,8 @@ router.get('/namespaces', async (req, res) => {
  * - Deletes keys associated with this namespace.
  * 
  * TODO
- * - Deletes treehub objects in blob storage associated with this namespace.
+ * - delete treehub objects in blob storage associated with this namespace.
+ * - delete images stored in image repo associated with this namespace.
  */
 router.delete('/namespaces/:namespace', async (req, res) => {
 
@@ -118,13 +118,14 @@ router.delete('/namespaces/:namespace', async (req, res) => {
                 id: namespace
             },
             include: {
-                objects: true
+                objects: true,
+                images: true
             }
         });
 
         // delete ostree objects in blob storage
         // get the bucket id from all objects stored under this namespace, which depends on whether it is a summary object or not
-        const bucketIds = namespaceObj!.objects.map(object => {
+        const treehubBucketIds = namespaceObj!.objects.map(object => {
             if (object.object_id === 'summary') {
                 return `${object.namespace_id}/${object.object_id}`
             } else {
@@ -132,10 +133,15 @@ router.delete('/namespaces/:namespace', async (req, res) => {
             }
         });
 
+        for await (const bucketId of treehubBucketIds) {
+            await blobStorage.deleteObject(bucketId);
+        }
 
-        for await (const bucketId of bucketIds) {
-            console.log(bucketId);
-            await blobStorage.deleteObject(bucketId)
+        // TODO delete images in image repo
+        const imageBucketIds = namespaceObj.images.map(image => image.id);
+
+        for await (const bucketId of imageBucketIds) {
+            await blobStorage.deleteObject(bucketId);
         }
 
 

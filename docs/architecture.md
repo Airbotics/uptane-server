@@ -6,18 +6,24 @@ For now, we're building a monolithic backend to perform all functions (Uptane di
 
 ### Admin
 
-Description: Actions taken by human adminstrators.
+Description: Handles actions taken by human adminstrators.
 
-Base URL: `/api/<version>/admin`
+Base URL: `/api/<version>/admin/...`
+
+More: [documentation](modules/admin.md).
 
 ### Treehub
 
 Description: A remote ostree repository.
 
-Base URL: `/api/<version>/treehub`
+Base URL: `/api/<version>/treehub/...`
+
+More: [documentation](modules/treehub.md).
 
 ### Image repo
 
-Description: The Uptane image repository.
+Description: Uptane image repository.
 
-Base URL: `/api/<version>/image`
+Base URL: `/api/<version>/image/...`
+
+More: [documentation](modules/image-repository.md).

@@ -22,6 +22,7 @@ model Namespace {
 
     refs                Ref[]
     objects             Object[]
+    images              Image[]
 
     @@map("namespaces")
 }
@@ -48,7 +49,7 @@ model Ref {
 model Object {
     object_id           String
     namespace_id        String
-    size                BigInt
+    size                Int
     status              ObjectStatus
 
     created_at          DateTime        @default(now())
@@ -59,4 +60,20 @@ model Object {
 
     @@id([namespace_id, object_id])
     @@map("objects")
+}
+
+
+// images stored in image repo
+model Image {
+    id                  String          @id @default(uuid()) @unique
+    namespace_id        String
+    size                Int
+    status              ObjectStatus
+
+    created_at          DateTime        @default(now())
+    updated_at          DateTime        @updatedAt
+
+    namespace           Namespace       @relation(fields: [namespace_id], references: [id], onDelete: Cascade)
+
+    @@map("images")
 }

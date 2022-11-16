@@ -2,7 +2,7 @@
 
 @BASE_URL=http://localhost:8001
 @API_VERSION=v1
-@NAMESPACE=2e598068-e64b-438e-9462-f41dcd317305
+@NAMESPACE=e2b254eb-8d2b-412e-9b91-b0ca3a3ad576
 
 
 # -----------------------------------------
@@ -76,3 +76,19 @@ Content-Type: text/plain
 
 ### get a ref
 GET {{BASE_URL}}/api/{{API_VERSION}}/treehub/{{NAMESPACE}}/refs/head/main HTTP/1.1
+
+
+
+# -----------------------------------------
+# Image repo
+# -----------------------------------------
+
+### upload an image
+PUT {{BASE_URL}}/api/{{API_VERSION}}/image/{{NAMESPACE}}/images HTTP/1.1
+Content-Type: application/octet-stream
+
+this is a sample image
+
+
+### list images
+GET {{BASE_URL}}/api/{{API_VERSION}}/image/{{NAMESPACE}}/images HTTP/1.1

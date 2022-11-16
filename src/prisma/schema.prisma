@@ -81,3 +81,18 @@ model Image {
     @@id([namespace_id, id])
     @@map("images")
 }
+
+
+model Metadata {
+    id                  String          @default(uuid())
+    namespace_id        String
+    type                String          // enum
+    version             Int
+    value               Json            // holds entire signed metadata
+
+    created_at          DateTime        @default(now())
+
+    @@id([namespace_id, id])
+    @@unique([namespace_id, type, version])
+    @@map("metadata")
+}

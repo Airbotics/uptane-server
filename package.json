@@ -9,6 +9,7 @@
     },
     "dependencies": {
         "@prisma/client": "^4.6.1",
+        "canonicalize": "^1.0.8",
         "dotenv": "^16.0.3",
         "express": "^4.17.3",
         "http": "0.0.1-security",

@@ -14,3 +14,11 @@ export interface IKeyPair {
     publicKey: string;
     privateKey: string;
 }
+
+export interface ITufKey {
+    keytype: 'rsa' | 'ed25519' | 'ecdsa-sha2-nistp256';
+    keyval: {
+        public: string;
+    };
+    scheme: 'rsassa-pss-sha256' | 'ed25519' | 'ecdsa-sha2-nistp256';
+}

@@ -4,6 +4,8 @@ import config from '../../config';
 import { generateKeyPair } from '../../core/crypto';
 import { keyStorage } from '../../core/key-storage';
 import { blobStorage } from '../../core/blob-storage';
+import { ETUFRole } from '../../core/consts';
+import { generateRoot } from '../../core/tuf';
 
 const router = express.Router();
 
@@ -13,6 +15,7 @@ const router = express.Router();
  * 
  * - Creates namespace in db.
  * - Generates online private keys (these will be replaced by offline keys in time).
+ * - Creates image repo root.json and saves it to db.
  */
 router.post('/namespaces', async (req, res) => {
 
@@ -27,12 +30,33 @@ router.post('/namespaces', async (req, res) => {
     const directorSnaphotKey = generateKeyPair(config.KEY_TYPE);
     const directorTimestampKey = generateKeyPair(config.KEY_TYPE);
 
+     // create initial root.json for image repo, we'll start it off at 1
+     const version = 1;
 
+     const value = generateRoot(config.TUF_TTL.IMAGE.ROOT,
+         version,
+         imageRootKey.privateKey,
+         imageTargetsKey.privateKey,
+         imageSnapshotKey.privateKey,
+         imageTimestampKey.privateKey
+     ) as object;
+
+    // do persistance layer operations in a transaction
     const namespace = await prisma.$transaction(async tx => {
 
         // create namespace in db
         const namespace = await tx.namespace.create({
             data: {}
+        });
+
+         // create image repo root.json in db
+         await prisma.metadata.create({
+            data: {
+                namespace_id: namespace.id,
+                type: ETUFRole.Root,
+                version,
+                value
+            }
         });
 
         // store keys under namespace

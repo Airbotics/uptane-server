@@ -13,6 +13,7 @@ enum ObjectStatus {
     uploaded
 }
 
+
 // namespace to contain all resources (metadata, ecus, manifests, images, etc.) related to the same project
 model Namespace {
     id                  String          @id @default(uuid()) @unique
@@ -65,9 +66,11 @@ model Object {
 
 // images stored in image repo
 model Image {
-    id                  String          @id @default(uuid()) @unique
+    id                  String          @default(uuid())
     namespace_id        String
     size                Int
+    sha256              String          @unique
+    sha512              String          @unique
     status              ObjectStatus
 
     created_at          DateTime        @default(now())
@@ -75,5 +78,6 @@ model Image {
 
     namespace           Namespace       @relation(fields: [namespace_id], references: [id], onDelete: Cascade)
 
+    @@id([namespace_id, id])
     @@map("images")
 }

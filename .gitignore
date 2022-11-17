@@ -13,3 +13,6 @@ lerna-debug.log
 **/.DS_Store
 .keys
 .blobs
+__pycache__
+scripts/mock-uptane/db/
+scripts/mock-uptane/primary-fs/

@@ -8,11 +8,25 @@ datasource db {
     url                 = env("POSTGRES_CONN_STR")
 }
 
-enum ObjectStatus {
+// upload status of an object/image
+enum UploadStatus {
     uploading
     uploaded
 }
 
+// type of tuf repo
+enum TUFRepo {
+    director
+    image
+}
+
+// type of tuf role
+enum TUFRole {
+    root
+    targets
+    snapshot
+    timestamp
+}
 
 // namespace to contain all resources (metadata, ecus, manifests, images, etc.) related to the same project
 model Namespace {
@@ -31,10 +45,10 @@ model Namespace {
 
 // ostree references
 model Ref {
-    name                String
-    commit              String
+    name                String                                  // `/heads/main` or similar
+    commit              String                                  // commit hash
+    object_id           String                                  // object it points to
     namespace_id        String
-    object_id           String
 
     created_at          DateTime        @default(now())
     updated_at          DateTime        @updatedAt
@@ -50,8 +64,8 @@ model Ref {
 model Object {
     object_id           String
     namespace_id        String
-    size                Int
-    status              ObjectStatus
+    size                Int                                     // size of object in bytes
+    status              UploadStatus
 
     created_at          DateTime        @default(now())
     updated_at          DateTime        @updatedAt
@@ -68,10 +82,10 @@ model Object {
 model Image {
     id                  String          @default(uuid())
     namespace_id        String
-    size                Int
-    sha256              String          @unique
-    sha512              String          @unique
-    status              ObjectStatus
+    size                Int                                     // size of image in bytes
+    sha256              String          @unique                 // sha256 hash of image
+    sha512              String          @unique                 // sha512 hash of image
+    status              UploadStatus                            // uploading or uploaded
 
     created_at          DateTime        @default(now())
     updated_at          DateTime        @updatedAt
@@ -83,19 +97,18 @@ model Image {
 }
 
 // tuf metadata
-// TODO should include which type of repo this belongs to, which should be an enum
-// TODO move this to mongo
-// TODO if we keep it in postgres then make type an enum
+// NOTE this may be moved to mongo
 model Metadata {
     id                  String          @default(uuid())
     namespace_id        String
-    type                String          // TODO enum
-    version             Int
+    role                TUFRole         // director or image repo
+    repo                TUFRepo         // root, targets, snapshot or timestamp
+    version             Int             // must match the version in the signed portion of the metadata
     value               Json            // holds entire signed metadata
 
     created_at          DateTime        @default(now())
 
     @@id([namespace_id, id])
-    @@unique([namespace_id, type, version])
+    @@unique([namespace_id, repo, role, version])
     @@map("metadata")
 }

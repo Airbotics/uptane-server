@@ -1,5 +1,5 @@
 import express from 'express';
-import { ObjectStatus } from '@prisma/client';
+import { UploadStatus } from '@prisma/client';
 import { prisma } from '../../core/postgres';
 import { blobStorage } from '../../core/blob-storage';
 
@@ -45,11 +45,11 @@ router.put('/:namespace/objects/:prefix/:suffix', express.raw({ type: '*/*' }), 
                 namespace_id,
                 object_id,
                 size,
-                status: ObjectStatus.uploading
+                status: UploadStatus.uploading
             },
             update: {
                 size,
-                status: ObjectStatus.uploading
+                status: UploadStatus.uploading
             },
             where: {
                 namespace_id_object_id: {
@@ -69,7 +69,7 @@ router.put('/:namespace/objects/:prefix/:suffix', express.raw({ type: '*/*' }), 
                 }
             },
             data: {
-                status: ObjectStatus.uploaded
+                status: UploadStatus.uploaded
             }
         });
     });

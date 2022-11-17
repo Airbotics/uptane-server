@@ -6,6 +6,7 @@ import { keyStorage } from '../../core/key-storage';
 import { blobStorage } from '../../core/blob-storage';
 import { ETUFRole } from '../../core/consts';
 import { generateRoot } from '../../core/tuf';
+import { TUFRepo, TUFRole } from '@prisma/client';
 
 const router = express.Router();
 
@@ -30,16 +31,16 @@ router.post('/namespaces', async (req, res) => {
     const directorSnaphotKey = generateKeyPair(config.KEY_TYPE);
     const directorTimestampKey = generateKeyPair(config.KEY_TYPE);
 
-     // create initial root.json for image repo, we'll start it off at 1
-     const version = 1;
+    // create initial root.json for image repo, we'll start it off at 1
+    const version = 1;
 
-     const value = generateRoot(config.TUF_TTL.IMAGE.ROOT,
-         version,
-         imageRootKey,
-         imageTargetsKey,
-         imageSnapshotKey,
-         imageTimestampKey
-     ) as object;
+    const value = generateRoot(config.TUF_TTL.IMAGE.ROOT,
+        version,
+        imageRootKey,
+        imageTargetsKey,
+        imageSnapshotKey,
+        imageTimestampKey
+    ) as object;
 
 
     // do persistance layer operations in a transaction
@@ -50,11 +51,12 @@ router.post('/namespaces', async (req, res) => {
             data: {}
         });
 
-         // create image repo root.json in db
-         await prisma.metadata.create({
+        // create image repo root.json in db
+        await prisma.metadata.create({
             data: {
                 namespace_id: namespace.id,
-                type: ETUFRole.Root,
+                repo: TUFRepo.image,
+                role: TUFRole.root,
                 version,
                 value
             }

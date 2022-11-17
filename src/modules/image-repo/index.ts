@@ -1,5 +1,5 @@
 import express from 'express';
-import { ObjectStatus } from '@prisma/client';
+import { UploadStatus, TUFRepo, TUFRole } from '@prisma/client';
 import { blobStorage } from '../../core/blob-storage';
 import { prisma } from '../../core/postgres';
 import { generateHash } from '../../core/crypto';
@@ -24,15 +24,16 @@ router.get('/:namespace/:version.:role.json', async (req, res) => {
 
     const metadata = await prisma.metadata.findUnique({
         where: {
-            namespace_id_type_version: {
+            namespace_id_repo_role_version: {
                 namespace_id,
-                type: role,
+                repo: TUFRepo.image,
+                role: role as TUFRole,
                 version
             }
         }
     });
 
-    if(!metadata) {
+    if (!metadata) {
         return res.status(400).send('cannot get metadata');
     }
 
@@ -59,7 +60,8 @@ router.get('/:namespace/timestamp.json', async (req, res) => {
     const timestamps = await prisma.metadata.findMany({
         where: {
             namespace_id,
-            type: ETUFRole.Timestamp
+            repo: TUFRepo.image,
+            role: TUFRole.timestamp
         },
         orderBy: {
             created_at: 'desc'
@@ -123,7 +125,7 @@ router.put('/:namespace/images', express.raw({ type: '*/*' }), async (req, res) 
                 size,
                 sha256: generateHash(content, { algorithm: 'SHA256' }),
                 sha512: generateHash(content, { algorithm: 'SHA512' }),
-                status: ObjectStatus.uploading
+                status: UploadStatus.uploading
             }
         });
 
@@ -137,7 +139,7 @@ router.put('/:namespace/images', express.raw({ type: '*/*' }), async (req, res) 
                 }
             },
             data: {
-                status: ObjectStatus.uploaded
+                status: UploadStatus.uploaded
             }
         });
     });

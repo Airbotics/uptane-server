@@ -8,7 +8,7 @@ CONSTANTS
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 VIN = '123456'
-PRIMARY_ECU_SERIAL = 'abcdef'
+PRIMARY_ECU_SERIAL = 'ECU1234'
 DB_ROOT_PATH = 'db'
 API_URL = 'http://localhost:5000'
 DB_ROOT_PATH = os.path.join(os.path.dirname(__file__), 'db')

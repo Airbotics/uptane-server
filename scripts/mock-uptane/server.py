@@ -323,6 +323,18 @@ def process_vehicle_manifest(vin, manifest):
     return {}
 
 
+def resign_timestamp(): 
+    prev_timestamp_version = Metadata[Timestamp].from_file(os.path.join(DB_ROOT_PATH, 'image', 'metadata', f'timestamp.json')).signed.version
+  
+    image_timestamp_metadata = Metadata(Timestamp(expires=_in(1), version=prev_timestamp_version+1))
+    image_timestamp_metadata.sign(SSlibSigner(image_timestamp_key))
+    image_timestamp_metadata.to_file(os.path.join(DB_ROOT_PATH, 'image', 'metadata', f'timestamp.json'), serializer=JSONSerializer(compact=False))
+
+    director_timestamp_metadata = Metadata(Timestamp(expires=_in(1), version=prev_timestamp_version+1))
+    director_timestamp_metadata.sign(SSlibSigner(director_timestamp_key))
+    director_timestamp_metadata.to_file(os.path.join(DB_ROOT_PATH, 'director', 'metadata', f'timestamp.json'), serializer=JSONSerializer(compact=False))
+    
+    return { 'timestamp_version': prev_timestamp_version + 1 }
 
 
 
@@ -428,19 +440,9 @@ def image_metadata(metadata):
 
 
 @app.route('/resign-timestamp')
-def resign_timestamp():
-
-    prev_timestamp_version = Metadata[Timestamp].from_file(os.path.join(DB_ROOT_PATH, 'image', 'metadata', f'timestamp.json')).signed.version
-  
-    image_timestamp_metadata = Metadata(Timestamp(expires=_in(1), version=prev_timestamp_version+1))
-    image_timestamp_metadata.sign(SSlibSigner(image_timestamp_key))
-    image_timestamp_metadata.to_file(os.path.join(DB_ROOT_PATH, 'image', 'metadata', f'timestamp.json'), serializer=JSONSerializer(compact=False))
-
-    director_timestamp_metadata = Metadata(Timestamp(expires=_in(1), version=prev_timestamp_version+1))
-    director_timestamp_metadata.sign(SSlibSigner(director_timestamp_key))
-    director_timestamp_metadata.to_file(os.path.join(DB_ROOT_PATH, 'director', 'metadata', f'timestamp.json'), serializer=JSONSerializer(compact=False))
-    
-    return { 'timestamp_version': prev_timestamp_version + 1 }
+def resign():
+    print('resigning timestamp for director and image repos')
+    return resign_timestamp()
 
 
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''

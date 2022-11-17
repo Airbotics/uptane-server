@@ -40,6 +40,7 @@ model Namespace {
     images              Image[]
     metadata            Metadata[]
     robots              Robot[]
+    ecus                Ecu[]
 
     @@map("namespaces")
 }
@@ -119,7 +120,7 @@ model Metadata {
 // robots on which Airbotics will update software
 // these are called vehicles in the Update spec
 model Robot {
-    id                  String
+    id                  String          @default(uuid())
     namespace_id        String
 
     created_at          DateTime        @default(now())
@@ -127,6 +128,25 @@ model Robot {
 
     namespace           Namespace       @relation(fields: [namespace_id], references: [id], onDelete: Cascade)
 
+    ecus                Ecu[]
+
     @@id([namespace_id, id])
     @@map("robots")
+}
+
+// ecus on robots
+// NOTE we could potentially remove the namespace id here
+model Ecu {
+    id                  String          @default(uuid())
+    namespace_id        String
+    robot_id            String
+
+    created_at          DateTime        @default(now())
+    updated_at          DateTime        @updatedAt
+
+    namespace           Namespace       @relation(fields: [namespace_id], references: [id], onDelete: Cascade)
+    robot               Robot           @relation(fields: [namespace_id, robot_id], references: [namespace_id, id], onDelete: Cascade)
+
+    @@id([namespace_id, id])
+    @@map("ecus")
 }

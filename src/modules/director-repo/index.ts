@@ -12,10 +12,6 @@ router.post('/:namespace/robots', async (req, res) => {
 
     const namespace_id = req.params.namespace;
 
-    const {
-        id
-    } = req.body
-
     // check namespace exists
     const namespaceCount = await prisma.namespace.count({
         where: {
@@ -32,7 +28,6 @@ router.post('/:namespace/robots', async (req, res) => {
 
         const robot = await prisma.robot.create({
             data: {
-                id,
                 namespace_id
             }
         });
@@ -49,7 +44,7 @@ router.post('/:namespace/robots', async (req, res) => {
         // catch a unique constraint error code
         // someone has tried to create a robot with an existing id, return 400
         if (error.code === 'P2002') {
-            return res.status(400).send('could not create robot.');
+            return res.status(400).send('could not create robot');
         }
         // otherwise we dont know what happened so re-throw the errror and let the
         // general error catcher return it as a 500
@@ -114,17 +109,25 @@ router.get('/:namespace/robots/:robot_id', async (req, res) => {
                 namespace_id,
                 id: robot_id
             }
+        },
+        include: {
+            ecus: true
         }
     });
 
     if (!robot) {
-        return res.status(400).send('could not get robot.');
+        return res.status(400).send('could not get robot');
     }
 
     const response = {
         id: robot.id,
         created_at: robot.created_at,
-        updated_at: robot.updated_at
+        updated_at: robot.updated_at,
+        ecus: robot.ecus.map(ecu => ({
+            id: ecu.id,
+            created_at: ecu.created_at,
+            updated_at: ecu.updated_at,
+        }))
     };
 
     return res.status(200).json(response);
@@ -151,9 +154,9 @@ router.delete('/:namespace/robots/:robot_id', async (req, res) => {
                 }
             }
         });
-    
+
         return res.status(200).send('deleted robot');
-        
+
     } catch (error) {
         // catch deletion failure error code
         // someone has tried to create a robot that does not exist in this namespace, return 400
@@ -164,6 +167,57 @@ router.delete('/:namespace/robots/:robot_id', async (req, res) => {
         // general error catcher return it as a 500
         throw error;
     }
+
+});
+
+
+
+/**
+ * Add an ecu to robot
+ */
+router.post('/:namespace/robots/:robot_id/ecus', async (req, res) => {
+
+    const namespace_id = req.params.namespace;
+    const robot_id = req.params.robot_id;
+
+    // check namespace exists
+    const namespaceCount = await prisma.namespace.count({
+        where: {
+            id: namespace_id
+        }
+    });
+
+    if (namespaceCount === 0) {
+        return res.status(400).send('could not create ecu');
+    }
+
+    // check robot exists
+    const robotCount = await prisma.robot.count({
+        where: {
+            id: robot_id
+        }
+    });
+
+    if (robotCount === 0) {
+        return res.status(400).send('could not create ecu');
+    }
+
+    const ecu = await prisma.ecu.create({
+        data: {
+            robot_id,
+            namespace_id
+        }
+    });
+    console.log('hi')
+
+    const response = {
+        id: ecu.id,
+        robot_id: ecu.robot_id,
+        created_at: ecu.created_at,
+        updated_at: ecu.updated_at
+    };
+
+    return res.status(200).json(response);
 
 });
 

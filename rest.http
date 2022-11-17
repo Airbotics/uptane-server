@@ -3,6 +3,7 @@
 @BASE_URL=http://localhost:8001
 @API_VERSION=v0
 @NAMESPACE=8b332d12-1793-4ed9-802c-6b0113b44e42
+@ROBOT=2bdfe952-298d-46d9-9c74-7ab412de0a16
 
 
 # -----------------------------------------
@@ -36,21 +37,18 @@ DELETE {{BASE_URL}}/api/{{API_VERSION}}/admin/namespaces/{{NAMESPACE}} HTTP/1.1
 
 ### create a robot
 POST {{BASE_URL}}/api/{{API_VERSION}}/director/{{NAMESPACE}}/robots HTTP/1.1
-Content-Type: application/json
-
-{
-    "id": "my-robot"
-}
 
 ### list robots
 GET {{BASE_URL}}/api/{{API_VERSION}}/director/{{NAMESPACE}}/robots HTTP/1.1
 
 ### get a single robot
-GET {{BASE_URL}}/api/{{API_VERSION}}/director/{{NAMESPACE}}/robots/my-robot HTTP/1.1
+GET {{BASE_URL}}/api/{{API_VERSION}}/director/{{NAMESPACE}}/robots/{{ROBOT}} HTTP/1.1
 
 ### delete a robot
-DELETE {{BASE_URL}}/api/{{API_VERSION}}/director/{{NAMESPACE}}/robots/my-robot HTTP/1.1
+DELETE {{BASE_URL}}/api/{{API_VERSION}}/director/{{NAMESPACE}}/robots/{{ROBOT}} HTTP/1.1
 
+### add ecu to robot
+POST {{BASE_URL}}/api/{{API_VERSION}}/director/{{NAMESPACE}}/robots/{{ROBOT}}/ecus HTTP/1.1
 
 
 

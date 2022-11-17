@@ -28,6 +28,7 @@ enum TUFRole {
     timestamp
 }
 
+
 // namespace to contain all resources (metadata, ecus, manifests, images, etc.) related to the same project
 model Namespace {
     id                  String          @id @default(uuid()) @unique
@@ -42,43 +43,9 @@ model Namespace {
     robots              Robot[]
     ecus                Ecu[]
     robot_manifests     RobotManifest[]
+    rollouts            Rollout[]
 
     @@map("namespaces")
-}
-
-
-// ostree references
-model Ref {
-    name                String                                  // `/heads/main` or similar
-    commit              String                                  // commit hash
-    object_id           String                                  // object it points to
-    namespace_id        String
-
-    created_at          DateTime        @default(now())
-    updated_at          DateTime        @updatedAt
-
-    object              Object          @relation(fields: [namespace_id, object_id], references: [namespace_id, object_id], onDelete: Cascade)
-    namespace           Namespace       @relation(fields: [namespace_id], references: [id], onDelete: Cascade)
-
-    @@id([namespace_id, name])
-    @@map("refs")
-}
-
-// ostree object
-model Object {
-    object_id           String
-    namespace_id        String
-    size                Int                                     // size of object in bytes
-    status              UploadStatus
-
-    created_at          DateTime        @default(now())
-    updated_at          DateTime        @updatedAt
-
-    refs                Ref[]
-    namespace           Namespace       @relation(fields: [namespace_id], references: [id], onDelete: Cascade)
-
-    @@id([namespace_id, object_id])
-    @@map("objects")
 }
 
 
@@ -94,11 +61,14 @@ model Image {
     created_at          DateTime        @default(now())
     updated_at          DateTime        @updatedAt
 
+    rollouts            Rollout[]
+
     namespace           Namespace       @relation(fields: [namespace_id], references: [id], onDelete: Cascade)
 
     @@id([namespace_id, id])
     @@map("images")
 }
+
 
 // tuf metadata
 // NOTE this may be moved to mongo
@@ -118,6 +88,7 @@ model Metadata {
     @@map("metadata")
 }
 
+
 // robots on which Airbotics will update software
 // these are called vehicles in the Update spec
 // TODO
@@ -133,10 +104,12 @@ model Robot {
 
     ecus                Ecu[]
     robot_manifests     RobotManifest[]
+    rollouts            Rollout[]
 
     @@id([namespace_id, id])
     @@map("robots")
 }
+
 
 // ecus on robots
 // NOTE we could potentially remove the namespace id here
@@ -174,4 +147,61 @@ model RobotManifest {
 
     @@id([namespace_id, id])
     @@map("robot_manifests")
+}
+
+
+// rollouts
+// TODO this is a temporary table
+model Rollout {
+    id                  String          @default(uuid())
+    namespace_id        String
+
+    robot_id            String
+    image_id            String
+
+    created_at          DateTime        @default(now())
+    updated_at          DateTime        @updatedAt
+
+    namespace           Namespace       @relation(fields: [namespace_id], references: [id], onDelete: Cascade)
+    robot               Robot           @relation(fields: [namespace_id, robot_id], references: [namespace_id, id], onDelete: Cascade)
+    image               Image           @relation(fields: [namespace_id, image_id], references: [namespace_id, id], onDelete: Cascade)
+
+    @@id([namespace_id, id])
+    @@map("rollouts")
+}
+
+
+// ostree references
+model Ref {
+    name                String                                  // `/heads/main` or similar
+    commit              String                                  // commit hash
+    object_id           String                                  // object it points to
+    namespace_id        String
+
+    created_at          DateTime        @default(now())
+    updated_at          DateTime        @updatedAt
+
+    object              Object          @relation(fields: [namespace_id, object_id], references: [namespace_id, object_id], onDelete: Cascade)
+    namespace           Namespace       @relation(fields: [namespace_id], references: [id], onDelete: Cascade)
+
+    @@id([namespace_id, name])
+    @@map("refs")
+}
+
+
+// ostree object
+model Object {
+    object_id           String
+    namespace_id        String
+    size                Int                                     // size of object in bytes
+    status              UploadStatus
+
+    created_at          DateTime        @default(now())
+    updated_at          DateTime        @updatedAt
+
+    refs                Ref[]
+    namespace           Namespace       @relation(fields: [namespace_id], references: [id], onDelete: Cascade)
+
+    @@id([namespace_id, object_id])
+    @@map("objects")
 }

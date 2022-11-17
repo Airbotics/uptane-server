@@ -50,6 +50,10 @@ An _ECU_ is an Electronic Control Unit, i.e. a computer.
 
 _Images_ is a general term referring to artifacts that should be deployed to ECUs, e.g. full OS images, built binaries, configuration files, maps, Docker images. At its most basic, images are a collection of files.
 
+### Rollout
+
+Images are assigned to ECUs on robots through _rollouts_, i.e. they associate a set of images for a set of ECUs. Rollouts are used by the director repository to determine if a robot's software is up-to-date or not. 
+
 
 ## TUF metadata expiration
 
@@ -72,6 +76,7 @@ By default, TUF metadata expires according to the following schedule. This can b
 Airbotics is a work-in-progress is not yet full compatible with the Updane specification, some of these limitations will be addressed over time. 
 
 Current limitations:
+- No support for secondary ECUs.
 - Only supports full verification ECUs.
 - Only supports online, asymmetric RSA keys.
 - No support for key revocation.

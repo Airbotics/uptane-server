@@ -84,11 +84,31 @@ router.post('/:namespace/robots/:robot_id/manifests', async (req, res) => {
      * exit and thank the primary for its time.
      */
 
+    // NOTE: this is temporary code that will be replaced by something more substantial
+    // for now we simply take the most recent rollout for this robot and apply that image to its
+    // primary ecu
+    const rollout = await prisma.rollout.findFirst({
+        where: {
+            namespace_id,
+            robot_id
+        },
+        orderBy: {
+            created_at: 'desc'   
+        }
+    });
+
+    if(!rollout) {
+        // there has been no rollout for this robot
+        return res.status(400).send('could not process manifest');
+    }
+
+
     /**
      * if we get to this point we need to create a new set of tuf metadata for the ecus 
      * on this robot, this follows a similar pattern to creating tuf metadata in the image
      * repo when an image is pushed.
      */
+
 
     /**
      * finally, if we get here then we have created new tuf metadata which is ready for
@@ -278,6 +298,76 @@ router.delete('/:namespace/robots/:robot_id', async (req, res) => {
         // general error catcher return it as a 500
         throw error;
     }
+
+});
+
+
+
+/**
+ * Create a rollout
+ * 
+ * Creates an association betwen a robot and image.
+ */
+router.post('/:namespace/rollouts', async (req, res) => {
+
+    const {
+        robot_id,
+        image_id
+    } = req.body;
+
+
+    const namespace_id = req.params.namespace;
+
+    // check namespace exists
+    const namespaceCount = await prisma.namespace.count({
+        where: {
+            id: namespace_id
+        }
+    });
+
+    if (namespaceCount === 0) {
+        return res.status(400).send('could not create rollout');
+    }
+
+    // check robot exists
+    const robotCount = await prisma.robot.count({
+        where: {
+            id: robot_id
+        }
+    });
+
+    if (robotCount === 0) {
+        return res.status(400).send('could not create rollout');
+    }
+
+    // check image exists
+    const imageCount = await prisma.image.count({
+        where: {
+            id: image_id
+        }
+    });
+
+    if (imageCount === 0) {
+        return res.status(400).send('could not create rollout');
+    }
+
+    const rollout = await prisma.rollout.create({
+        data: {
+            namespace_id,
+            image_id,
+            robot_id
+        }
+    });
+
+    const response = {
+        id: rollout.id,
+        image_id: rollout.image_id,
+        robot_id: rollout.robot_id,
+        created_at: rollout.created_at,
+        updated_at: rollout.updated_at
+    };
+
+    return res.status(200).json(response);
 
 });
 

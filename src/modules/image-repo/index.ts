@@ -4,6 +4,7 @@ import { UploadStatus, TUFRepo, TUFRole } from '@prisma/client';
 import { blobStorage } from '../../core/blob-storage';
 import config from '../../config';
 import { prisma } from '../../core/postgres';
+import { logger } from '../../core/logger';
 import { generateHash } from '../../core/crypto';
 import { generateSnapshot, generateTargets, generateTimestamp } from '../../core/tuf';
 import { keyStorage } from '../../core/key-storage';
@@ -40,7 +41,7 @@ const router = express.Router();
  * - valide the size/length reported by content-length header matches the length we actually receive
  * - include length and hash in snapshot and timestamp meta
  */
-router.put('/:namespace/images', express.raw({ type: '*/*' }), async (req, res) => {
+router.post('/:namespace/images', express.raw({ type: '*/*' }), async (req, res) => {
 
     const namespace_id = req.params.namespace;
     const imageContent = req.body;
@@ -49,6 +50,7 @@ router.put('/:namespace/images', express.raw({ type: '*/*' }), async (req, res) 
 
     // if content-length was not sent, or it is zero, or it is not a number return 400
     if (!size || size === 0 || isNaN(size)) {
+        logger.warn('could not create an image because content-length header was not sent');
         return res.status(400).end();
     }
 
@@ -60,6 +62,7 @@ router.put('/:namespace/images', express.raw({ type: '*/*' }), async (req, res) 
     });
 
     if (namespaceCount === 0) {
+        logger.warn('could not create an image because namespace does not exist');
         return res.status(400).send('could not upload image');
     }
 
@@ -215,6 +218,7 @@ router.put('/:namespace/images', express.raw({ type: '*/*' }), async (req, res) 
 
     });
 
+    logger.info('created an image');
     return res.status(200).end();
 
 });
@@ -235,6 +239,7 @@ router.get('/:namespace/images', async (req, res) => {
     });
 
     if (namespaceCount === 0) {
+        logger.warn('could not list images because namespace does not exist');
         return res.status(400).send('could not list images');
     }
 
@@ -294,6 +299,7 @@ router.get('/:namespace/images/:hash.:id', async (req, res) => {
     });
 
     if (!image) {
+        logger.warn('could not download image because it does not exist');
         return res.status(400).send('could not download image');
     }
 
@@ -306,6 +312,7 @@ router.get('/:namespace/images/:hash.:id', async (req, res) => {
     } catch (error) {
         // db and blob storage should be in sync
         // if an image exists in db but not blob storage something has gone wrong, bail on this request
+        logger.error('images in postgres and blob storage are out of sync');
         return res.status(500).end();
     }
 
@@ -332,6 +339,7 @@ router.get('/:namespace/images/:id', async (req, res) => {
     });
 
     if (!image) {
+        logger.warn('could not download image because it does not exist');
         return res.status(400).send('could not download image');
     }
 
@@ -344,6 +352,7 @@ router.get('/:namespace/images/:id', async (req, res) => {
     } catch (error) {
         // db and blob storage should be in sync
         // if an image exists in db but not blob storage something has gone wrong, bail on this request
+        logger.error('images in postgres and blob storage are out of sync');
         return res.status(500).end();
     }
 
@@ -374,6 +383,7 @@ router.get('/:namespace/:version.:role.json', async (req, res) => {
     });
 
     if (!metadata) {
+        logger.warn(`could not download ${role} metadata because it does not exist`);
         return res.status(404).end();
     }
 
@@ -405,6 +415,7 @@ router.get('/:namespace/timestamp.json', async (req, res) => {
     });
 
     if (timestamps.length === 0) {
+        logger.warn('could not download timestamp metadata because it does not exist');
         return res.status(404).end();
     }
 

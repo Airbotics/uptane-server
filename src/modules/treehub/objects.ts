@@ -1,5 +1,6 @@
 import express from 'express';
 import { UploadStatus } from '@prisma/client';
+import { logger } from '../../core/logger';
 import { prisma } from '../../core/postgres';
 import { blobStorage } from '../../core/blob-storage';
 
@@ -24,6 +25,7 @@ router.put('/:namespace/objects/:prefix/:suffix', express.raw({ type: '*/*' }), 
 
     // if content-length was not sent, or it is zero, or it is not a number return 400
     if (!size || size === 0 || isNaN(size)) {
+        logger.warn('could not upload ostree object because content-length header was not sent');
         return res.status(400).end();
     }
 
@@ -34,6 +36,7 @@ router.put('/:namespace/objects/:prefix/:suffix', express.raw({ type: '*/*' }), 
     });
 
     if (namespaceCount === 0) {
+        logger.warn('could not upload ostree object because namespace does not exist');
         return res.status(400).send('could not upload ostree object');
     }
 
@@ -74,6 +77,7 @@ router.put('/:namespace/objects/:prefix/:suffix', express.raw({ type: '*/*' }), 
         });
     });
 
+    logger.info('uploaded ostree object');
     return res.status(200).end();
 
 });
@@ -102,6 +106,7 @@ router.get('/:namespace/objects/:prefix/:suffix', async (req, res) => {
     });
 
     if (!object) {
+        logger.warn('could not get ostree object because it does not exist');
         return res.status(400).send('could not download ostree object');
     }
 
@@ -114,6 +119,7 @@ router.get('/:namespace/objects/:prefix/:suffix', async (req, res) => {
     } catch (error) {
         // db and blob storage should be in sync
         // if an object exists in db but not blob storage something has gone wrong, bail on this request
+        logger.error('ostree object in postgres and blob storage are out of sync');
         return res.status(500).end();
     }
 

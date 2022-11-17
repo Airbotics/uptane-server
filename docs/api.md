@@ -10,6 +10,17 @@ After that comes the version of the API being used, versions are of the form `v0
 
 - `v0 (latest)`: Alpha version
 
+## Methods
+
+The convention we follow is:
+
+PUT - for upserting
+
+POST - for creating
+
+GET - for reading
+
+DELETE - for deleting
 
 ## Responses
 

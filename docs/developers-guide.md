@@ -65,3 +65,22 @@ You can then inspect the schema and contents with:
 ```
 npx prisma studio --schema ./src/prisma/schema.prisma
 ```
+
+## Logging
+
+We use [winston](https://www.npmjs.com/package/winston) for logging.
+
+Currently logs are sent to the console but in the future they will be exported somewhere more permanent.
+
+Log levels and explantations:
+
+| Level   | Desc                                                   | Env       | Examples                       |
+| ------- | ------------------------------------------------------ | --------- | ------------------------------ |
+| `debug` | To help developers understanding of the control flow.  | Dev, prod | _Endpoint hit, db queries_     |
+| `info`  | General information about the application.             | Prod      | _App started, db connected_    |
+| `warn`  | Something unusual, but not unexpected has happened.    | Prod      | _404, invalid request, expiry_ |
+| `error` | Something that should not have happened has happened.  | Prod      | _500 error_                    |
+
+Log messages are lowercase without full stops.
+
+Mutations (POST, PUT, PATCH, DELETE) should produce an `info` level log message. Reads (OPTION, GET) do not produce a log message (unless there is an error).

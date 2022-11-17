@@ -1,5 +1,6 @@
 import express from 'express';
 import { UploadStatus } from '@prisma/client';
+import { logger } from '../../core/logger';
 import { prisma } from '../../core/postgres';
 import { blobStorage } from '../../core/blob-storage';
 
@@ -20,6 +21,7 @@ router.put('/:namespace/summary', express.raw({ type: '*/*' }), async (req, res)
 
     // if content-length was not sent, or it is zero, or it is not a number return 400
     if (!size || size === 0 || isNaN(size)) {
+        logger.warn('could not upload ostree summary because content-length header was not sent');
         return res.status(400).end();
     }
 
@@ -30,6 +32,7 @@ router.put('/:namespace/summary', express.raw({ type: '*/*' }), async (req, res)
     });
 
     if (namespaceCount === 0) {
+        logger.warn('could not upload ostree summary because namespace does not exist');
         return res.status(400).send('could not upload ostree summary');
     }
 
@@ -69,6 +72,7 @@ router.put('/:namespace/summary', express.raw({ type: '*/*' }), async (req, res)
         });
     });
 
+    logger.info('uploaded ostree summary');
     return res.status(200).end();
 
 });
@@ -83,7 +87,7 @@ router.get('/:namespace/summary', async (req, res) => {
     const object_id = 'summary';
     const bucketId = namespace_id + '/' + object_id;
 
-    const object = await prisma.object.findUnique({
+    const summary = await prisma.object.findUnique({
         where: {
             namespace_id_object_id: {
                 namespace_id,
@@ -92,7 +96,8 @@ router.get('/:namespace/summary', async (req, res) => {
         }
     });
 
-    if (!object) {
+    if (!summary) {
+        logger.warn('could not download ostree summary because it does not exist')
         return res.status(400).send('could not download ostree summary');
     }
 

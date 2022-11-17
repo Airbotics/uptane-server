@@ -1,6 +1,7 @@
 import express from 'express';
 import { keyStorage } from '../../core/key-storage';
 import config from '../../config';
+import { logger } from '../../core/logger';
 import { generateKeyPair } from '../../core/crypto';
 import { prisma } from '../../core/postgres';
 
@@ -28,6 +29,7 @@ router.post('/:namespace/robots/:robot_id/manifests', async (req, res) => {
     });
 
     if (namespaceCount === 0) {
+        logger.warn('could not process manifest because namespace does not exist');
         return res.status(400).send('could not process manifest');
     }
 
@@ -46,6 +48,7 @@ router.post('/:namespace/robots/:robot_id/manifests', async (req, res) => {
     });
 
     if (!robot) {
+        logger.warn('could not process manifest because robot does not exist');
         return res.status(400).send('could not process manifest');
     }
 
@@ -93,13 +96,13 @@ router.post('/:namespace/robots/:robot_id/manifests', async (req, res) => {
             robot_id
         },
         orderBy: {
-            created_at: 'desc'   
+            created_at: 'desc'
         }
     });
 
-    if(!rollout) {
-        // there has been no rollout for this robot
-        return res.status(400).send('could not process manifest');
+    if (!rollout) {
+        logger.info('processed manifest for robot but no images have been assigned to it');
+        return res.status(200).end();
     }
 
 
@@ -115,6 +118,7 @@ router.post('/:namespace/robots/:robot_id/manifests', async (req, res) => {
      * the ecus the next time it requests it, which will probably be soon. that was a lot...
      */
 
+    logger.info('processed manifest for robot and created new tuf metadata');
     return res.status(200).end();
 
 });
@@ -141,6 +145,7 @@ router.post('/:namespace/robots', async (req, res) => {
     });
 
     if (namespaceCount === 0) {
+        logger.warn('could not create robot because namespace does not exist');
         return res.status(400).send('could not create robot');
     }
 
@@ -175,6 +180,7 @@ router.post('/:namespace/robots', async (req, res) => {
         namespace_id
     };
 
+    logger.info('created a robot');
     return res.status(200).json(response);
 
 });
@@ -195,6 +201,7 @@ router.get('/:namespace/robots', async (req, res) => {
     });
 
     if (namespaceCount === 0) {
+        logger.warn('could not list robots because namespace does not exist');
         return res.status(400).send('could not list robots');
     }
 
@@ -227,7 +234,6 @@ router.get('/:namespace/robots/:robot_id', async (req, res) => {
     const namespace_id = req.params.namespace;
     const robot_id = req.params.robot_id;
 
-
     // get robot
     const robot = await prisma.robot.findUnique({
         where: {
@@ -243,6 +249,7 @@ router.get('/:namespace/robots/:robot_id', async (req, res) => {
     });
 
     if (!robot) {
+        logger.warn('could not get info about robot because it or the namespace does not exist');
         return res.status(400).send('could not get robot');
     }
 
@@ -277,7 +284,7 @@ router.delete('/:namespace/robots/:robot_id', async (req, res) => {
     // try delete robot
     try {
 
-        const robot = await prisma.robot.delete({
+        await prisma.robot.delete({
             where: {
                 namespace_id_id: {
                     namespace_id,
@@ -286,12 +293,14 @@ router.delete('/:namespace/robots/:robot_id', async (req, res) => {
             }
         });
 
+        logger.info('deleted a robot');
         return res.status(200).send('deleted robot');
 
     } catch (error) {
         // catch deletion failure error code
         // someone has tried to create a robot that does not exist in this namespace, return 400
         if (error.code === 'P2025') {
+            logger.warn('could not delete a robot because it does not exist');
             return res.status(400).send('could not delete robot');
         }
         // otherwise we dont know what happened so re-throw the errror and let the
@@ -304,7 +313,7 @@ router.delete('/:namespace/robots/:robot_id', async (req, res) => {
 
 
 /**
- * Create a rollout
+ * Create a rollout.
  * 
  * Creates an association betwen a robot and image.
  */
@@ -326,6 +335,7 @@ router.post('/:namespace/rollouts', async (req, res) => {
     });
 
     if (namespaceCount === 0) {
+        logger.warn('could not create a rollout because namespace does not exist');
         return res.status(400).send('could not create rollout');
     }
 
@@ -337,6 +347,7 @@ router.post('/:namespace/rollouts', async (req, res) => {
     });
 
     if (robotCount === 0) {
+        logger.warn('could not create a rollout because robot does not exist');
         return res.status(400).send('could not create rollout');
     }
 
@@ -348,6 +359,7 @@ router.post('/:namespace/rollouts', async (req, res) => {
     });
 
     if (imageCount === 0) {
+        logger.warn('could not create a rollout because image does not exist');
         return res.status(400).send('could not create rollout');
     }
 
@@ -367,6 +379,7 @@ router.post('/:namespace/rollouts', async (req, res) => {
         updated_at: rollout.updated_at
     };
 
+    logger.info('created rollout');
     return res.status(200).json(response);
 
 });

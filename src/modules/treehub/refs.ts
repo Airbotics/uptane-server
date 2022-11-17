@@ -1,4 +1,5 @@
 import express from 'express';
+import { logger } from '../../core/logger';
 import { prisma } from '../../core/postgres';
 
 const router = express.Router();
@@ -27,6 +28,7 @@ router.put('/:namespace/refs/:name(*)', express.text(), async (req, res) => {
     });
 
     if (namespaceCount === 0) {
+        logger.warn('could not upload ostree ref because namespace does not exist');
         return res.status(400).send('could not upload ostree ref');
     }
 
@@ -38,6 +40,7 @@ router.put('/:namespace/refs/:name(*)', express.text(), async (req, res) => {
     });
 
     if (objectCount === 0) {
+        logger.warn('could not upload ostree ref because the object it references does not exist');
         return res.status(400).send('could not upload ostree ref');
     }
 
@@ -59,6 +62,7 @@ router.put('/:namespace/refs/:name(*)', express.text(), async (req, res) => {
         }
     });
 
+    logger.info('uploaded ostree ref');
     return res.status(200).end();
 });
 
@@ -84,6 +88,7 @@ router.get('/:namespace/refs/:name(*)', async (req, res) => {
     });
 
     if (!ref) {
+        logger.warn('could not get ostree ref because it does not exist');
         return res.status(400).send('could not download ostree ref');
     }
 

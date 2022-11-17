@@ -1,5 +1,6 @@
 import express from 'express';
 import { prisma } from '../../core/postgres';
+import { logger } from '../../core/logger';
 import { OSTREE_CONFIG } from '../../core/consts';
 
 const router = express.Router();
@@ -21,6 +22,7 @@ router.get('/:namespace/config', async (req, res) => {
     });
 
     if (namespaceCount === 0) {
+        logger.warn('could not get ostree config because namespace does not exist');
         return res.status(400).send('could not get ostree config');
     }
 

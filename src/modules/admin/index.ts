@@ -1,11 +1,12 @@
 import express from 'express';
+import { TUFRepo, TUFRole } from '@prisma/client';
 import { prisma } from '../../core/postgres';
 import config from '../../config';
 import { generateKeyPair } from '../../core/crypto';
 import { keyStorage } from '../../core/key-storage';
 import { blobStorage } from '../../core/blob-storage';
 import { generateRoot } from '../../core/tuf';
-import { TUFRepo, TUFRole } from '@prisma/client';
+import { logger } from '../../core/logger';
 
 const router = express.Router();
 
@@ -111,13 +112,13 @@ router.post('/namespaces', async (req, res) => {
 
     });
 
-
     const response = {
         id: namespace.id,
         created_at: namespace.created_at,
         updated_at: namespace.updated_at
     };
 
+    logger.info('created a namespace');
     return res.status(200).json(response);
 
 });
@@ -164,13 +165,14 @@ router.delete('/namespaces/:namespace', async (req, res) => {
     });
 
     if (namespaceCount === 0) {
+        logger.warn('could not delete a namespace because it does not exist');
         return res.status(400).send('could not delete namespace');
     }
 
     await prisma.$transaction(async tx => {
 
         // delete namespace in db
-        const namespaceObj = await prisma.namespace.delete({
+        const namespaceObj = await tx.namespace.delete({
             where: {
                 id: namespace
             },
@@ -221,11 +223,10 @@ router.delete('/namespaces/:namespace', async (req, res) => {
         await keyStorage.deleteKey(`${namespace}-director-targets-public`);
         await keyStorage.deleteKey(`${namespace}-director-snapshot-public`);
         await keyStorage.deleteKey(`${namespace}-director-timestamp-public`);
-        
-
 
     });
 
+    logger.info('deleted a namespace');
     return res.status(200).send('namespace deleted');
 
 });

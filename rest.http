@@ -72,7 +72,7 @@ GET {{BASE_URL}}/api/{{API_VERSION}}/image/{{NAMESPACE}}/timestamp.json HTTP/1.1
 # -----------------------------------------
 
 ### upload an image
-PUT {{BASE_URL}}/api/{{API_VERSION}}/image/{{NAMESPACE}}/images HTTP/1.1
+POST {{BASE_URL}}/api/{{API_VERSION}}/image/{{NAMESPACE}}/images HTTP/1.1
 Content-Type: application/octet-stream
 
 this is a sample image

@@ -2,7 +2,7 @@
 
 @BASE_URL=http://localhost:8001
 @API_VERSION=v0
-@NAMESPACE=4e39b199-5005-4a30-a873-82dc7e370670
+@NAMESPACE=c87b355e-7c07-4dcd-87f2-d4d020faa211
 
 
 # -----------------------------------------
@@ -83,8 +83,7 @@ GET {{BASE_URL}}/api/{{API_VERSION}}/treehub/{{NAMESPACE}}/refs/head/main HTTP/1
 # -----------------------------------------
 
 ### get metadata
-GET {{BASE_URL}}/api/{{API_VERSION}}/image/{{NAMESPACE}}/1.root.json HTTP/1.1
-
+GET {{BASE_URL}}/api/{{API_VERSION}}/image/{{NAMESPACE}}/1.snapshot.json HTTP/1.1
 
 
 ### get timestamp
@@ -102,6 +101,7 @@ PUT {{BASE_URL}}/api/{{API_VERSION}}/image/{{NAMESPACE}}/images HTTP/1.1
 Content-Type: application/octet-stream
 
 this is a sample image
+
 
 ### list images
 GET {{BASE_URL}}/api/{{API_VERSION}}/image/{{NAMESPACE}}/images HTTP/1.1

@@ -1,6 +1,9 @@
 import { generateHash } from '../crypto';
 import { toCanonical } from '../utils';
 import { generateRoot } from './root';
+import { generateTargets } from './targets';
+import { generateSnapshot } from './snapshot';
+import { generateTimestamp } from './timestamp';
 import { ITufKey } from '../../types';
 
 /**
@@ -23,5 +26,8 @@ export const genKeyId = (roleKey: ITufKey): string => generateHash(toCanonical(r
 
 // export the remaining tuf functions
 export {
-    generateRoot
+    generateRoot,
+    generateTargets,
+    generateSnapshot,
+    generateTimestamp
 };

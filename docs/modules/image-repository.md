@@ -19,7 +19,7 @@ When an image for an ECU has been built and is ready to be deployed to the fleet
 
 Before the TUF metadata for the image repo expires it should be resigned. Currently, this happens with a background worker.
 
-There are two main queries that can be made against it:
+There are three main queries that can be made against it:
 
 1. List images
 
@@ -28,6 +28,10 @@ This allows an admin to read a full list of images that have been uploaded.
 2. Download an image
 
 This allows an ECU to download the content of an image that has been uploaded by an admin. Each image is referenced by a unique id, an ECU can fetch it from `<BASE_URL>/images/<id>` or prepend the the hash of the image to the id, i.e. `<BASE_URL>/images/<hash>.<id>`.
+
+3. Fetch TUF metadata
+
+Clients can fetch TUF metadata stored in the image repository.
 
 
 ## Storing images

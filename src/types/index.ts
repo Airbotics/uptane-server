@@ -68,7 +68,18 @@ export interface IRootTUF {
     signed: IRootSignedTUF;
 }
 
-
+// the actual content of the targets.json metdata with information 
+// about the images the listed as targets
+export interface ITargetsImages {
+    [key: string]: {
+        custom?: any;
+        hashes: {
+            sha256: string;
+            sha512: string;
+        };
+        length: number;
+    };
+}
 
 
 export interface ITargetsSignedTUF {
@@ -77,16 +88,7 @@ export interface ITargetsSignedTUF {
     version: number;
     expires: string;
     delegations?: any;
-    targets: {
-        [key: string]: {
-            custom?: any;
-            hashes: {
-                sha256: string;
-                sha512: string;
-            };
-            length: number;
-        };
-    };
+    targets: ITargetsImages;
 }
 
 export interface ITargetsTUF {

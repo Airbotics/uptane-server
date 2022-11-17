@@ -2,6 +2,7 @@
 
 This guide is for developers that want to work on and develop Airbotics. Its recommended to start by reading the [user guide](user-guide.md) first to familiarise yourself with the system at a high level first.
 
+
 ## Including a license notice
 
 This notice should be included at the top of every source code file:

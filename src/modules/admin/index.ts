@@ -21,15 +21,11 @@ const router = express.Router();
 router.post('/namespaces', async (req, res) => {
 
     // generate 8 key pairs, 4 top-level metadata, 2 repos
+    // NOTE just working on image repo for now
     const imageRootKey = generateKeyPair(config.KEY_TYPE);
     const imageTargetsKey = generateKeyPair(config.KEY_TYPE);
     const imageSnapshotKey = generateKeyPair(config.KEY_TYPE);
     const imageTimestampKey = generateKeyPair(config.KEY_TYPE);
-
-    const directorRootKey = generateKeyPair(config.KEY_TYPE);
-    const directorTargetsKey = generateKeyPair(config.KEY_TYPE);
-    const directorSnaphotKey = generateKeyPair(config.KEY_TYPE);
-    const directorTimestampKey = generateKeyPair(config.KEY_TYPE);
 
     // create initial root.json for image repo, we'll start it off at 1
     const version = 1;
@@ -62,16 +58,17 @@ router.post('/namespaces', async (req, res) => {
             }
         });
 
-        // store keys under namespace
-        await keyStorage.putKey(`${namespace.id}-image-root`, imageRootKey.privateKey);
-        await keyStorage.putKey(`${namespace.id}-image-targets`, imageTargetsKey.privateKey);
-        await keyStorage.putKey(`${namespace.id}-image-snapshot`, imageSnapshotKey.privateKey);
-        await keyStorage.putKey(`${namespace.id}-image-timestamp`, imageTimestampKey.privateKey);
+        // store image repo private keys
+        await keyStorage.putKey(`${namespace.id}-image-root-private`, imageRootKey.privateKey);
+        await keyStorage.putKey(`${namespace.id}-image-targets-private`, imageTargetsKey.privateKey);
+        await keyStorage.putKey(`${namespace.id}-image-snapshot-private`, imageSnapshotKey.privateKey);
+        await keyStorage.putKey(`${namespace.id}-image-timestamp-private`, imageTimestampKey.privateKey);
 
-        await keyStorage.putKey(`${namespace.id}-director-root`, directorRootKey.privateKey);
-        await keyStorage.putKey(`${namespace.id}-director-targets`, directorTargetsKey.privateKey);
-        await keyStorage.putKey(`${namespace.id}-director-snapshot`, directorSnaphotKey.privateKey);
-        await keyStorage.putKey(`${namespace.id}-director-timestamp`, directorTimestampKey.privateKey);
+        // store image repo public keys
+        await keyStorage.putKey(`${namespace.id}-image-root-public`, imageRootKey.publicKey);
+        await keyStorage.putKey(`${namespace.id}-image-targets-public`, imageTargetsKey.publicKey);
+        await keyStorage.putKey(`${namespace.id}-image-snapshot-public`, imageSnapshotKey.publicKey);
+        await keyStorage.putKey(`${namespace.id}-image-timestamp-public`, imageTimestampKey.publicKey);
 
         return namespace;
 
@@ -167,16 +164,17 @@ router.delete('/namespaces/:namespace', async (req, res) => {
             await blobStorage.deleteObject(bucketId);
         }
 
-        // delete keys associated with this namespace.
-        await keyStorage.deleteKey(`${namespace}-image-root`);
-        await keyStorage.deleteKey(`${namespace}-image-targets`);
-        await keyStorage.deleteKey(`${namespace}-image-snapshot`);
-        await keyStorage.deleteKey(`${namespace}-image-timestamp`);
+        // delete keys associated with this namespace
+        await keyStorage.deleteKey(`${namespace}-image-root-private`);
+        await keyStorage.deleteKey(`${namespace}-image-targets-private`);
+        await keyStorage.deleteKey(`${namespace}-image-snapshot-private`);
+        await keyStorage.deleteKey(`${namespace}-image-timestamp-private`);
 
-        await keyStorage.deleteKey(`${namespace}-director-root`);
-        await keyStorage.deleteKey(`${namespace}-director-targets`);
-        await keyStorage.deleteKey(`${namespace}-director-snapshot`);
-        await keyStorage.deleteKey(`${namespace}-director-timestamp`);
+        await keyStorage.deleteKey(`${namespace}-image-root-public`);
+        await keyStorage.deleteKey(`${namespace}-image-targets-public`);
+        await keyStorage.deleteKey(`${namespace}-image-snapshot-public`);
+        await keyStorage.deleteKey(`${namespace}-image-timestamp-public`);
+
 
     });
 

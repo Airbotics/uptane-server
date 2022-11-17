@@ -39,6 +39,7 @@ model Namespace {
     objects             Object[]
     images              Image[]
     metadata            Metadata[]
+    robots              Robot[]
 
     @@map("namespaces")
 }
@@ -113,4 +114,19 @@ model Metadata {
     @@id([namespace_id, id])
     @@unique([namespace_id, repo, role, version])
     @@map("metadata")
+}
+
+// robots on which Airbotics will update software
+// these are called vehicles in the Update spec
+model Robot {
+    id                  String
+    namespace_id        String
+
+    created_at          DateTime        @default(now())
+    updated_at          DateTime        @updatedAt
+
+    namespace           Namespace       @relation(fields: [namespace_id], references: [id], onDelete: Cascade)
+
+    @@id([namespace_id, id])
+    @@map("robots")
 }

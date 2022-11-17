@@ -2,6 +2,7 @@ import express, { Request, Response, NextFunction } from 'express';
 import admin from './modules/admin';
 import treehub from './modules/treehub';
 import imageRepo from './modules/image-repo';
+import directorRepo from './modules/director-repo';
 
 
 const app = express();
@@ -21,8 +22,9 @@ app.get('/', (req, res) => {
 
 
 app.use('/api/v0/admin', admin);
-app.use('/api/v0/treehub', treehub);
+app.use('/api/v0/director', directorRepo);
 app.use('/api/v0/image', imageRepo);
+app.use('/api/v0/treehub', treehub);
 
 
 

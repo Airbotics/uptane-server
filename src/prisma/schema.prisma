@@ -41,6 +41,7 @@ model Namespace {
     metadata            Metadata[]
     robots              Robot[]
     ecus                Ecu[]
+    robot_manifests     RobotManifest[]
 
     @@map("namespaces")
 }
@@ -119,6 +120,8 @@ model Metadata {
 
 // robots on which Airbotics will update software
 // these are called vehicles in the Update spec
+// TODO
+// - provisioned - compound attribute, whether all ecus have provisioned
 model Robot {
     id                  String          @default(uuid())
     namespace_id        String
@@ -129,6 +132,7 @@ model Robot {
     namespace           Namespace       @relation(fields: [namespace_id], references: [id], onDelete: Cascade)
 
     ecus                Ecu[]
+    robot_manifests     RobotManifest[]
 
     @@id([namespace_id, id])
     @@map("robots")
@@ -136,10 +140,14 @@ model Robot {
 
 // ecus on robots
 // NOTE we could potentially remove the namespace id here
+// TODO 
+// - last_seen
 model Ecu {
     id                  String          @default(uuid())
     namespace_id        String
     robot_id            String
+    provisioned         Boolean         @default(false)     // whether the ecu has completed provisioning
+    primary             Boolean                             // whether this ecu is the primary, only one per robot is supported
 
     created_at          DateTime        @default(now())
     updated_at          DateTime        @updatedAt
@@ -149,4 +157,21 @@ model Ecu {
 
     @@id([namespace_id, id])
     @@map("ecus")
+}
+
+
+// robot manifests sent by primaries
+model RobotManifest {
+    id                  String          @default(uuid())
+    namespace_id        String
+    robot_id            String
+    value               Json            // holds entire signed manifest
+
+    created_at          DateTime        @default(now())
+
+    namespace           Namespace       @relation(fields: [namespace_id], references: [id], onDelete: Cascade)
+    robot               Robot           @relation(fields: [namespace_id, robot_id], references: [namespace_id, id], onDelete: Cascade)
+
+    @@id([namespace_id, id])
+    @@map("robot_manifests")
 }

@@ -14,15 +14,20 @@ def init_db():
         pass
 
     os.mkdir(DB_ROOT_PATH)
-    os.mkdir(os.path.join(DB_ROOT_PATH, 'keys'))
-    os.mkdir(os.path.join(DB_ROOT_PATH, 'vehicles'))
-    os.mkdir(os.path.join(DB_ROOT_PATH, 'targets'))
-    os.mkdir(os.path.join(DB_ROOT_PATH, 'image'))
+    
+    #key store
+    os.mkdir(os.path.join(DB_ROOT_PATH, 'keys')) 
+    
+    #image repo
+    os.mkdir(os.path.join(DB_ROOT_PATH, 'image')) #image repo db
     os.mkdir(os.path.join(DB_ROOT_PATH, 'image', 'metadata'))
     os.mkdir(os.path.join(DB_ROOT_PATH, 'image', 'targets'))
+    
+    #director repo
     os.mkdir(os.path.join(DB_ROOT_PATH, 'director'))
     os.mkdir(os.path.join(DB_ROOT_PATH, 'director', 'metadata'))
-    os.mkdir(os.path.join(DB_ROOT_PATH, 'director', 'targets'))
+    os.mkdir(os.path.join(DB_ROOT_PATH, 'director', 'targets')) #target images store
+    os.mkdir(os.path.join(DB_ROOT_PATH, 'director', 'inventory'))  #inventory db
 
 
 def generate_keys():
@@ -58,7 +63,7 @@ def init_repos():
       print('Unable to init repos')
 
 
-#Ensure init_repos has been called first
+
 def init_primary_fs(): 
     print('initing primary filesystem')
     try:
@@ -93,22 +98,32 @@ def init_primary_fs():
 
 
 
-def register_vehicle():
+def init_inventory():
 
-    print('registering vehicle')
+    print('initialising inventory with test vehicle')
 
     primary_key = _load_key('primary')
 
-    vehicle_body = {
-        'vin': VIN
-    }
-    requests.post(f'{API_URL}/director/vehicles', json=vehicle_body)
+    try:
+        vehicle_body = {
+            'vin': VIN
+        }
+        res = requests.post(f'{API_URL}/director/vehicles', json=vehicle_body)
+        print(f'register vehicle responded with status code: {res.status_code}')
+    except:
+      print('Unable to registry vehicle')
 
-    ecu_body = {
-        "ecu_serial": PRIMARY_ECU_SERIAL,
-        "public_key": primary_key['keyval']['public']
-    }
-    requests.post(f'{API_URL}/director/vehicles/{VIN}/ecus', json=ecu_body)
+    
+    try:
+        ecu_body = {
+            "ecu_serial": PRIMARY_ECU_SERIAL,
+            "public_key": primary_key['keyval']['public']
+        }
+        res = requests.post(f'{API_URL}/director/vehicles/{VIN}/ecus', json=ecu_body)
+        print(f'register ecu responded with status code: {res.status_code}')
+
+    except:
+      print('Unable to assign primary ecu to vehicle')
 
 
 def add_image(name, content):
@@ -119,16 +134,6 @@ def add_image(name, content):
         "content": content
     }
     res = requests.post(f'{API_URL}/image/targets', json=body)
-
-
-def assign_image(id):
-    print('putting an image on a vehicle')
-
-    body = {
-        "vin": VIN,
-        "image_id": id
-    }
-    res = requests.post(f'{API_URL}/director/assignments', json=body)
 
 
 def resign_timestamp():
@@ -154,8 +159,8 @@ def main():
     elif action == 'init-repos':
         init_repos()
 
-    elif action == 'reg-vehicle':
-        register_vehicle()
+    elif action == 'init-inventory':
+        init_inventory()
     
     elif action == 'add-image':
         
@@ -169,8 +174,6 @@ def main():
 
         add_image(name, content)
     
-    elif action == 'assign-image':
-        assign_image(id)
 
     elif action == 'init-primary-fs':
         init_primary_fs()

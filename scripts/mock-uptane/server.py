@@ -15,8 +15,7 @@ from tuf.api.metadata import (
 )
 from tuf.api.serialization.json import JSONSerializer
 from securesystemslib.signer import SSlibSigner
-from pprint import pprint
-from common import DB_ROOT_PATH, _get_time, _in, _load_key
+from common import DB_ROOT_PATH, PRIMARY_ECU_SERIAL, _get_time, _in, _load_key
 
 
 app = Flask(__name__)
@@ -35,8 +34,6 @@ director_targets_key    = _load_key('director-targets')
 director_snapshot_key   = _load_key('director-snapshot')
 director_timestamp_key  = _load_key('director-timestamp')
 
-
-TEST_ECU_SERIAL = 'ECU1234'
 
 
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -85,6 +82,8 @@ def init_image_repo():
     
     return {}
 
+
+
 def init_director_repo():
 
     root = Metadata(Root(expires=_in(365)))
@@ -99,6 +98,8 @@ def init_director_repo():
     
     return {}
 
+
+
 def get_time_attestation(nonces):
     signed = {
         'nonces': nonces,
@@ -109,12 +110,17 @@ def get_time_attestation(nonces):
         'signatures': create_signature(timeserver_key, json.dumps(signed).encode())
     }
 
-def find_vehicle(id):
+
+
+def find_vehicle(vin):
     try:
-        with open(os.path.join(DB_ROOT_PATH, 'vehicles', id), 'r') as f:
+        with open(os.path.join(DB_ROOT_PATH, 'director', 'inventory', vin), 'r') as f:
             return json.loads(f.read())
     except:
+        print('vehicle not found')
         return None
+
+
 
 def create_vehicle(vin):
     vehicle = {
@@ -123,23 +129,27 @@ def create_vehicle(vin):
         'vehicle_manifests': [],
         'image': None
     }
-    with open(os.path.join(DB_ROOT_PATH, 'vehicles', vin), 'w') as f:
+
+    with open(os.path.join(DB_ROOT_PATH, 'director', 'inventory', vin), 'w') as f:
         f.write(json.dumps(vehicle))
     
-    # create a directory in 'director' to store metadata for each vehicle
-    os.mkdir(os.path.join(DB_ROOT_PATH, 'director', vin))
-
     return vehicle
+    
+
+
+
 
 def list_vehicles():
-    return os.listdir(os.path.join(DB_ROOT_PATH, 'vehicles'))
+    return os.listdir(os.path.join(DB_ROOT_PATH, 'director', 'inventory'))
 
-def add_ecu_to_vehicle(id, ecu_serial, public_key):
-    vehicle = find_vehicle(id)
+
+
+def add_ecu_to_vehicle(vin, ecu_serial, public_key):
+    vehicle = find_vehicle(vin)
 
     if not vehicle:
         return {}
-
+  
     ecu = {
         'ecu_serial': ecu_serial,
         'is_primary': True, # we only support primaries
@@ -149,25 +159,35 @@ def add_ecu_to_vehicle(id, ecu_serial, public_key):
 
     vehicle['ecus'].append(ecu)
 
-    with open(os.path.join(DB_ROOT_PATH, 'vehicles', vehicle['vin']), 'w') as f:
+    with open(os.path.join(DB_ROOT_PATH, 'director', 'inventory', vin), 'w') as f:
         f.write(json.dumps(vehicle))
 
     return ecu
 
+
+
 def list_targets():
     return os.listdir(os.path.join(DB_ROOT_PATH, 'targets'))
+
+
 
 def get_target(id):
     with open(os.path.join(DB_ROOT_PATH, 'targets', id), 'r') as f:
         return f.read()
 
+
+
 def get_director_repo_timestamp():
     with open(os.path.join(DB_ROOT_PATH, 'director', 'metadata', 'timestamp.json'), 'r') as f:
         return json.loads(f.read())
 
+
+
 def get_image_repo_timestamp():
     with open(os.path.join(DB_ROOT_PATH, 'image', 'metadata', 'timestamp.json'), 'r') as f:
         return json.loads(f.read())
+
+
 
 def get_director_repo_metadata(version, role):
     metadata_path = os.path.join(DB_ROOT_PATH, 'director', 'metadata', f'{version}.{role}.json')
@@ -177,6 +197,8 @@ def get_director_repo_metadata(version, role):
     else:
         return abort(404)
 
+
+
 def get_image_repo_metadata(version, role):
     metadata_path = os.path.join(DB_ROOT_PATH, 'image', 'metadata', f'{version}.{role}.json')
     if os.path.isfile(metadata_path):
@@ -184,6 +206,8 @@ def get_image_repo_metadata(version, role):
             return json.loads(f.read())
     else:
         return abort(404)
+
+
 
 def put_target(name, content, repo_name):
     #Write the target file
@@ -205,7 +229,7 @@ def put_target(name, content, repo_name):
         targets_metadata = Metadata(Targets(
             expires=_in(7), 
             version=curr_meta_versions['targets'] + 1,
-            unrecognized_fields={'custom': {'ecu_serial': TEST_ECU_SERIAL}}))
+            unrecognized_fields={'custom': {'ecu_serial': PRIMARY_ECU_SERIAL}}))
     else: 
         targets_metadata = Metadata(Targets(
             expires=_in(7),
@@ -240,20 +264,7 @@ def put_target(name, content, repo_name):
 
     return {'message': f'new target written to {file_path}, and meta datafiles were updated'}
 
-def assign_image_to_vehicle(vin, image_id):
-    vehicle = find_vehicle(vin)
 
-    if not vehicle:
-        return {}
-    
-    # TODO check image exists
-
-    vehicle['image'] = image_id
-
-    with open(os.path.join(DB_ROOT_PATH, 'vehicles', vehicle['vin']), 'w') as f:
-        f.write(json.dumps(vehicle))
-
-    return vehicle
 
 def process_vehicle_manifest(vin, manifest):
     vehicle = find_vehicle(vin)
@@ -325,6 +336,20 @@ def process_vehicle_manifest(vin, manifest):
 
 
 
+def resign_timestamp(): 
+    prev_timestamp_version = Metadata[Timestamp].from_file(os.path.join(DB_ROOT_PATH, 'image', 'metadata', f'timestamp.json')).signed.version
+  
+    image_timestamp_metadata = Metadata(Timestamp(expires=_in(1), version=prev_timestamp_version+1))
+    image_timestamp_metadata.sign(SSlibSigner(image_timestamp_key))
+    image_timestamp_metadata.to_file(os.path.join(DB_ROOT_PATH, 'image', 'metadata', f'timestamp.json'), serializer=JSONSerializer(compact=False))
+
+    director_timestamp_metadata = Metadata(Timestamp(expires=_in(1), version=prev_timestamp_version+1))
+    director_timestamp_metadata.sign(SSlibSigner(director_timestamp_key))
+    director_timestamp_metadata.to_file(os.path.join(DB_ROOT_PATH, 'director', 'metadata', f'timestamp.json'), serializer=JSONSerializer(compact=False))
+    
+    return { 'timestamp_version': prev_timestamp_version + 1 }
+
+
 
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 SERVER API
@@ -336,13 +361,7 @@ def timeserver():
     nonces = request.get_json()['nonces']
     return get_time_attestation(nonces)
 
-'''
-# init director repo
-@app.route('/director/init')
-def init_director():
-    return init_director_repo()
 
-'''
 
 # init image and director repos
 @app.route('/init')
@@ -350,6 +369,8 @@ def init_repos():
     init_image_repo()
     init_director_repo()
     return 'OK'
+
+
 
 # create and list vehicles
 @app.route('/director/vehicles', methods=['GET', 'POST'])
@@ -361,17 +382,17 @@ def director_vehicles():
     elif request.method == 'GET':
         return list_vehicles()
 
-# assign image to vehicle
-@app.route('/director/assignments', methods=['POST'])
-def director_vehicle_assignment():
-    vin = request.get_json()['vin']
-    image_id = request.get_json()['image_id']
-    return assign_image_to_vehicle(vin, image_id)
+
+
     
+
+
 # get single vehicle
 @app.route('/director/vehicles/<id>')
 def director_vehicle_single(id):
     return find_vehicle(id) or {}
+
+
 
 # add ecu to vehicle
 @app.route('/director/vehicles/<id>/ecus', methods=['POST'])
@@ -381,12 +402,16 @@ def director_vehicles_ecus(id):
         public_key = request.get_json()['public_key']
         return add_ecu_to_vehicle(id, ecu_serial, public_key)
 
+
+
 # accept manifest from primary
 @app.route('/director/vehicles/<id>/manifest', methods=['POST'])
 def director_vehicles_manifest(id):
     if request.method == 'POST':
         manifest = request.get_json()
         return process_vehicle_manifest(id, manifest)
+
+
 
 # add and list target
 @app.route('/image/targets', methods=['GET', 'POST'])
@@ -401,10 +426,14 @@ def image_targets():
     elif request.method == 'GET':
         return list_targets()
 
+
+
 # download target content
 @app.route('/image/targets/<id>')
 def image_targets_single(id):
     return get_target(id)
+
+
 
 # download director repo metadata
 @app.route('/director/<metadata>.json')
@@ -415,6 +444,8 @@ def director_metadata(metadata):
         version = metadata.split('.')[0]
         role = metadata.split('.')[1]
         return get_director_repo_metadata(version, role)
+
+
 
 # download image repo metadata
 @app.route('/image/<metadata>.json')
@@ -427,25 +458,12 @@ def image_metadata(metadata):
         return get_image_repo_metadata(version, role)
 
 
+
 @app.route('/resign-timestamp')
-def resign_timestamp():
+def resign():
+    print('resigning timestamp for director and image repos')
+    return resign_timestamp()
 
-    prev_timestamp_version = Metadata[Timestamp].from_file(os.path.join(DB_ROOT_PATH, 'image', 'metadata', f'timestamp.json')).signed.version
-  
-    image_timestamp_metadata = Metadata(Timestamp(expires=_in(1), version=prev_timestamp_version+1))
-    image_timestamp_metadata.sign(SSlibSigner(image_timestamp_key))
-    image_timestamp_metadata.to_file(os.path.join(DB_ROOT_PATH, 'image', 'metadata', f'timestamp.json'), serializer=JSONSerializer(compact=False))
-
-    director_timestamp_metadata = Metadata(Timestamp(expires=_in(1), version=prev_timestamp_version+1))
-    director_timestamp_metadata.sign(SSlibSigner(director_timestamp_key))
-    director_timestamp_metadata.to_file(os.path.join(DB_ROOT_PATH, 'director', 'metadata', f'timestamp.json'), serializer=JSONSerializer(compact=False))
-    
-    return { 'timestamp_version': prev_timestamp_version + 1 }
-
-
-'''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-SPACE TIME
-'''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
 
 if __name__ == '__main__':

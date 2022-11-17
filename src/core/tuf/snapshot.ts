@@ -1,15 +1,15 @@
 import config from '../../config';
 import { ETUFRole } from '../consts';
 import { daysFromNow, formatDate, toCanonical } from '../utils';
-import { generateSignature } from '../crypto';
+import { generateHash, generateSignature } from '../crypto';
 import { generateTufKey, genKeyId } from './index';
-import { IKeyPair, ISnapshotSignedTUF, ISnapshotTUF } from '../../types';
+import { IKeyPair, ISnapshotSignedTUF, ISnapshotTUF, ITargetsTUF } from '../../types';
 
 
 /**
  * Creates a signed tuf snapshot metadata object
  */
-export const generateSnapshot = (ttl: number, version: number, snapshotKeyPair: IKeyPair): ISnapshotTUF => {
+export const generateSnapshot = (ttl: number, version: number, snapshotKeyPair: IKeyPair, targetsMetadata: ITargetsTUF): ISnapshotTUF => {
 
     // generate tuf key object
     const snapshotTufKey = generateTufKey(snapshotKeyPair.publicKey);
@@ -25,7 +25,12 @@ export const generateSnapshot = (ttl: number, version: number, snapshotKeyPair: 
         version,
         meta: {
             'targets.json': {
-                version
+                version: targetsMetadata.signed.version,
+                // length: toCanonical(targetsMetadata).length,
+                // hashes: {
+                //     sha256: generateHash(toCanonical(targetsMetadata), { algorithm: 'SHA256' }),
+                //     sha512: generateHash(toCanonical(targetsMetadata), { algorithm: 'SHA512' })
+                // }
             }
         }
     };

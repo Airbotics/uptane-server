@@ -38,6 +38,7 @@ model Namespace {
     refs                Ref[]
     objects             Object[]
     images              Image[]
+    metadata            Metadata[]
 
     @@map("namespaces")
 }
@@ -107,6 +108,7 @@ model Metadata {
     value               Json            // holds entire signed metadata
 
     created_at          DateTime        @default(now())
+    namespace           Namespace       @relation(fields: [namespace_id], references: [id], onDelete: Cascade)
 
     @@id([namespace_id, id])
     @@unique([namespace_id, repo, role, version])

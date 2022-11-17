@@ -48,7 +48,7 @@ router.post('/namespaces', async (req, res) => {
         });
 
         // create image repo root.json in db
-        await prisma.metadata.create({
+        await tx.metadata.create({
             data: {
                 namespace_id: namespace.id,
                 repo: TUFRepo.image,

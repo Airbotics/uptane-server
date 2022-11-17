@@ -39,11 +39,12 @@ const router = express.Router();
  * 
  * TODO:
  * - valide the size/length reported by content-length header matches the length we actually receive
+ * - include length and hash in snapshot and timestamp meta
  */
 router.put('/:namespace/images', express.raw({ type: '*/*' }), async (req, res) => {
 
     const namespace_id = req.params.namespace;
-    const content = req.body;
+    const imageContent = req.body;
 
     const size = parseInt(req.get('content-length')!);
 
@@ -64,20 +65,50 @@ router.put('/:namespace/images', express.raw({ type: '*/*' }), async (req, res) 
     }
 
     // get hashes of image
-    const sha256 = generateHash(content, { algorithm: 'SHA256' });
-    const sha512 = generateHash(content, { algorithm: 'SHA512' });
+    const sha256 = generateHash(imageContent, { algorithm: 'SHA256' });
+    const sha512 = generateHash(imageContent, { algorithm: 'SHA512' });
 
-    // count up the number of previous targets
-    const existingTargetsCount = await prisma.metadata.count({
+    // count the number of previous targets, snapshot and timestamp
+    // this gets the most recently created metadata and grabs its version
+    // NOTE: this assumes the version column in the table is always in sync with what
+    // is stored in the metadata json field
+    const latestTargets = await prisma.metadata.findFirst({
         where: {
             namespace_id,
             repo: TUFRepo.image,
             role: TUFRole.targets
+        },
+        orderBy: {
+            version: 'desc'
+        }
+    });
+
+    const latestSnapshot = await prisma.metadata.findFirst({
+        where: {
+            namespace_id,
+            repo: TUFRepo.image,
+            role: TUFRole.snapshot
+        },
+        orderBy: {
+            version: 'desc'
+        }
+    });
+
+    const latestTimestamp = await prisma.metadata.findFirst({
+        where: {
+            namespace_id,
+            repo: TUFRepo.image,
+            role: TUFRole.timestamp
+        },
+        orderBy: {
+            version: 'desc'
         }
     });
 
     // add one to get the new version as TUF uses 1-based indexing for metadata files
-    const version = existingTargetsCount + 1;
+    const newTargetsVersion = latestTargets ? latestTargets.version + 1 : 1;
+    const newSnapshotVersion = latestSnapshot ? latestSnapshot.version + 1 : 1;
+    const newTimeStampVersion = latestTimestamp ? latestTimestamp.version + 1 : 1;
 
 
     // read in keys from key storage
@@ -85,22 +116,24 @@ router.put('/:namespace/images', express.raw({ type: '*/*' }), async (req, res) 
         privateKey: await keyStorage.getKey(`${namespace_id}-image-targets-private`),
         publicKey: await keyStorage.getKey(`${namespace_id}-image-targets-public`)
     }
+
     const snapshotKeyPair: IKeyPair = {
         privateKey: await keyStorage.getKey(`${namespace_id}-image-snapshot-private`),
         publicKey: await keyStorage.getKey(`${namespace_id}-image-snapshot-public`)
     }
+
     const timestampKeyPair: IKeyPair = {
         privateKey: await keyStorage.getKey(`${namespace_id}-image-timestamp-private`),
         publicKey: await keyStorage.getKey(`${namespace_id}-image-timestamp-public`)
     }
 
     // assemble information about this image to be put in the targets.json metadata
-    // but first we need to know what the image id is at this point so we create a uuid in js which will
-    // be used in the inventory db and blob storage. there is a very small chance of a uuid collision here
+    // we need to know what the image id is at this point so we create a uuid in js, this will
+    // be used in the inventory db, tuf metadata and blob storage. there is a very small chance of a uuid collision here
     const imageId = uuidv4();
 
     const targetsImages: ITargetsImages = {
-        imageId: {
+        [imageId]: {
             custom: {},
             length: size,
             hashes: {
@@ -112,24 +145,23 @@ router.put('/:namespace/images', express.raw({ type: '*/*' }), async (req, res) 
 
 
     // generate new set of tuf metadata (apart from root)
-    const targetsMetadata = generateTargets(config.TUF_TTL.IMAGE.TARGETS, version, targetsKeyPair, targetsImages) as object;
-
-    const snapshotMetadata = generateSnapshot(config.TUF_TTL.IMAGE.SNAPSHOT, version, snapshotKeyPair) as object;
-
-    const timestampMetadata = generateTimestamp(config.TUF_TTL.IMAGE.TIMESTAMP, version, timestampKeyPair) as object;
+    const targetsMetadata = generateTargets(config.TUF_TTL.IMAGE.TARGETS, newTargetsVersion, targetsKeyPair, targetsImages);
+    const snapshotMetadata = generateSnapshot(config.TUF_TTL.IMAGE.SNAPSHOT, newSnapshotVersion, snapshotKeyPair, targetsMetadata);
+    const timestampMetadata = generateTimestamp(config.TUF_TTL.IMAGE.TIMESTAMP, newTimeStampVersion, timestampKeyPair, snapshotMetadata);
 
 
     // perform db writes in transaction
     await prisma.$transaction(async tx => {
 
         // create tuf metadata
+        // prisma wants to be passed an `object` instead of our custom interface so we cast it
         await tx.metadata.create({
             data: {
                 namespace_id,
                 repo: TUFRepo.image,
                 role: TUFRole.targets,
-                version,
-                value: targetsMetadata
+                version: newTargetsVersion,
+                value: targetsMetadata as object
             }
         });
 
@@ -138,8 +170,8 @@ router.put('/:namespace/images', express.raw({ type: '*/*' }), async (req, res) 
                 namespace_id,
                 repo: TUFRepo.image,
                 role: TUFRole.snapshot,
-                version,
-                value: snapshotMetadata
+                version: newSnapshotVersion,
+                value: snapshotMetadata as object
             }
         });
 
@@ -148,8 +180,8 @@ router.put('/:namespace/images', express.raw({ type: '*/*' }), async (req, res) 
                 namespace_id,
                 repo: TUFRepo.image,
                 role: TUFRole.timestamp,
-                version,
-                value: timestampMetadata
+                version: newTimeStampVersion,
+                value: timestampMetadata as object
             }
         });
 
@@ -167,9 +199,9 @@ router.put('/:namespace/images', express.raw({ type: '*/*' }), async (req, res) 
         });
 
         // upload image to blob storage
-        await blobStorage.putObject(imageId, content);
+        await blobStorage.putObject(imageId, imageContent);
 
-        // update reference to image saying that it has completed uploading
+        // update reference to image in db saying that it has completed uploading
         await tx.image.update({
             where: {
                 namespace_id_id: {
@@ -181,6 +213,7 @@ router.put('/:namespace/images', express.raw({ type: '*/*' }), async (req, res) 
                 status: UploadStatus.uploaded
             }
         });
+
     });
 
     return res.status(200).end();
@@ -342,16 +375,16 @@ router.get('/:namespace/:version.:role.json', async (req, res) => {
     });
 
     if (!metadata) {
-        return res.status(400).send('cannot get metadata');
+        return res.status(404).end();
     }
 
     // check it hasnt expired
     // TODO    
 
     // canonicalise it and return it
-    const canonicalisedMetadata = toCanonical(metadata.value as object);
+    // const canonicalisedMetadata = toCanonical(metadata.value as object);
 
-    return res.status(200).send(canonicalisedMetadata);
+    return res.status(200).send(metadata.value);
 
 });
 
@@ -376,7 +409,7 @@ router.get('/:namespace/timestamp.json', async (req, res) => {
     });
 
     if (timestamps.length === 0) {
-        return res.status(400).send('cannot get metadata');
+        return res.status(404).end();
     }
 
     const mostRecentTimestamp = timestamps[0];
@@ -385,9 +418,9 @@ router.get('/:namespace/timestamp.json', async (req, res) => {
     // TODO    
 
     // canonicalise it and return it
-    const canonicalisedMetadata = toCanonical(mostRecentTimestamp.value as object);
+    // const canonicalisedMetadata = toCanonical(mostRecentTimestamp.value as object);
 
-    return res.status(200).send(canonicalisedMetadata);
+    return res.status(200).send(mostRecentTimestamp.value);
 
 });
 

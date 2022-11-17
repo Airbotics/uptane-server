@@ -48,9 +48,9 @@ def get_metadata_versions(repo_name):
     '''
 
     if os.path.isfile(os.path.join(DB_ROOT_PATH, repo_name, 'metadata', f'timestamp.json')):
-        curr_timestamp = Metadata[Timestamp].from_file(os.path.join(DB_ROOT_PATH, 'image', 'metadata', f'timestamp.json'))
+        curr_timestamp = Metadata[Timestamp].from_file(os.path.join(DB_ROOT_PATH, repo_name, 'metadata', f'timestamp.json'))
         curr_snapshot_ver = curr_timestamp.signed.snapshot_meta.version
-        curr_snapshot = Metadata[Snapshot].from_file(os.path.join(DB_ROOT_PATH, 'image', 'metadata', f'{curr_snapshot_ver}.snapshot.json'))
+        curr_snapshot = Metadata[Snapshot].from_file(os.path.join(DB_ROOT_PATH, repo_name, 'metadata', f'{curr_snapshot_ver}.snapshot.json'))
         curr_target_ver = curr_snapshot.signed.meta['targets.json'].version
 
         return {
@@ -192,9 +192,11 @@ def put_target(name, content, repo_name):
     with open(file_path, 'w') as f:
         f.write(content)
 
-    
     # Compute the current versions of each metadata files
     curr_meta_versions = get_metadata_versions(repo_name)
+
+    print(repo_name)
+    print(curr_meta_versions)
 
     # Create the new target metadata
     targets_metadata = None

@@ -2,6 +2,7 @@ node_modules/
 *.tsbuildinfo
 .eslintcache
 .env
+.venv
 *.log
 dist/
 .vscode/

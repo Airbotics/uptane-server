@@ -2,7 +2,7 @@
 
 @BASE_URL=http://localhost:8001
 @API_VERSION=v0
-@NAMESPACE=f1abab87-13f2-485a-8c48-04adf4d0ae1b
+@NAMESPACE=8b332d12-1793-4ed9-802c-6b0113b44e42
 
 
 # -----------------------------------------
@@ -100,7 +100,7 @@ GET {{BASE_URL}}/api/{{API_VERSION}}/image/{{NAMESPACE}}/timestamp.json HTTP/1.1
 PUT {{BASE_URL}}/api/{{API_VERSION}}/image/{{NAMESPACE}}/images HTTP/1.1
 Content-Type: application/octet-stream
 
-this is a different sample image
+this is a sample image
 
 
 ### list images

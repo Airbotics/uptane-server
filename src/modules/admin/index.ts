@@ -4,7 +4,6 @@ import config from '../../config';
 import { generateKeyPair } from '../../core/crypto';
 import { keyStorage } from '../../core/key-storage';
 import { blobStorage } from '../../core/blob-storage';
-import { ETUFRole } from '../../core/consts';
 import { generateRoot } from '../../core/tuf';
 import { TUFRepo, TUFRole } from '@prisma/client';
 
@@ -20,22 +19,36 @@ const router = express.Router();
  */
 router.post('/namespaces', async (req, res) => {
 
-    // generate 8 key pairs, 4 top-level metadata, 2 repos
-    // NOTE just working on image repo for now
+    // generate 8 key pairs, 4 top-level metadata keys for 2 repos
     const imageRootKey = generateKeyPair(config.KEY_TYPE);
     const imageTargetsKey = generateKeyPair(config.KEY_TYPE);
     const imageSnapshotKey = generateKeyPair(config.KEY_TYPE);
     const imageTimestampKey = generateKeyPair(config.KEY_TYPE);
 
+    const directorRootKey = generateKeyPair(config.KEY_TYPE);
+    const directorTargetsKey = generateKeyPair(config.KEY_TYPE);
+    const directorSnapshotKey = generateKeyPair(config.KEY_TYPE);
+    const directorTimestampKey = generateKeyPair(config.KEY_TYPE);
+
     // create initial root.json for image repo, we'll start it off at 1
     const version = 1;
 
-    const value = generateRoot(config.TUF_TTL.IMAGE.ROOT,
+    // generate image repo root.json
+    const imageRepoRoot = generateRoot(config.TUF_TTL.IMAGE.ROOT,
         version,
         imageRootKey,
         imageTargetsKey,
         imageSnapshotKey,
         imageTimestampKey
+    ) as object;
+
+    // generate directory repo root.json
+    const directorRepoRoot = generateRoot(config.TUF_TTL.DIRECTOR.ROOT,
+        version,
+        directorRootKey,
+        directorTargetsKey,
+        directorSnapshotKey,
+        directorTimestampKey
     ) as object;
 
 
@@ -54,9 +67,21 @@ router.post('/namespaces', async (req, res) => {
                 repo: TUFRepo.image,
                 role: TUFRole.root,
                 version,
-                value
+                value: imageRepoRoot
             }
         });
+
+        // create director repo root.json in db
+        await tx.metadata.create({
+            data: {
+                namespace_id: namespace.id,
+                repo: TUFRepo.director,
+                role: TUFRole.root,
+                version,
+                value: directorRepoRoot
+            }
+        });
+        
 
         // store image repo private keys
         await keyStorage.putKey(`${namespace.id}-image-root-private`, imageRootKey.privateKey);
@@ -69,6 +94,18 @@ router.post('/namespaces', async (req, res) => {
         await keyStorage.putKey(`${namespace.id}-image-targets-public`, imageTargetsKey.publicKey);
         await keyStorage.putKey(`${namespace.id}-image-snapshot-public`, imageSnapshotKey.publicKey);
         await keyStorage.putKey(`${namespace.id}-image-timestamp-public`, imageTimestampKey.publicKey);
+
+        // store director repo private keys
+        await keyStorage.putKey(`${namespace.id}-director-root-private`, directorRootKey.privateKey);
+        await keyStorage.putKey(`${namespace.id}-director-targets-private`, directorTargetsKey.privateKey);
+        await keyStorage.putKey(`${namespace.id}-director-snapshot-private`, directorSnapshotKey.privateKey);
+        await keyStorage.putKey(`${namespace.id}-director-timestamp-private`, directorTimestampKey.privateKey);
+
+        // store director repo public keys
+        await keyStorage.putKey(`${namespace.id}-director-root-public`, directorRootKey.publicKey);
+        await keyStorage.putKey(`${namespace.id}-director-targets-public`, directorTargetsKey.publicKey);
+        await keyStorage.putKey(`${namespace.id}-director-snapshot-public`, directorSnapshotKey.publicKey);
+        await keyStorage.putKey(`${namespace.id}-director-timestamp-public`, directorTimestampKey.publicKey);
 
         return namespace;
 
@@ -174,6 +211,17 @@ router.delete('/namespaces/:namespace', async (req, res) => {
         await keyStorage.deleteKey(`${namespace}-image-targets-public`);
         await keyStorage.deleteKey(`${namespace}-image-snapshot-public`);
         await keyStorage.deleteKey(`${namespace}-image-timestamp-public`);
+
+        await keyStorage.deleteKey(`${namespace}-director-root-private`);
+        await keyStorage.deleteKey(`${namespace}-director-targets-private`);
+        await keyStorage.deleteKey(`${namespace}-director-snapshot-private`);
+        await keyStorage.deleteKey(`${namespace}-director-timestamp-private`);
+
+        await keyStorage.deleteKey(`${namespace}-director-root-public`);
+        await keyStorage.deleteKey(`${namespace}-director-targets-public`);
+        await keyStorage.deleteKey(`${namespace}-director-snapshot-public`);
+        await keyStorage.deleteKey(`${namespace}-director-timestamp-public`);
+        
 
 
     });

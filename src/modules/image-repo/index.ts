@@ -5,7 +5,6 @@ import { blobStorage } from '../../core/blob-storage';
 import config from '../../config';
 import { prisma } from '../../core/postgres';
 import { generateHash } from '../../core/crypto';
-import { toCanonical } from '../../core/utils';
 import { generateSnapshot, generateTargets, generateTimestamp } from '../../core/tuf';
 import { keyStorage } from '../../core/key-storage';
 import { IKeyPair, ITargetsImages } from '../../types';
@@ -381,9 +380,6 @@ router.get('/:namespace/:version.:role.json', async (req, res) => {
     // check it hasnt expired
     // TODO    
 
-    // canonicalise it and return it
-    // const canonicalisedMetadata = toCanonical(metadata.value as object);
-
     return res.status(200).send(metadata.value);
 
 });
@@ -416,9 +412,6 @@ router.get('/:namespace/timestamp.json', async (req, res) => {
 
     // check it hasnt expired
     // TODO    
-
-    // canonicalise it and return it
-    // const canonicalisedMetadata = toCanonical(mostRecentTimestamp.value as object);
 
     return res.status(200).send(mostRecentTimestamp.value);
 

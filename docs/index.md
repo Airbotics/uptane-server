@@ -38,6 +38,10 @@ _TUF_ stands for [The Update Framework](https://theupdateframework.com/), of whi
 
 A human _adminstrator_ responsible for managing Airbotics, e.g. an engineer at a robotics company.
 
+### Robot
+
+A _robot_ is a machine on which Airbotics will update software. It can contain multiple ECUs. Updane calls these machines vehicles instead. We say robot, but really it could be anything.
+
 ### ECU
 
 An _ECU_ is an Electronic Control Unit, i.e. a computer.

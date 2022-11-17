@@ -9,7 +9,7 @@ import { IKeyPair, ISnapshotTUF, ITimestampSignedTUF, ITimestampTUF } from '../.
 /**
  * Creates a signed tuf timestamp metadata object
  */
-export const generateTimestamp = (ttl: number, version: number, timestampKeyPair: IKeyPair, snapshotMetadata: ISnapshotTUF ): ITimestampTUF => {
+export const generateTimestamp = (ttl: number, version: number, timestampKeyPair: IKeyPair, snapshotMetadata: ISnapshotTUF): ITimestampTUF => {
 
     // generate tuf key object
     const timestampTufKey = generateTufKey(timestampKeyPair.publicKey);

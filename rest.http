@@ -32,6 +32,18 @@ DELETE {{BASE_URL}}/api/{{API_VERSION}}/admin/namespaces/{{NAMESPACE}} HTTP/1.1
 
 
 # -----------------------------------------
+# Director repo - tuf
+# -----------------------------------------
+
+### get metadata
+GET {{BASE_URL}}/api/{{API_VERSION}}/director/{{NAMESPACE}}/1.root.json HTTP/1.1
+
+
+### get timestamp
+GET {{BASE_URL}}/api/{{API_VERSION}}/director/{{NAMESPACE}}/timestamp.json HTTP/1.1
+
+
+# -----------------------------------------
 # Director repo - robots
 # -----------------------------------------
 

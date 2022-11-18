@@ -4,6 +4,7 @@ import config from '../../config';
 import { logger } from '../../core/logger';
 import { generateKeyPair } from '../../core/crypto';
 import { prisma } from '../../core/postgres';
+import { TUFRepo, TUFRole } from '@prisma/client';
 
 
 const router = express.Router();
@@ -384,6 +385,75 @@ router.post('/:namespace/rollouts', async (req, res) => {
 
 });
 
+
+/**
+ * Fetch role metadata (apart from timestamp) in a namespace.
+ * 
+ * Timestamp is not handled with this route because it isn't prepended
+ * with a dot, i.e. ``/timestamp.json`` instead not ``/1.timestamp.json``
+ */
+router.get('/:namespace/:version.:role.json', async (req, res) => {
+
+    const namespace_id = req.params.namespace;
+    const version = Number(req.params.version);
+    const role = req.params.role;
+
+    const metadata = await prisma.metadata.findUnique({
+        where: {
+            namespace_id_repo_role_version: {
+                namespace_id,
+                repo: TUFRepo.director,
+                role: role as TUFRole,
+                version
+            }
+        }
+    });
+
+    if (!metadata) {
+        logger.warn(`could not download ${role} metadata because it does not exist`);
+        return res.status(404).end();
+    }
+
+    // check it hasnt expired
+    // TODO    
+
+    return res.status(200).send(metadata.value);
+
+});
+
+
+/**
+ * Fetch timestamp metadata in a namespace.
+ */
+router.get('/:namespace/timestamp.json', async (req, res) => {
+
+    const namespace_id = req.params.namespace;
+
+    // get the most recent timestamp
+    const timestamps = await prisma.metadata.findMany({
+        where: {
+            namespace_id,
+            repo: TUFRepo.director,
+            role: TUFRole.timestamp
+        },
+        orderBy: {
+            created_at: 'desc'
+        }
+    });
+
+    if (timestamps.length === 0) {
+        logger.warn('could not download timestamp metadata because it does not exist');
+        return res.status(404).end();
+    }
+
+    const mostRecentTimestamp = timestamps[0];
+
+    // check it hasnt expired
+    // TODO    
+
+    return res.status(200).send(mostRecentTimestamp.value);
+
+});
 
 
 export default router;

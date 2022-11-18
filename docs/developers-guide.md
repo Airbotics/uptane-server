@@ -48,7 +48,7 @@ npm run start
 
 ## Working with databases
 
-Firstly, you'll have to bring up Postgres in a docker container with:
+Firstly, bring up Postgres in a Docker container with:
 
 ```
 docker compose up postgres
@@ -76,10 +76,10 @@ Log levels and explantations:
 
 | Level   | Desc                                                   | Env       | Examples                       |
 | ------- | ------------------------------------------------------ | --------- | ------------------------------ |
-| `debug` | To help developers understanding of the control flow.  | Dev, prod | _Endpoint hit, db queries_     |
-| `info`  | General information about the application.             | Prod      | _App started, db connected_    |
-| `warn`  | Something unusual, but not unexpected has happened.    | Prod      | _404, invalid request, expiry_ |
-| `error` | Something that should not have happened has happened.  | Prod      | _500 error_                    |
+| `debug` | To help developers understanding of the control flow.  | Dev       | _Endpoint hit, db queries_     |
+| `info`  | General information about the application.             | Dev, Prod | _App started, db connected_    |
+| `warn`  | Something unusual, but not unexpected has happened.    | Dev, Prod | _404, invalid request, expiry_ |
+| `error` | Something that should not have happened has happened.  | Dev, Prod | _500 error_                    |
 
 Log messages are lowercase without full stops.
 

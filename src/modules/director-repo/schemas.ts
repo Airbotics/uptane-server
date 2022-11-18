@@ -11,8 +11,7 @@ import { SignatureMethods } from '../../core/consts';
 export const signautreSchema = Joi.object({
     keyid: Joi.string().required(),
     sig: Joi.string().required(),
-    method: Joi.string().valid(SignatureMethods.rsa, SignatureMethods.ed25519).required(),
-    hash: hashschema.required()
+    method: Joi.string().valid(SignatureMethods.rsa, SignatureMethods.ed25519).required()
 })
 
 

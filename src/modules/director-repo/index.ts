@@ -4,6 +4,8 @@ import config from '../../config';
 import { logger } from '../../core/logger';
 import { generateKeyPair } from '../../core/crypto';
 import { prisma } from '../../core/postgres';
+import { robotManifestSchema } from './schemas';
+import { IRobotManifest } from '../../types';
 
 
 const router = express.Router();
@@ -14,12 +16,102 @@ const router = express.Router();
  * 
  * If all verification checks pass, and a new image is set to be deployed onto some 
  * of the robots ecus then this creates a new set of director repo tuf metadata
+ * 
+ * From the spec...
+ * 
+ * [Uptane Spec 5.4.2.1]
+ * • The Primary SHALL build a vehicle version manifest.
+ * • Once the complete manifest is built, the Primary CAN send the manifest to the Director repository.
+ * • However, it is not strictly required that the Primary send the manifest until (after/before?) 
+ * it downloads and verifies the tuf metadata
+ * 
+ * [Uptane Spec 5.4.2.1.1]
+ * • The vehicle version manifest is a metadata structure that SHALL contain the following information
+ *      • signatures: a signature of the payload from the primacy ECU 
+ *      • payload:
+ *          • VIN
+ *          • ECU unqique ID
+ *          • A list of ECU version reports, one of which SHOULD be the report for the primary itself
+ * 
+ * [Uptane Spec 5.4.2.1.2]
+    * 
+ * • An ECU version report is a metadata structure that SHALL contain the following information:
+ *      • signatures: a signature of the payload by the corresponding ECU
+ *      • payload: 
+ *          • The ECUs unique identifier
+ *          • The filename, length, and hashes of its currently installed image
+ *          • An indicator of any detected security attack
+ *          • The latest time the ECU can verify at the time this version report was generated
+ *          • A nonce or counter to prevent a replay of the ECU version report. This value SHALL change each update cycle
+ * 
+ * 
+ * 
  */
+
+
+  
+
+const robotManifestChecks = (robotManifest: IRobotManifest) => {
+
+    const checks = {
+        
+        validateSchema: () => {
+            const { error } = robotManifestSchema.validate(robotManifest)
+            if(error) throw (`Received an invalid manifest from a robot`);
+            return checks;
+        },
+        
+        validatePrimaryECUReport: () => {
+            if(robotManifest.signed.ecu_version_reports[robotManifest.signed.primary_ecu_serial] === undefined) {
+                throw (`The robots manifest is missing an ecu version report from the primary ecu`);
+            }
+            return checks;
+        },
+
+        validateRobotAndEcuRegistration: async (namespace_id: string) => {
+
+            const robot = await prisma.robot.findUnique({
+                where: {
+                    namespace_id_id: {
+                        namespace_id,
+                        id: robotManifest.signed.vin
+                    }
+                },
+                include: {
+                    ecus: true
+                }
+            });
+
+            if (!robot) throw (`Received a robot manifest from a robot that is not registered in the inventory db`);
+
+            const ecusSerialsFromManifest: string[] = Object.keys(robotManifest.signed.ecu_version_reports);
+            const ecusSerialsRegistered: string[] = robot.ecus.map(ecu => (ecu.id));
+            
+            if(ecusSerialsFromManifest.length !== ecusSerialsRegistered.length) {
+                throw('Received a robot manifest that has a different number of ecus than are in the inventory db')
+            }
+
+            ecusSerialsFromManifest.forEach(ecuSerial => {
+                if(!ecusSerialsRegistered.includes(ecuSerial)) {
+                    throw (`Received a robot manifest that contains an ecu that has not been registered in the inventory db`);
+                }
+            });
+        
+            return checks;
+        }
+    }
+
+    return checks;
+
+}
+
+
+
 router.post('/:namespace/robots/:robot_id/manifests', async (req, res) => {
 
-    const namespace_id = req.params.namespace;
-    const robot_id = req.params.robot_id;
-    const manifest = req.body;
+    const namespace_id: string = req.params.namespace;
+    const robot_id: string = req.params.robot_id;
+    const manifest: IRobotManifest = req.body;
 
     // check namespace exists
     const namespaceCount = await prisma.namespace.count({
@@ -33,33 +125,29 @@ router.post('/:namespace/robots/:robot_id/manifests', async (req, res) => {
         return res.status(400).send('could not process manifest');
     }
 
-    // get robot
-    const robot = await prisma.robot.findUnique({
-        where: {
-            namespace_id_id: {
-                namespace_id,
-                id: robot_id
-            }
-        },
-        include: {
-            ecus: true,
-            robot_manifests: true
-        }
-    });
 
-    if (!robot) {
-        logger.warn('could not process manifest because robot does not exist');
-        return res.status(400).send('could not process manifest');
+
+    // Perform all of the checks
+    try {
+
+        robotManifestChecks(manifest)
+            .validatePrimaryECUReport()
+            .validateSchema()
+            .validateRobotAndEcuRegistration(namespace_id)
+
+            prisma.insert.manifest ({
+            
+            })
+
+    } catch (e) {
+
+        prisma.insert.manifest ({
+            
+        })
+        logger.error('Unable to accept robot manifest');
+        logger.error(e);
     }
-
-    // firstly we commit the manifest to the db for archival purposes even if it fails to verify
-    await prisma.robotManifest.create({
-        data: {
-            namespace_id,
-            robot_id,
-            value: manifest
-        }
-    });
+    
 
 
     /**
@@ -67,11 +155,12 @@ router.post('/:namespace/robots/:robot_id/manifests', async (req, res) => {
      * this robot for review
      * 
      * checks:
-     * - validate the schema is correct
-     * - check the vin in the manifest is in the inventory db
-     * - check all ecus on this robot in the inventory db are in the manifest
-     * - check there are no additional ecus
-     * - verify the top-level signature of the manifest
+     * - validate the schema is correct                                                     [x]
+     * - check the primary ecus version report is included                                  [x]
+     * - check the vin in the manifest is in the inventory db                               [x]
+     * - check all ecus on this robot in the inventory db are in the manifest               [x]
+     * - check there are no additional ecus                                                 [x]
+     * - verify the top-level signature of the manifest                                     [x]
      * - verify every signature for all other ecus in the manifest
      * - check the nonce in each ecu has not been used before
      * - check no any attacks have been reported by the ecus

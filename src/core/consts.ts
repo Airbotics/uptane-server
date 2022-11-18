@@ -20,3 +20,8 @@ export const enum ETUFRole {
     Snapshot = 'snapshot',
     Timestamp = 'timestamp'
 }
+
+export const enum SignatureMethods {
+    rsa = 'rsassa-pss',
+    ed25519 = 'ed25519'
+}

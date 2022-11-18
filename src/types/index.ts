@@ -29,7 +29,7 @@ export interface IHashes {
 export interface ISignatureTUF {
     keyid: string;
     sig: string;
-    method: string;
+    method?: string;
 }
 
 

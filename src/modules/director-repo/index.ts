@@ -3,9 +3,11 @@ import { keyStorage } from '../../core/key-storage';
 import config from '../../config';
 import { logger } from '../../core/logger';
 import { generateKeyPair } from '../../core/crypto';
+import { verifySignature } from '../../core/crypto/signatures';
 import { prisma } from '../../core/postgres';
 import { robotManifestSchema } from './schemas';
 import { IRobotManifest } from '../../types';
+import { toCanonical } from '../../core/utils';
 
 
 const router = express.Router();
@@ -51,8 +53,25 @@ const router = express.Router();
 
   
 
-const robotManifestChecks = (robotManifest: IRobotManifest) => {
+const robotManifestChecks = async (robotManifest: IRobotManifest, namespace_id: string) => {
 
+    //Do the async stuff needed for the checks functions here
+    const robot = await prisma.robot.findUnique({
+        where: {
+            namespace_id_id: {
+                namespace_id: namespace_id,
+                id: robotManifest.signed.vin
+            }
+        },
+        include: {
+            ecus: true
+        }
+    });
+
+    
+    const robotPubKey = await keyStorage.getKey(robotManifest.signatures[0].keyid);
+
+    
     const checks = {
         
         validateSchema: () => {
@@ -68,19 +87,7 @@ const robotManifestChecks = (robotManifest: IRobotManifest) => {
             return checks;
         },
 
-        validateRobotAndEcuRegistration: async (namespace_id: string) => {
-
-            const robot = await prisma.robot.findUnique({
-                where: {
-                    namespace_id_id: {
-                        namespace_id,
-                        id: robotManifest.signed.vin
-                    }
-                },
-                include: {
-                    ecus: true
-                }
-            });
+        validateRobotAndEcuRegistration: () => {
 
             if (!robot) throw (`Received a robot manifest from a robot that is not registered in the inventory db`);
 
@@ -98,8 +105,48 @@ const robotManifestChecks = (robotManifest: IRobotManifest) => {
             });
         
             return checks;
-        }
+        },
+
+        validatePrimarySignature: () => {
+
+            const verified = verifySignature({
+                signature: robotManifest.signatures[0].sig,
+                pubKey: robotPubKey,
+                algorithm: 'sha256',
+                data: toCanonical(robotManifest.signed)
+            });
+
+            if(! verified) throw('Received a robot manifest with an invalid signature')
+
+            return checks;
+
+        },
+
+        validateReportSignatures: () => {
+            
+            return checks;
+
+        },
+
+        validateNonces: () => {
+            return checks;
+        },
+
+        validateTime: () => {
+            return checks;
+        },
+
+        validateAttacks: () => {
+            return checks;
+        },
+
+        validateImages: () => {
+            return checks;
+        },
+
+
     }
+
 
     return checks;
 
@@ -120,30 +167,26 @@ router.post('/:namespace/robots/:robot_id/manifests', async (req, res) => {
         }
     });
 
+
     if (namespaceCount === 0) {
         logger.warn('could not process manifest because namespace does not exist');
         return res.status(400).send('could not process manifest');
     }
 
-
-
     // Perform all of the checks
     try {
 
-        robotManifestChecks(manifest)
+        (await robotManifestChecks(manifest, namespace_id))
             .validatePrimaryECUReport()
             .validateSchema()
-            .validateRobotAndEcuRegistration(namespace_id)
-
-            prisma.insert.manifest ({
+            .validateRobotAndEcuRegistration()
+            .validatePrimarySignature()
+            .validateReportSignatures()
+            .validateNonces()
             
-            })
 
     } catch (e) {
 
-        prisma.insert.manifest ({
-            
-        })
         logger.error('Unable to accept robot manifest');
         logger.error(e);
     }

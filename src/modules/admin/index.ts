@@ -42,7 +42,7 @@ router.post('/namespaces', async (req, res) => {
         imageTargetsKey,
         imageSnapshotKey,
         imageTimestampKey
-    ) as object;
+    );
 
     // generate directory repo root.json
     const directorRepoRoot = generateRoot(config.TUF_TTL.DIRECTOR.ROOT,
@@ -51,7 +51,7 @@ router.post('/namespaces', async (req, res) => {
         directorTargetsKey,
         directorSnapshotKey,
         directorTimestampKey
-    ) as object;
+    );
 
 
     // do persistance layer operations in a transaction
@@ -69,7 +69,8 @@ router.post('/namespaces', async (req, res) => {
                 repo: TUFRepo.image,
                 role: TUFRole.root,
                 version,
-                value: imageRepoRoot
+                value: imageRepoRoot as object,
+                expires_at: imageRepoRoot.signed.expires
             }
         });
 
@@ -80,7 +81,8 @@ router.post('/namespaces', async (req, res) => {
                 repo: TUFRepo.director,
                 role: TUFRole.root,
                 version,
-                value: directorRepoRoot
+                value: directorRepoRoot as object,
+                expires_at: directorRepoRoot.signed.expires
             }
         });
 

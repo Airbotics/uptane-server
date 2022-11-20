@@ -1,5 +1,11 @@
 version: '3.8'
 services:
+    server:
+        image: server
+        build: .
+        container_name: server
+        ports:
+            - 8001:8001
     postgres:
         image: postgres
         container_name: postgres

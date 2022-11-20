@@ -33,7 +33,7 @@ export const generateSignature = (keyType: 'rsa', toSign: string, privateKey: st
 type VerifySigParams = {
     signature: string;
     pubKey: string;
-    algorithm: "RSA-SHA256";
+    algorithm: 'RSA-SHA256';
     data: string;
 }
 

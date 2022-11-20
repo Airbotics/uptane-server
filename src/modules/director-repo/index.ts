@@ -113,7 +113,7 @@ const robotManifestChecks = async (robotManifest: IRobotManifest, namespace_id: 
             const verified = verifySignature({
                 signature: robotManifest.signatures[0].sig,
                 pubKey: robotPubKey,
-                algorithm: 'sha256',
+                algorithm: 'RSA-SHA256',
                 data: toCanonical(robotManifest.signed)
             });
 

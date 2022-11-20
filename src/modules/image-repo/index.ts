@@ -163,7 +163,8 @@ router.post('/:namespace/images', express.raw({ type: '*/*' }), async (req, res)
                 repo: TUFRepo.image,
                 role: TUFRole.targets,
                 version: newTargetsVersion,
-                value: targetsMetadata as object
+                value: targetsMetadata as object,
+                expires_at: targetsMetadata.signed.expires
             }
         });
 
@@ -173,7 +174,8 @@ router.post('/:namespace/images', express.raw({ type: '*/*' }), async (req, res)
                 repo: TUFRepo.image,
                 role: TUFRole.snapshot,
                 version: newSnapshotVersion,
-                value: snapshotMetadata as object
+                value: snapshotMetadata as object,
+                expires_at: targetsMetadata.signed.expires
             }
         });
 
@@ -183,7 +185,8 @@ router.post('/:namespace/images', express.raw({ type: '*/*' }), async (req, res)
                 repo: TUFRepo.image,
                 role: TUFRole.timestamp,
                 version: newTimeStampVersion,
-                value: timestampMetadata as object
+                value: timestampMetadata as object,
+                expires_at: targetsMetadata.signed.expires
             }
         });
 

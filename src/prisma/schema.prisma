@@ -71,16 +71,16 @@ model Image {
 
 
 // tuf metadata
-// NOTE this may be moved to mongo
 model Metadata {
     id                  String          @default(uuid())
     namespace_id        String
-    role                TUFRole         // director or image repo
-    repo                TUFRepo         // root, targets, snapshot or timestamp
-    version             Int             // must match the version in the signed portion of the metadata
-    value               Json            // holds entire signed metadata
+    role                TUFRole                                 // director or image repo
+    repo                TUFRepo                                 // root, targets, snapshot or timestamp
+    version             Int                                     // must match the version in the signed portion of the metadata
+    value               Json                                    // holds entire signed metadata
 
     created_at          DateTime        @default(now())
+    expires_at          DateTime                                // this should always match the 'expires' field in the signed portion
     namespace           Namespace       @relation(fields: [namespace_id], references: [id], onDelete: Cascade)
 
     @@id([namespace_id, id])

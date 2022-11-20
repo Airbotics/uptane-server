@@ -15,6 +15,7 @@ const router = express.Router();
  * Initialises a namespace
  * 
  * - Creates namespace in db.
+ * - Creats bucket in blob storage to hold its blobs.
  * - Generates online private keys (these will be replaced by offline keys in time).
  * - Creates image repo root.json and saves it to db.
  */
@@ -82,7 +83,9 @@ router.post('/namespaces', async (req, res) => {
                 value: directorRepoRoot
             }
         });
-        
+
+        // create bucket in blob storage
+        await blobStorage.createBucket(namespace.id);
 
         // store image repo private keys
         await keyStorage.putKey(`${namespace.id}-image-root-private`, imageRootKey.privateKey);
@@ -152,6 +155,7 @@ router.get('/namespaces', async (req, res) => {
  * Delete a namespace
  * 
  * - Deletes namespace in db, this cascades to all resources.
+ * - Deletes bucket and all objects in blob storage.
  * - Deletes keys, images and treehub objects associated with this namespace.
  */
 router.delete('/namespaces/:namespace', async (req, res) => {
@@ -175,33 +179,11 @@ router.delete('/namespaces/:namespace', async (req, res) => {
         const namespaceObj = await tx.namespace.delete({
             where: {
                 id: namespace
-            },
-            include: {
-                objects: true,
-                images: true
             }
         });
 
-        // delete ostree objects in blob storage associated with this namespace.
-        // get the bucket id from all objects stored under this namespace, which depends on whether it is a summary object or not
-        const treehubBucketIds = namespaceObj!.objects.map(object => {
-            if (object.object_id === 'summary') {
-                return `${object.namespace_id}/${object.object_id}`
-            } else {
-                return `${object.namespace_id}/${object.object_id.substring(0, 2)}/${object.object_id.substring(2)}`
-            }
-        });
-
-        for await (const bucketId of treehubBucketIds) {
-            await blobStorage.deleteObject(bucketId);
-        }
-
-        // delete images in image repo associated with this namespace.
-        const imageBucketIds = namespaceObj.images.map(image => image.id);
-
-        for await (const bucketId of imageBucketIds) {
-            await blobStorage.deleteObject(bucketId);
-        }
+        // deletes bucket in blob storage
+        await blobStorage.deleteBucket(namespace);
 
         // delete keys associated with this namespace
         await keyStorage.deleteKey(`${namespace}-image-root-private`);

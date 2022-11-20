@@ -19,7 +19,6 @@ router.put('/:namespace/objects/:prefix/:suffix', express.raw({ type: '*/*' }), 
     const suffix = req.params.suffix;
     const content = req.body;
     const object_id = prefix + suffix;
-    const bucketId = namespace_id + '/' + prefix + '/' + suffix;
 
     const size = parseInt(req.get('content-length')!);
 
@@ -62,7 +61,7 @@ router.put('/:namespace/objects/:prefix/:suffix', express.raw({ type: '*/*' }), 
             }
         });
 
-        await blobStorage.putObject(bucketId, content);
+        await blobStorage.putObject(namespace_id, `treehub/${prefix}/${suffix}`, content);
 
         await tx.object.update({
             where: {
@@ -94,7 +93,6 @@ router.get('/:namespace/objects/:prefix/:suffix', async (req, res) => {
     const prefix = req.params.prefix;
     const suffix = req.params.suffix;
     const object_id = prefix + suffix;
-    const bucketId = namespace_id + '/' + prefix + '/' + suffix;
 
     const object = await prisma.object.findUnique({
         where: {
@@ -111,7 +109,7 @@ router.get('/:namespace/objects/:prefix/:suffix', async (req, res) => {
     }
 
     try {
-        const content = await blobStorage.getObject(bucketId);
+        const content = await blobStorage.getObject(namespace_id, `treehub/${prefix}/${suffix}`);
 
         res.set('content-type', 'application/octet-stream');
         return res.status(200).send(content);

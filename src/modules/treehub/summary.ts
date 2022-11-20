@@ -57,7 +57,7 @@ router.put('/:namespace/summary', express.raw({ type: '*/*' }), async (req, res)
             }
         });
 
-        await blobStorage.putObject(bucketId, content);
+        await blobStorage.putObject(namespace_id, 'treehub/summary', content);
 
         await tx.object.update({
             where: {
@@ -70,6 +70,7 @@ router.put('/:namespace/summary', express.raw({ type: '*/*' }), async (req, res)
                 status: UploadStatus.uploaded
             }
         });
+        
     });
 
     logger.info('uploaded ostree summary');
@@ -85,7 +86,6 @@ router.get('/:namespace/summary', async (req, res) => {
 
     const namespace_id = req.params.namespace;
     const object_id = 'summary';
-    const bucketId = namespace_id + '/' + object_id;
 
     const summary = await prisma.object.findUnique({
         where: {
@@ -102,7 +102,7 @@ router.get('/:namespace/summary', async (req, res) => {
     }
 
     try {
-        const content = await blobStorage.getObject(bucketId);
+        const content = await blobStorage.getObject(namespace_id, 'treehub/summary');
 
         res.set('content-type', 'application/octet-stream');
         return res.status(200).send(content);

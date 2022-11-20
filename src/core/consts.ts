@@ -1,6 +1,7 @@
 // supported providers for blob storage
 export const enum EBlobStorageProvider {
-    Fs = 'fs'
+    Fs = 'fs',
+    S3 = 's3'
 }
 
 // supported providers for key storage

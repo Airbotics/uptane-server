@@ -9,9 +9,8 @@ Assuming your infrastructure is up and running (server listening, db in clean st
 A namespace is a logical collection of resources related to the same project. A few things happen when you create a namespace:
 
 - It's created in the db.
-
+- A bucket in blob storage is created to hold its resources.
 - 8 key pairs are created an stored in key storage (4 top-level roles for 2 repositories).
-
 - An initial root.json is created for both repositories.
 
 You can create a namespace with:

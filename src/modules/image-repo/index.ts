@@ -201,7 +201,7 @@ router.post('/:namespace/images', express.raw({ type: '*/*' }), async (req, res)
         });
 
         // upload image to blob storage
-        await blobStorage.putObject(imageId, imageContent);
+        await blobStorage.putObject(namespace_id, `images/${imageId}`, imageContent);
 
         // update reference to image in db saying that it has completed uploading
         await tx.image.update({
@@ -280,7 +280,6 @@ router.get('/:namespace/images/:hash.:id', async (req, res) => {
     const namespace_id = req.params.namespace;
     const hash = req.params.hash;
     const id = req.params.id;
-    const bucketId = id;
 
     // FIND image WHERE namespace = namespace AND image_id = image_id AND (sha256 = hash OR sha512 = hash)
     const image = await prisma.image.findFirst({
@@ -304,7 +303,8 @@ router.get('/:namespace/images/:hash.:id', async (req, res) => {
     }
 
     try {
-        const content = await blobStorage.getObject(bucketId);
+        // const content = await blobStorage.getObject(bucketId);
+        const content = await blobStorage.getObject(namespace_id, `images/${image.id}`);
 
         res.set('content-type', 'application/octet-stream');
         return res.status(200).send(content);
@@ -326,8 +326,6 @@ router.get('/:namespace/images/:id', async (req, res) => {
 
     const namespace_id = req.params.namespace;
     const id = req.params.id;
-    const bucketId = id;
-
 
     const image = await prisma.image.findUnique({
         where: {
@@ -344,7 +342,7 @@ router.get('/:namespace/images/:id', async (req, res) => {
     }
 
     try {
-        const content = await blobStorage.getObject(bucketId);
+        const content = await blobStorage.getObject(namespace_id, `images/${image.id}`);
 
         res.set('content-type', 'application/octet-stream');
         return res.status(200).send(content);

@@ -2,8 +2,9 @@
 
 @BASE_URL=http://localhost:8001
 @API_VERSION=v0
-@NAMESPACE=637eb995-f4f3-4dbb-a236-10f35a1472fa
-@ROBOT=542226fe-d3c8-462e-8ddb-8bad46fec63a
+@NAMESPACE=53295408-e1d6-41ba-878a-64a046982009
+@IMAGE=91497b2c-3554-4adb-b78a-54072faa39b7
+@ROBOT=649de690-6de8-43c0-b662-c32ca597dd8d
 
 
 # -----------------------------------------
@@ -95,15 +96,15 @@ GET {{BASE_URL}}/api/{{API_VERSION}}/image/{{NAMESPACE}}/images HTTP/1.1
 
 
 ### download image with image id only
-GET {{BASE_URL}}/api/{{API_VERSION}}/image/{{NAMESPACE}}/images/52685082-64e0-4151-9279-2876af72c0c2 HTTP/1.1
+GET {{BASE_URL}}/api/{{API_VERSION}}/image/{{NAMESPACE}}/images/{{IMAGE}} HTTP/1.1
 
 
 ### download image with sha256 and image id
-GET {{BASE_URL}}/api/{{API_VERSION}}/image/{{NAMESPACE}}/images/e317b3f3501466ae189499652d5c4d2cc825444efb38c68a6e4df79f6b8beaa0.52685082-64e0-4151-9279-2876af72c0c2 HTTP/1.1
+GET {{BASE_URL}}/api/{{API_VERSION}}/image/{{NAMESPACE}}/images/e317b3f3501466ae189499652d5c4d2cc825444efb38c68a6e4df79f6b8beaa0.{{IMAGE}} HTTP/1.1
 
 
 ### download image with sha512 and image id
-GET {{BASE_URL}}/api/{{API_VERSION}}/image/{{NAMESPACE}}/images/021a31d187c51c86dda1a3b4ae19e429d32452218c7dd5a145e84ea51718067bc005747b344679d86233f06134e873cc0f85e470a6282e53720eef6c8c9936f3.52685082-64e0-4151-9279-2876af72c0c2 HTTP/1.1
+GET {{BASE_URL}}/api/{{API_VERSION}}/image/{{NAMESPACE}}/images/021a31d187c51c86dda1a3b4ae19e429d32452218c7dd5a145e84ea51718067bc005747b344679d86233f06134e873cc0f85e470a6282e53720eef6c8c9936f3.{{IMAGE}} HTTP/1.1
 
 
 

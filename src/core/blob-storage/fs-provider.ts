@@ -12,20 +12,29 @@ import config from '../../config';
  */
 export class FsBlobProvider implements IBlobStorageProvider {
 
-    async putObject(bucketId: string, content: Buffer): Promise<void> {
+    async createBucket(bucketId: string): Promise<void> {
         const filePath = path.resolve(path.join(config.BLOB_FS_STORAGE_DIR, bucketId));
+        fs.mkdirSync(filePath, { recursive: true });
+    }
+
+    async deleteBucket(bucketId: string): Promise<void> {
+        const filePath = path.resolve(path.join(config.BLOB_FS_STORAGE_DIR, bucketId));
+        fs.rmdirSync(filePath, { recursive: true });
+    }
+
+    async putObject(bucketId: string, objectId: string, content: Buffer): Promise<void> {
+        const filePath = path.resolve(path.join(config.BLOB_FS_STORAGE_DIR, bucketId, objectId));
         fs.mkdirSync(path.dirname(filePath), { recursive: true });
         fs.writeFileSync(filePath, content);
     }
-
-    async getObject(bucketId: string): Promise<Buffer | string> {
-        const filePath = path.resolve(path.join(config.BLOB_FS_STORAGE_DIR, bucketId));
+    
+    async getObject(bucketId: string, objectId: string): Promise<Buffer | string> {
+        const filePath = path.resolve(path.join(config.BLOB_FS_STORAGE_DIR, bucketId, objectId));
         return fs.readFileSync(filePath);
     }
 
-    // BUG this just deletes the file, but any parent directories are kept around, which we don't want
-    async deleteObject(bucketId: string): Promise<void> {
-        const filePath = path.resolve(path.join(config.BLOB_FS_STORAGE_DIR, bucketId));
+    async deleteObject(bucketId: string, objectId: string): Promise<void> {
+        const filePath = path.resolve(path.join(config.BLOB_FS_STORAGE_DIR, bucketId, objectId));
         return fs.unlinkSync(filePath);
     }
 

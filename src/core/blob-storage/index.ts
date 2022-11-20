@@ -2,6 +2,7 @@ import config from '../../config';
 import { EBlobStorageProvider } from '../consts';
 import { IBlobStorageProvider } from '../../types';
 import { FsBlobProvider } from './fs-provider';
+import { s3BlobProvider } from './s3-provider';
 
 
 class BlobStorageProvider implements IBlobStorageProvider {
@@ -16,19 +17,31 @@ class BlobStorageProvider implements IBlobStorageProvider {
                 this.strategy = new FsBlobProvider();
                 break;
 
+            case EBlobStorageProvider.S3:
+                this.strategy = new s3BlobProvider();
+                break;
+
         }
     }
 
-    async putObject(bucketId: string, content: Buffer): Promise<void> {
-        return this.strategy.putObject(bucketId, content);
+    async createBucket(bucketId: string): Promise<void> {
+        return this.strategy.createBucket(bucketId);
     }
 
-    async getObject(bucketId: string): Promise<Buffer | string> {
-        return this.strategy.getObject(bucketId);
+    async deleteBucket(bucketId: string): Promise<void> {
+        return this.strategy.deleteBucket(bucketId);
     }
 
-    async deleteObject(bucketId: string): Promise<void> {
-        return this.strategy.deleteObject(bucketId);
+    async putObject(bucketId: string, objectId: string, content: Buffer): Promise<void> {
+        return this.strategy.putObject(bucketId, objectId, content);
+    }
+
+    async getObject(bucketId: string, objectId: string): Promise<Buffer | string> {
+        return this.strategy.getObject(bucketId, objectId);
+    }
+
+    async deleteObject(bucketId: string, objectId: string): Promise<void> {
+        return this.strategy.deleteObject(bucketId, objectId);
     }
 
 }

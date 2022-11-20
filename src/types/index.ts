@@ -21,10 +21,20 @@ export interface IKeyPair {
 /**
  * TUF
  */
+
+export interface IHashes {
+    sha256: string;
+    sha512: string;
+}
+
+
 export interface ISignatureTUF {
     keyid: string;
     sig: string;
+    method?: string;
 }
+
+
 
 
 export interface ITufKey {
@@ -75,10 +85,7 @@ export interface IRootTUF {
 export interface ITargetsImages {
     [key: string]: {
         custom?: any;
-        hashes: {
-            sha256: string;
-            sha512: string;
-        };
+        hashes: IHashes,
         length: number;
     };
 }
@@ -110,10 +117,7 @@ export interface ISnapshotSignedTUF {
         [key: string]: {
             version: number;
             length?: number;
-            hashes?: {
-                sha256: string;
-                sha512: string;
-            };
+            hashes?: IHashes
         };
     };
 }
@@ -134,10 +138,7 @@ export interface ITimestampSignedTUF {
         [key: string]: {
             version: number;
             length?: number;
-            hashes?: {
-                sha256: string;
-                sha512: string;
-            };
+            hashes?: IHashes
         };
     };
 }
@@ -145,4 +146,39 @@ export interface ITimestampSignedTUF {
 export interface ITimestampTUF {
     signatures: ISignatureTUF[];
     signed: ITimestampSignedTUF;
+}
+
+
+export interface ITimestampTUF {
+    signatures: ISignatureTUF[];
+    signed: ITimestampSignedTUF;
+}
+
+
+/**
+ * Director
+ */
+
+ export interface IecuVersionReport {
+    signatures: ISignatureTUF[],
+    signed: {
+        ecu_serial: string,
+        time: string,
+        attacks_detected: string,
+        nonce: string,
+        installed_image: {
+            filename: string,
+            length: number
+            hashes: IHashes
+        }
+    }
+}
+
+export interface IRobotManifest {
+    signatures: ISignatureTUF[],
+    signed: {
+        vin: string,
+        primary_ecu_serial: string,
+        ecu_version_reports: { [key: string]: IecuVersionReport}, // Will need to be updated to support multiple version reports
+    }
 }

@@ -5,7 +5,7 @@ import { logger } from '../../core/logger';
 import { generateKeyPair } from '../../core/crypto';
 import { verifySignature } from '../../core/crypto/signatures';
 import { prisma } from '../../core/postgres';
-import { TUFRepo, TUFRole } from '@prisma/client';
+import { Prisma, TUFRepo, TUFRole } from '@prisma/client';
 import { robotManifestSchema } from './schemas';
 import { IRobotManifest } from '../../types';
 import { toCanonical } from '../../core/utils';
@@ -65,11 +65,12 @@ const robotManifestChecks = async (robotManifest: IRobotManifest, namespace_id: 
             }
         },
         include: {
-            ecus: true
+            ecus: true,
+            robot_manifests: true
         }
     });
-
-    if(!robot) throw('could not process manifest because the robot does not exist')
+    
+    if(!robot) throw('could not process manifest because the robot does not exist');
 
     //Load all the pub keys that are included in the ecu version reports. This should include the primary ecu
     const ecuPubKeys: { [ecu_serial: string]: string } = {};
@@ -156,6 +157,24 @@ const robotManifestChecks = async (robotManifest: IRobotManifest, namespace_id: 
         },
 
         validateNonces: () => {
+            //For each ecu version report, check if the nonce for that report has ever been 
+            //sent to us before in a previous manifest
+
+            Object.keys(robotManifest.signed.ecu_version_reports).forEach(ecuSerial => {
+
+                const previouslySentNonces: string[] = [];
+
+                robot.robot_manifests.forEach(manifest => {
+                    const fullManfest = JSON.parse(manifest.value as string);
+                    previouslySentNonces.push(fullManfest['signed']['ecu_version_reports'][ecuSerial]['signed']['nonce'])
+                })
+
+                if(previouslySentNonces.includes(robotManifest.signed.ecu_version_reports[ecuSerial].signed.nonce)) {
+                    throw ('One of the vehicle manifest reports includes a nonce that has previously been sent.')
+                }
+
+            });
+            
             return checks;
         },
 

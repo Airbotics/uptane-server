@@ -52,7 +52,7 @@ const router = express.Router();
  */
 
 
-  
+
 
 const robotManifestChecks = async (robotManifest: IRobotManifest, namespace_id: string) => {
 
@@ -69,20 +69,34 @@ const robotManifestChecks = async (robotManifest: IRobotManifest, namespace_id: 
         }
     });
 
-    
-    const robotPubKey = await keyStorage.getKey(robotManifest.signatures[0].keyid);
+    if(!robot) throw('could not process manifest because the robot does not exist')
 
-    
+    //Load all the pub keys that are included in the ecu version reports. This should include the primary ecu
+    const ecuPubKeys: { [ecu_serial: string]: string } = {};
+
+    try {
+        Object.keys(robotManifest.signed.ecu_version_reports).forEach(
+            async (ecuSerial) => {
+                ecuPubKeys[ecuSerial] = await keyStorage.getKey(
+                    robotManifest.signed.ecu_version_reports[ecuSerial].signatures[0].keyid)
+            }
+        );
+
+    } catch(e) {
+        throw(`Could not process manifest, the public key for one of the ecu version reports could not be loaded`)
+    }
+
+
     const checks = {
-        
+
         validateSchema: () => {
             const { error } = robotManifestSchema.validate(robotManifest)
-            if(error) throw (`Received an invalid manifest from a robot`);
+            if (error) throw (`Received an invalid manifest from a robot`);
             return checks;
         },
-        
+
         validatePrimaryECUReport: () => {
-            if(robotManifest.signed.ecu_version_reports[robotManifest.signed.primary_ecu_serial] === undefined) {
+            if (robotManifest.signed.ecu_version_reports[robotManifest.signed.primary_ecu_serial] === undefined) {
                 throw (`The robots manifest is missing an ecu version report from the primary ecu`);
             }
             return checks;
@@ -94,17 +108,17 @@ const robotManifestChecks = async (robotManifest: IRobotManifest, namespace_id: 
 
             const ecusSerialsFromManifest: string[] = Object.keys(robotManifest.signed.ecu_version_reports);
             const ecusSerialsRegistered: string[] = robot.ecus.map(ecu => (ecu.id));
-            
-            if(ecusSerialsFromManifest.length !== ecusSerialsRegistered.length) {
-                throw('Received a robot manifest that has a different number of ecus than are in the inventory db')
+
+            if (ecusSerialsFromManifest.length !== ecusSerialsRegistered.length) {
+                throw ('Received a robot manifest that has a different number of ecus than are in the inventory db')
             }
 
             ecusSerialsFromManifest.forEach(ecuSerial => {
-                if(!ecusSerialsRegistered.includes(ecuSerial)) {
+                if (!ecusSerialsRegistered.includes(ecuSerial)) {
                     throw (`Received a robot manifest that contains an ecu that has not been registered in the inventory db`);
                 }
             });
-        
+
             return checks;
         },
 
@@ -112,21 +126,33 @@ const robotManifestChecks = async (robotManifest: IRobotManifest, namespace_id: 
 
             const verified = verifySignature({
                 signature: robotManifest.signatures[0].sig,
-                pubKey: robotPubKey,
-                algorithm: 'sha256',
+                pubKey: ecuPubKeys[robotManifest.signed.primary_ecu_serial],
+                algorithm: 'RSA-SHA256',
                 data: toCanonical(robotManifest.signed)
             });
 
-            if(! verified) throw('Received a robot manifest with an invalid signature')
+            if (!verified) throw ('Received a robot manifest with an invalid signature')
 
             return checks;
 
         },
 
         validateReportSignatures: () => {
+
+            //NOTE: Its assumed each ecu version report is only signed by one key
+
+            Object.keys(robotManifest.signed.ecu_version_reports).forEach(ecuSerial => {
+                const verified = verifySignature({
+                    signature: robotManifest.signed.ecu_version_reports[ecuSerial].signatures[0].sig,
+                    pubKey: ecuPubKeys[ecuSerial],
+                    algorithm: 'RSA-SHA256',
+                    data: toCanonical(robotManifest.signed)
+                });
+    
+                if (!verified) throw ('Received a robot manifest with an invalid signature')
+            });
             
             return checks;
-
         },
 
         validateNonces: () => {
@@ -184,14 +210,14 @@ router.post('/:namespace/robots/:robot_id/manifests', async (req, res) => {
             .validatePrimarySignature()
             .validateReportSignatures()
             .validateNonces()
-            
+
 
     } catch (e) {
 
         logger.error('Unable to accept robot manifest');
         logger.error(e);
     }
-    
+
 
 
     /**

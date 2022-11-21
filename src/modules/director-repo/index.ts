@@ -56,6 +56,9 @@ const router = express.Router();
 
 const robotManifestChecks = async (robotManifest: IRobotManifest, namespace_id: string) => {
 
+    //We are gonna need these so many times so pull them out once
+    const ecuSerials = Object.keys(robotManifest.signed.ecu_version_reports);
+
     //Do the async stuff needed for the checks functions here
     const robot = await prisma.robot.findUnique({
         where: {
@@ -69,22 +72,21 @@ const robotManifestChecks = async (robotManifest: IRobotManifest, namespace_id: 
             robot_manifests: true
         }
     });
-    
-    if(!robot) throw('could not process manifest because the robot does not exist');
+
+    if (!robot) throw ('could not process manifest because the robot does not exist');
 
     //Load all the pub keys that are included in the ecu version reports. This should include the primary ecu
     const ecuPubKeys: { [ecu_serial: string]: string } = {};
 
     try {
-        Object.keys(robotManifest.signed.ecu_version_reports).forEach(
-            async (ecuSerial) => {
-                ecuPubKeys[ecuSerial] = await keyStorage.getKey(
-                    robotManifest.signed.ecu_version_reports[ecuSerial].signatures[0].keyid);
-            }
-        );
+        
+        for (const ecuSerial of ecuSerials) {
+            ecuPubKeys[ecuSerial] = await keyStorage.getKey(
+                robotManifest.signed.ecu_version_reports[ecuSerial].signatures[0].keyid);
+        }
 
-    } catch(e) {
-        throw(`Could not process manifest, the public key for one of the ecu version reports could not be loaded`)
+    } catch (e) {
+        throw (`Could not process manifest, the public key for one of the ecu version reports could not be loaded`)
     }
 
     const checks = {
@@ -106,18 +108,17 @@ const robotManifestChecks = async (robotManifest: IRobotManifest, namespace_id: 
 
             if (!robot) throw (`Received a robot manifest from a robot that is not registered in the inventory db`);
 
-            const ecusSerialsFromManifest: string[] = Object.keys(robotManifest.signed.ecu_version_reports);
             const ecusSerialsRegistered: string[] = robot.ecus.map(ecu => (ecu.id));
 
-            if (ecusSerialsFromManifest.length !== ecusSerialsRegistered.length) {
+            if (ecuSerials.length !== ecusSerialsRegistered.length) {
                 throw ('Received a robot manifest that has a different number of ecus than are in the inventory db')
             }
 
-            ecusSerialsFromManifest.forEach(ecuSerial => {
+            for (const ecuSerial of ecuSerials) {
                 if (!ecusSerialsRegistered.includes(ecuSerial)) {
                     throw (`Received a robot manifest that contains an ecu that has not been registered in the inventory db`);
                 }
-            });
+            }
 
             return checks;
         },
@@ -140,39 +141,36 @@ const robotManifestChecks = async (robotManifest: IRobotManifest, namespace_id: 
         validateReportSignatures: () => {
 
             //NOTE: Its assumed each ecu version report is only signed by one key
-
-            Object.keys(robotManifest.signed.ecu_version_reports).forEach(ecuSerial => {
+            for (const ecuSerial of ecuSerials) {
                 const verified = verifySignature({
                     signature: robotManifest.signed.ecu_version_reports[ecuSerial].signatures[0].sig,
                     pubKey: ecuPubKeys[ecuSerial],
                     algorithm: 'RSA-SHA256',
                     data: toCanonical(robotManifest.signed)
                 });
-    
+
                 if (!verified) throw ('Received an ECU version report with an invalid signature')
-            });
-            
+            }
+
             return checks;
         },
 
         validateNonces: () => {
             //For each ecu version report, check if the nonce for that report has ever been 
             //sent to us before in a previous manifest
-
-            Object.keys(robotManifest.signed.ecu_version_reports).forEach(ecuSerial => {
+            for (const ecuSerial of ecuSerials) {
 
                 const previouslySentNonces: string[] = [];
 
-                robot.robot_manifests.forEach(manifest => {
+                for(const manifest of robot.robot_manifests) {
                     const fullManfest = JSON.parse(manifest.value as string);
                     previouslySentNonces.push(fullManfest['signed']['ecu_version_reports'][ecuSerial]['signed']['nonce'])
-                })
-
-                if(previouslySentNonces.includes(robotManifest.signed.ecu_version_reports[ecuSerial].signed.nonce)) {
-                    throw('One of the ECU version reports includes a nonce that has previously been sent.')
                 }
 
-            });
+                if (previouslySentNonces.includes(robotManifest.signed.ecu_version_reports[ecuSerial].signed.nonce)) {
+                    throw ('One of the ECU version reports includes a nonce that has previously been sent.')
+                }
+            }
 
             return checks;
         },
@@ -181,30 +179,28 @@ const robotManifestChecks = async (robotManifest: IRobotManifest, namespace_id: 
 
             const now = Math.floor(new Date().getTime() / 1000); //Assume this time is trusted for now
 
-            Object.keys(robotManifest.signed.ecu_version_reports).forEach(ecuSerial => {
+            for (const ecuSerial of ecuSerials) {
+                
+                const validForSecs: number = (ecuSerial === robotManifest.signed.primary_ecu_serial) ?
+                    Number(config.PRIMARY_ECU_VALID_FOR_SECS) : Number(config.SECONDARY_ECU_VALID_FOR_SECS);
 
-                const validForSecs: number = (ecuSerial === robotManifest.signed.primary_ecu_serial) ? 
-                    Number(config.PRIMARY_ECU_VALID_FOR_SECS): Number(config.SECONDARY_ECU_VALID_FOR_SECS);
-
-                if(robotManifest.signed.ecu_version_reports[ecuSerial].signed.time >= now || 
-                    robotManifest.signed.ecu_version_reports[ecuSerial].signed.time < (now-validForSecs)) {
-                    throw('One of the ECU version reports includes an expired timestamp')
+                if (robotManifest.signed.ecu_version_reports[ecuSerial].signed.time >= now ||
+                    robotManifest.signed.ecu_version_reports[ecuSerial].signed.time < (now - validForSecs)) {
+                    throw ('One of the ECU version reports includes an expired timestamp')
                 }
-            });
+            }
 
             return checks;
         },
 
         validateAttacks: () => {
 
-            Object.keys(robotManifest.signed.ecu_version_reports).forEach(ecuSerial => {
-
-                //Assuming the client sends a non empty string in the case of an identified attack
-                //Might need to first check if the attacks_detected field is part of the schema
-                if(robotManifest.signed.ecu_version_reports[ecuSerial].signed.attacks_detected !== '') {
-                    throw('One of the ECU version reports includes an identified attack!')
+            for (const ecuSerial of ecuSerials) {
+                if (robotManifest.signed.ecu_version_reports[ecuSerial].signed.attacks_detected !== '') {
+                    throw ('One of the ECU version reports includes an identified attack!')
                 }
-            });
+            }
+
             return checks;
         }
 
@@ -214,20 +210,44 @@ const robotManifestChecks = async (robotManifest: IRobotManifest, namespace_id: 
 
 }
 
-const determineUpToDate = async (robotID: string, imageID: string) => {
 
-    const latestRollout = await prisma.rollout.findMany({
-        where: {
-            robot_id: ''
-        },
-        orderBy: {
-            created_at: 'desc'
-        },
-        take: 1,
-        include: { image: true }
-    });
+const determineEcusToUpdate = async (robotManifest: IRobotManifest) => {
+
+    const ecuSerials = Object.keys(robotManifest.signed.ecu_version_reports);
+
+    const ecusToUpdate: { ecu_serial: string; image_id: string }[] = [];
+
+    //Lets loop through the ecu version reports one last time
+    for (const ecuSerial of ecuSerials) {
+
+        const latestRollout = await prisma.tempEcuImages.findMany({
+            where: {
+                ecu_id: ecuSerial
+            },
+            orderBy: {
+                created_at: 'desc'
+            },
+            take: 1,
+            include: { image: true }
+        });
+
+        //There is no rollout for this ecu, dont need to update tuf metadata
+        if (latestRollout.length === 0) continue;
+
+        //There is a rollout but the image sha matches the one sent so dont need to update tuf metadata
+        if(latestRollout[0].image.sha256 === 
+            robotManifest.signed.ecu_version_reports[ecuSerial].signed.installed_image.hashes.sha256) continue;
+
+        //There is a rollout and the image sha is not the same as what was reported, need to update new tuf metadata
+        ecusToUpdate.push({ecu_serial: ecuSerial, image_id: latestRollout[0].image_id})
+
+    }
+
+    return ecusToUpdate;
+}
 
 
+const generateTufMetadata = async (ecuID: string, installedImgSha256: string) => {
 
 }
 
@@ -264,11 +284,9 @@ router.post('/:namespace/robots/:robot_id/manifests', async (req, res) => {
             .validateTime()
 
     } catch (e) {
-
         logger.error('Unable to accept robot manifest');
         logger.error(e);
     }
-
 
 
     /**
@@ -298,36 +316,31 @@ router.post('/:namespace/robots/:robot_id/manifests', async (req, res) => {
      */
 
 
-    //
+    /**
+     * For now we have a tmp table that simply maps ecu serials and images to make it easier
+     * to test a full uptane runthrough. We will figure out how to do all the joining between rollouts,
+     * stacks, versions, ecus etc. in due course when the schema becomes clearer.
+     * 
+     * For each ECU determine if the reported installed image is different to the latest one 
+     * we have on record, if it is, we need to generate new tuf metadata for the ecu. Otherwise
+     * we can infer that the ECU is running the latest avaiable image
+     * 
+     * NOTE: THIS WILL BE REPLACED VERY SOON
+     */
 
 
+    //Lets loop through the ecu version reports one last time
+    const ecusToUpdate = determineEcusToUpdate(manifest);
 
-
-    // NOTE: this is temporary code that will be replaced by something more substantial
-    // for now we simply take the most recent rollout for this robot and apply that image to its
-    // primary ecu
-    const rollout = await prisma.rollout.findFirst({
-        where: {
-            namespace_id,
-            robot_id
-        },
-        orderBy: {
-            created_at: 'desc'
-        }
-    });
-
-    if (!rollout) {
-        logger.info('processed manifest for robot but no images have been assigned to it');
+    if((await ecusToUpdate).length === 0) {
+        logger.info('processed manifest for robot and determined all ecus have already installed their latest images');
         return res.status(200).end();
     }
 
+    //OK now we need to generate the new TUF targets, snapshot and timestamp files for each ecu that needs updated
+    else {
 
-    /**
-     * if we get to this point we need to create a new set of tuf metadata for the ecus 
-     * on this robot, this follows a similar pattern to creating tuf metadata in the image
-     * repo when an image is pushed.
-     */
-
+    }
 
     /**
      * finally, if we get here then we have created new tuf metadata which is ready for

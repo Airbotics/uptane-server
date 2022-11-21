@@ -5,6 +5,7 @@ dotenv.config();
 
 const DEFAULT_CONN_STR = 'postgresql://user:password@localhost:5432/db?schema=public';
 
+// available time units are here: https://day.js.org/docs/en/manipulate/add#list-of-all-available-units
 // NOTE: it would be nice to use something like TOML here, but we'll just keep it js for now
 const config = {
 
@@ -17,7 +18,7 @@ const config = {
     MAX_JSON_REQUEST_SIZE: '100mb',                                             // max json size we accept
 
     // blob storage
-    BLOB_STORAGE_PROVIDER: EBlobStorageProvider.S3,                             // blob storage provider to use
+    BLOB_STORAGE_PROVIDER: EBlobStorageProvider.Fs,                             // blob storage provider to use
     BLOB_FS_STORAGE_DIR: './.blobs',                                            // where ostree blobs are stored when filesystem provider is being used
 
     // key storage and management
@@ -28,19 +29,19 @@ const config = {
     // tuf
     TUF_SPEC_VERSION: '1.0.30',                                                 // TUF spec we're using (more of a const that config for now...)
     TUF_CONSISTENT_SNAPSHOT: true,                                              // whether we use consistent snapshots (more of a const that config for now...)
-    TUF_EXPIRY_WINDOW: 3,                                                       // if a TUF metadata is due to expiry within this number of hours it will be resigned
+    TUF_EXPIRY_WINDOW: [3, 'hour'],                                             // if a TUF metadata is due to expiry within this number of <units> it will be resigned
     TUF_TTL: {
         DIRECTOR: {
-            ROOT: 365,                                                          // expiry of director root metadata in days
-            TARGETS: 1,                                                         // expiry of director targets metadata in days
-            SNAPSHOT: 1,                                                        // expiry of director snapshot metadata in days
-            TIMESTAMP: 1                                                        // expiry of director timestamp metadata in days
+            ROOT: [365, 'day'],                                                 // expiry of director root metadata in days
+            TARGETS: [1, 'day'],                                                // expiry of director targets metadata in days
+            SNAPSHOT: [1, 'day'],                                               // expiry of director snapshot metadata in days
+            TIMESTAMP: [1, 'day'],                                              // expiry of director timestamp metadata in days
         },
         IMAGE: {
-            ROOT: 365,                                                          // expiry of image root metadata in days
-            TARGETS: 365,                                                       // expiry of image targets metadata in days
-            SNAPSHOT: 1,                                                        // expiry of image snapshot metadata in days
-            TIMESTAMP: 1                                                        // expiry of image timestamp metadata in days
+            ROOT: [365, 'day'],                                                 // expiry of image root metadata in days
+            TARGETS: [365, 'day'],                                              // expiry of image targets metadata in days
+            SNAPSHOT: [1, 'day'],                                               // expiry of image snapshot metadata in days
+            TIMESTAMP: [1, 'day'],                                              // expiry of image timestamp metadata in days
         }
     },
 

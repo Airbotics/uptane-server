@@ -12,6 +12,7 @@
         "@aws-sdk/client-s3": "^3.213.0",
         "@prisma/client": "^4.6.1",
         "canonicalize": "^1.0.8",
+        "dayjs": "^1.11.6",
         "dotenv": "^16.0.3",
         "express": "^4.17.3",
         "helmet": "^6.0.0",

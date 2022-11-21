@@ -9,25 +9,3 @@ import canonicalize from 'canonicalize';
  * all occurences of `\\n` with `\n` after it has been stringified. This could probably be done in a better way.
  */
 export const toCanonical = (data: object): string => canonicalize(data)!.replace(/\\n/g, '\n');
-
-
-/**
- * Returns a `Date` object `days` number of days in the future.
- * 
- * `days` should be positive whole number. 
- */
-export const daysFromNow = (days: number): Date => new Date(new Date().setDate(new Date().getDate() + days));
-
-
-/**
- * Returns a `Date` object `hours` number of hours in the future.
- * 
- * `hours` should be positive whole number. 
- */
-export const hoursFromNow = (hours: number): Date => new Date(new Date().setHours(new Date().getHours() + hours));
-
-
-/**
- * Formats a date to be compliant with TUF, i.e. `YYYY-MM-DDTHH:MM:SSZ`.
- */
-export const formatDate = (date: Date): string => date.toISOString().split('.')[0] + 'Z';

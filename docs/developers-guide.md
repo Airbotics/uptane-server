@@ -80,7 +80,7 @@ docker compose up
 ```
 
 
-## Working with databases
+## Working with Postgres
 
 Firstly, bring up Postgres in a Docker container with:
 

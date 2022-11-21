@@ -1,11 +1,12 @@
 import { TUFRole } from '@prisma/client';
 import { prisma } from '../../core/postgres';
 import config from '../../config';
-import { hoursFromNow } from '../../core/utils';
+// import { hoursFromNow } from '../../core/utils';
 import { logger } from '../../core/logger';
 import { generateRoot } from '../../core/tuf';
 import { IKeyPair } from '../../types';
 import { keyStorage } from '../../core/key-storage';
+import dayjs, { ManipulateType } from 'dayjs';
 
 
 /**
@@ -32,12 +33,14 @@ const main = async () => {
             distinct: ['namespace_id', 'repo']
         });
 
+        logger.debug(`found ${mostRecentRoots.length} root metadata files to process`);
+
 
         for (const root of mostRecentRoots) {
 
             // if it expires some time in the future beyond the window we care about then
             // we just continue
-            if (root.expires_at.getTime() > hoursFromNow(config.TUF_EXPIRY_WINDOW).getTime()) {
+            if (dayjs(root.expires_at).isAfter(dayjs().add(config.TUF_EXPIRY_WINDOW[0] as number, config.TUF_EXPIRY_WINDOW[1] as ManipulateType))) {
                 continue;
             }
 
@@ -64,7 +67,6 @@ const main = async () => {
                 privateKey: await keyStorage.getKey(`${root.namespace_id}-image-timestamp-private`),
                 publicKey: await keyStorage.getKey(`${root.namespace_id}-image-timestamp-public`)
             }
-
 
             // bump the version
             const newVeresion = root.version + 1;

@@ -1,6 +1,7 @@
+import dayjs, { ManipulateType } from 'dayjs';
 import config from '../../config';
 import { ETUFRole } from '../consts';
-import { daysFromNow, formatDate, toCanonical } from '../utils';
+import { toCanonical } from '../utils';
 import { generateSignature } from '../crypto';
 import { generateTufKey, genKeyId } from './index';
 import { IKeyPair, IRootSignedTUF, IRootTUF } from '../../types';
@@ -9,7 +10,7 @@ import { IKeyPair, IRootSignedTUF, IRootTUF } from '../../types';
 /**
  * Creates a signed tuf root metadata object
  */
-export const generateRoot = (ttl: number, version: number, rootKeyPair: IKeyPair, targetsKeyPair: IKeyPair, snapshotKeyPair: IKeyPair, timestampKeyPair: IKeyPair): IRootTUF => {
+export const generateRoot = (ttl: (number|string)[], version: number, rootKeyPair: IKeyPair, targetsKeyPair: IKeyPair, snapshotKeyPair: IKeyPair, timestampKeyPair: IKeyPair): IRootTUF => {
 
     // generate tuf key objects
     const rootTufKey = generateTufKey(rootKeyPair.publicKey);
@@ -27,7 +28,7 @@ export const generateRoot = (ttl: number, version: number, rootKeyPair: IKeyPair
     const signed: IRootSignedTUF = {
         _type: ETUFRole.Root,
         consistent_snapshot: config.TUF_CONSISTENT_SNAPSHOT,
-        expires: formatDate(daysFromNow(ttl)),
+        expires: dayjs().add(ttl[0] as number, ttl[1] as ManipulateType).format(),
         spec_version: config.TUF_SPEC_VERSION,
         version,
         keys: {

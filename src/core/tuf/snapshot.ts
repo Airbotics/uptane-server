@@ -1,6 +1,7 @@
+import dayjs, { ManipulateType } from 'dayjs';
 import config from '../../config';
 import { ETUFRole } from '../consts';
-import { daysFromNow, formatDate, toCanonical } from '../utils';
+import { toCanonical } from '../utils';
 import { generateHash, generateSignature } from '../crypto';
 import { generateTufKey, genKeyId } from './index';
 import { IKeyPair, ISnapshotSignedTUF, ISnapshotTUF, ITargetsTUF } from '../../types';
@@ -9,7 +10,7 @@ import { IKeyPair, ISnapshotSignedTUF, ISnapshotTUF, ITargetsTUF } from '../../t
 /**
  * Creates a signed tuf snapshot metadata object
  */
-export const generateSnapshot = (ttl: number, version: number, snapshotKeyPair: IKeyPair, targetsMetadata: ITargetsTUF): ISnapshotTUF => {
+export const generateSnapshot = (ttl: (number | string)[], version: number, snapshotKeyPair: IKeyPair, targetsMetadata: ITargetsTUF): ISnapshotTUF => {
 
     // generate tuf key object
     const snapshotTufKey = generateTufKey(snapshotKeyPair.publicKey);
@@ -20,7 +21,7 @@ export const generateSnapshot = (ttl: number, version: number, snapshotKeyPair: 
     // generate the signed portion of the snapshot metadata
     const signed: ISnapshotSignedTUF = {
         _type: ETUFRole.Snapshot,
-        expires: formatDate(daysFromNow(ttl)),
+        expires: dayjs().add(ttl[0] as number, ttl[1] as ManipulateType).format(),
         spec_version: config.TUF_SPEC_VERSION,
         version,
         meta: {

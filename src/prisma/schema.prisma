@@ -51,7 +51,7 @@ model Namespace {
 
 // images stored in image repo
 model Image {
-    id                  String          @default(uuid())
+    id                  String          @id @default(uuid()) @unique
     namespace_id        String
     size                Int                                     // size of image in bytes
     sha256              String          @unique                 // sha256 hash of image
@@ -62,10 +62,12 @@ model Image {
     updated_at          DateTime        @updatedAt
 
     rollouts            Rollout[]
+    tmp_ecu_images      TempEcuImages[]
+
 
     namespace           Namespace       @relation(fields: [namespace_id], references: [id], onDelete: Cascade)
 
-    @@id([namespace_id, id])
+    @@unique([namespace_id, id])
     @@map("images")
 }
 
@@ -82,6 +84,7 @@ model Metadata {
     created_at          DateTime        @default(now())
     expires_at          DateTime                                // this should always match the 'expires' field in the signed portion
     namespace           Namespace       @relation(fields: [namespace_id], references: [id], onDelete: Cascade)
+    
 
     @@id([namespace_id, id])
     @@unique([namespace_id, repo, role, version])
@@ -116,7 +119,7 @@ model Robot {
 // TODO 
 // - last_seen
 model Ecu {
-    id                  String          @default(uuid())
+    id                  String          @id @default(uuid()) @unique
     namespace_id        String
     robot_id            String
     provisioned         Boolean         @default(false)     // whether the ecu has completed provisioning
@@ -128,7 +131,10 @@ model Ecu {
     namespace           Namespace       @relation(fields: [namespace_id], references: [id], onDelete: Cascade)
     robot               Robot           @relation(fields: [namespace_id, robot_id], references: [namespace_id, id], onDelete: Cascade)
 
-    @@id([namespace_id, id])
+    tmp_ecu_images      TempEcuImages[]
+
+
+    @@unique([namespace_id, id])
     @@map("ecus")
 }
 
@@ -204,4 +210,21 @@ model Object {
 
     @@id([namespace_id, object_id])
     @@map("objects")
+}
+
+
+
+// TODO this is a temporary table
+model TempEcuImages {
+    ecu_id              String
+    image_id            String
+
+    created_at          DateTime        @default(now())
+    updated_at          DateTime        @updatedAt
+
+    ecu                 Ecu             @relation(fields: [ecu_id], references: [id], onDelete: Cascade)
+    image               Image           @relation(fields: [image_id], references: [id], onDelete: Cascade)
+
+    @@unique([ecu_id, image_id])
+    @@map("tmp_ecu_images")
 }

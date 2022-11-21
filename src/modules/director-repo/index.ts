@@ -79,14 +79,13 @@ const robotManifestChecks = async (robotManifest: IRobotManifest, namespace_id: 
         Object.keys(robotManifest.signed.ecu_version_reports).forEach(
             async (ecuSerial) => {
                 ecuPubKeys[ecuSerial] = await keyStorage.getKey(
-                    robotManifest.signed.ecu_version_reports[ecuSerial].signatures[0].keyid)
+                    robotManifest.signed.ecu_version_reports[ecuSerial].signatures[0].keyid);
             }
         );
 
     } catch(e) {
         throw(`Could not process manifest, the public key for one of the ecu version reports could not be loaded`)
     }
-
 
     const checks = {
 
@@ -207,17 +206,28 @@ const robotManifestChecks = async (robotManifest: IRobotManifest, namespace_id: 
                 }
             });
             return checks;
-        },
-
-        validateImages: () => {
-            return checks;
-        },
-
+        }
 
     }
 
-
     return checks;
+
+}
+
+const determineUpToDate = async (robotID: string, imageID: string) => {
+
+    const latestRollout = await prisma.rollout.findMany({
+        where: {
+            robot_id: ''
+        },
+        orderBy: {
+            created_at: 'desc'
+        },
+        take: 1,
+        include: { image: true }
+    });
+
+
 
 }
 
@@ -236,7 +246,6 @@ router.post('/:namespace/robots/:robot_id/manifests', async (req, res) => {
         }
     });
 
-
     if (namespaceCount === 0) {
         logger.warn('could not process manifest because namespace does not exist');
         return res.status(400).send('could not process manifest');
@@ -252,7 +261,7 @@ router.post('/:namespace/robots/:robot_id/manifests', async (req, res) => {
             .validatePrimarySignature()
             .validateReportSignatures()
             .validateNonces()
-
+            .validateTime()
 
     } catch (e) {
 
@@ -273,9 +282,9 @@ router.post('/:namespace/robots/:robot_id/manifests', async (req, res) => {
      * - check all ecus on this robot in the inventory db are in the manifest               [x]
      * - check there are no additional ecus                                                 [x]
      * - verify the top-level signature of the manifest                                     [x]
-     * - verify every signature for all other ecus in the manifest
-     * - check the nonce in each ecu has not been used before
-     * - check no any attacks have been reported by the ecus
+     * - verify every signature for all other ecus in the manifest                          [x]
+     * - check the nonce in each ecu has not been used before                               [x]
+     * - check no any attacks have been reported by the ecus                                [x]
      * - check the images reported by each of the ecus correspond to the last set that were sent down
      * - probably a few more in time..
      */
@@ -287,6 +296,12 @@ router.post('/:namespace/robots/:robot_id/manifests', async (req, res) => {
      * if the robot is up-to-date then no new tuf metadata needs to be created, so we gracefully
      * exit and thank the primary for its time.
      */
+
+
+    //
+
+
+
 
     // NOTE: this is temporary code that will be replaced by something more substantial
     // for now we simply take the most recent rollout for this robot and apply that image to its

@@ -28,6 +28,7 @@ const config = {
     // tuf
     TUF_SPEC_VERSION: '1.0.30',                                                 // TUF spec we're using (more of a const that config for now...)
     TUF_CONSISTENT_SNAPSHOT: true,                                              // whether we use consistent snapshots (more of a const that config for now...)
+    TUF_EXPIRY_WINDOW: 3,                                                       // if a TUF metadata is due to expiry within this number of hours it will be resigned
     TUF_TTL: {
         DIRECTOR: {
             ROOT: 365,                                                          // expiry of director root metadata in days
@@ -48,6 +49,10 @@ const config = {
     AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID,                           // aws access key id
     AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY,                   // aws secret acess key
     AWS_S3_ENDPOINT: process.env.AWS_S3_ENDPOINT,                               // aws s3 endpoint to connect to
+
+    // background worker
+    WORKER_CRON: '0 * * * *',                                                   // cron to run background worker, i.e. every hour
+    USE_NODE_SCHEDULER: true,                                                   // whether to use the nodejs scheduler to run workers, for development
 
 };
 

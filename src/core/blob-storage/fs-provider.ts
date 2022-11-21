@@ -6,7 +6,7 @@ import config from '../../config';
 /**
  * Local filesytem blob storage provider.
  * 
- * Stores blobs on local filesystem in ``config.BLOB_FS_STORAGE_DIR`` directory.
+ * Stores blobs on local filesystem in `config.BLOB_FS_STORAGE_DIR` directory.
  * 
  * WARNING: This should not be used in production unless you like breaking things.
  */

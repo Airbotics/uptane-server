@@ -5,9 +5,9 @@ import { IKeyStorageProvider } from '../../types';
 
 
 /**
- * Local filesytem blob storage provider.
+ * Local filesytem key storage provider.
  * 
- * Stores blobs on local filesystem in ``config.KEYS_FS_STORAGE_DIR`` directory.
+ * Stores keys on local filesystem in `config.KEYS_FS_STORAGE_DIR` directory.
  * 
  * WARNING: This should not be used in production unless you like breaking things.
  */

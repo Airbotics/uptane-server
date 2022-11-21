@@ -522,7 +522,7 @@ router.post('/:namespace/rollouts', async (req, res) => {
  * Fetch role metadata (apart from timestamp) in a namespace.
  * 
  * Timestamp is not handled with this route because it isn't prepended
- * with a dot, i.e. ``/timestamp.json`` instead not ``/1.timestamp.json``
+ * with a dot, i.e. `/timestamp.json` instead not `/1.timestamp.json`
  */
 router.get('/:namespace/:version.:role.json', async (req, res) => {
 

@@ -1,12 +1,14 @@
 import express, { Request, Response, NextFunction } from 'express';
 import hpp from 'hpp';
 import helmet from 'helmet';
+import schedule from 'node-schedule';
 import config from './config'
 import { logger } from './core/logger';
 import admin from './modules/admin';
 import treehub from './modules/treehub';
 import imageRepo from './modules/image-repo';
 import directorRepo from './modules/director-repo';
+import backgroundWorker from './modules/background-workers';
 
 
 const app = express();
@@ -28,11 +30,17 @@ app.get('/', (req, res) => {
 });
 
 
+// mount modules
 app.use('/api/v0/admin', admin);
 app.use('/api/v0/director', directorRepo);
 app.use('/api/v0/image', imageRepo);
 app.use('/api/v0/treehub', treehub);
 
+
+// optionally mount a background worker in this process, if it has been configured
+if(config.USE_NODE_SCHEDULER) {
+    schedule.scheduleJob(config.WORKER_CRON, backgroundWorker);
+}
 
 // handle 404
 app.use((req: Request, res: Response, next: NextFunction) => {

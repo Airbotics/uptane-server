@@ -89,3 +89,4 @@ Current limitations:
 - No support for rollbacks yet.
 - No support for adding/updating/removing ECUs.
 - No support for removing images from the image repository.
+- One image per ECU.

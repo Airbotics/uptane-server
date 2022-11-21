@@ -31,7 +31,7 @@ const generateRsaKeyPair = () => {
  * Generate an asymmetric key pair.
  * 
  * Options are:
- * - ``rsa``
+ * - `rsa`
  */
 export const generateKeyPair = (keyType: 'rsa'): IKeyPair => {
     switch (keyType) {

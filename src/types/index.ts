@@ -163,7 +163,7 @@ export interface ITimestampTUF {
     signatures: ISignatureTUF[],
     signed: {
         ecu_serial: string,
-        time: string,
+        time: number,
         attacks_detected: string,
         nonce: string,
         installed_image: {

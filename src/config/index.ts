@@ -49,6 +49,10 @@ const config = {
     AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY,                   // aws secret acess key
     AWS_S3_ENDPOINT: process.env.AWS_S3_ENDPOINT,                               // aws s3 endpoint to connect to
 
+    PRIMARY_ECU_VALID_FOR_SECS: process.env.SECONDARY_ECU_VALID_FOR_SECS || 3600,
+    SECONDARY_ECU_VALID_FOR_SECS: process.env. SECONDARY_ECU_VALID_FOR_SECS || 43200,
+
+
 };
 
 export default config;

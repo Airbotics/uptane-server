@@ -150,7 +150,7 @@ const robotManifestChecks = async (robotManifest: IRobotManifest, namespace_id: 
                     data: toCanonical(robotManifest.signed)
                 });
     
-                if (!verified) throw ('Received a robot manifest with an invalid signature')
+                if (!verified) throw ('Received an ECU version report with an invalid signature')
             });
             
             return checks;
@@ -170,19 +170,42 @@ const robotManifestChecks = async (robotManifest: IRobotManifest, namespace_id: 
                 })
 
                 if(previouslySentNonces.includes(robotManifest.signed.ecu_version_reports[ecuSerial].signed.nonce)) {
-                    throw ('One of the vehicle manifest reports includes a nonce that has previously been sent.')
+                    throw('One of the ECU version reports includes a nonce that has previously been sent.')
                 }
 
             });
-            
+
             return checks;
         },
 
         validateTime: () => {
+
+            const now = Math.floor(new Date().getTime() / 1000); //Assume this time is trusted for now
+
+            Object.keys(robotManifest.signed.ecu_version_reports).forEach(ecuSerial => {
+
+                const validForSecs: number = (ecuSerial === robotManifest.signed.primary_ecu_serial) ? 
+                    Number(config.PRIMARY_ECU_VALID_FOR_SECS): Number(config.SECONDARY_ECU_VALID_FOR_SECS);
+
+                if(robotManifest.signed.ecu_version_reports[ecuSerial].signed.time >= now || 
+                    robotManifest.signed.ecu_version_reports[ecuSerial].signed.time < (now-validForSecs)) {
+                    throw('One of the ECU version reports includes an expired timestamp')
+                }
+            });
+
             return checks;
         },
 
         validateAttacks: () => {
+
+            Object.keys(robotManifest.signed.ecu_version_reports).forEach(ecuSerial => {
+
+                //Assuming the client sends a non empty string in the case of an identified attack
+                //Might need to first check if the attacks_detected field is part of the schema
+                if(robotManifest.signed.ecu_version_reports[ecuSerial].signed.attacks_detected !== '') {
+                    throw('One of the ECU version reports includes an identified attack!')
+                }
+            });
             return checks;
         },
 

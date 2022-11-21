@@ -59,6 +59,9 @@ const config = {
     PRIMARY_ECU_VALID_FOR_SECS: process.env.SECONDARY_ECU_VALID_FOR_SECS || 3600,
     SECONDARY_ECU_VALID_FOR_SECS: process.env. SECONDARY_ECU_VALID_FOR_SECS || 43200,
 
+    // logs
+    LOGS_DIR: '.logs',                                                          // local log directory
+
 
 };
 

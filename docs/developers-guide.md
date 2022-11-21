@@ -54,7 +54,7 @@ npm run start
 
 We use [winston](https://www.npmjs.com/package/winston) for logging.
 
-Currently logs are sent to the console but in the future they will be exported somewhere more permanent.
+Currently, logs are sent to the console and written to a log file in the `config.LOGS_DIR` directory with a filename of the datetime for when the server started.
 
 Log levels and explantations:
 

@@ -54,6 +54,11 @@ const config = {
     WORKER_CRON: '0 * * * *',                                                   // cron to run background worker, i.e. every hour
     USE_NODE_SCHEDULER: true,                                                   // whether to use the nodejs scheduler to run workers, for development
 
+    // manifest processing
+    PRIMARY_ECU_VALID_FOR_SECS: process.env.SECONDARY_ECU_VALID_FOR_SECS || 3600,
+    SECONDARY_ECU_VALID_FOR_SECS: process.env. SECONDARY_ECU_VALID_FOR_SECS || 43200,
+
+
 };
 
 export default config;

@@ -10,7 +10,7 @@ import { IKeyPair, ISnapshotSignedTUF, ISnapshotTUF, ITargetsTUF } from '../../t
 /**
  * Creates a signed tuf snapshot metadata object
  */
-export const generateSnapshot = (ttl: (number | string)[], version: number, snapshotKeyPair: IKeyPair, targetsMetadata: ITargetsTUF): ISnapshotTUF => {
+export const generateSnapshot = (ttl: (number | string)[], version: number, snapshotKeyPair: IKeyPair, targetsVersion: number): ISnapshotTUF => {
 
     // generate tuf key object
     const snapshotTufKey = generateTufKey(snapshotKeyPair.publicKey);
@@ -26,7 +26,7 @@ export const generateSnapshot = (ttl: (number | string)[], version: number, snap
         version,
         meta: {
             'targets.json': {
-                version: targetsMetadata.signed.version,
+                version: targetsVersion,
                 // length: toCanonical(targetsMetadata).length,
                 // hashes: {
                 //     sha256: generateHash(toCanonical(targetsMetadata), { algorithm: 'SHA256' }),

@@ -148,8 +148,8 @@ router.post('/:namespace/images', express.raw({ type: '*/*' }), async (req, res)
 
     // generate new set of tuf metadata (apart from root)
     const targetsMetadata = generateTargets(config.TUF_TTL.IMAGE.TARGETS, newTargetsVersion, targetsKeyPair, targetsImages);
-    const snapshotMetadata = generateSnapshot(config.TUF_TTL.IMAGE.SNAPSHOT, newSnapshotVersion, snapshotKeyPair, targetsMetadata);
-    const timestampMetadata = generateTimestamp(config.TUF_TTL.IMAGE.TIMESTAMP, newTimeStampVersion, timestampKeyPair, snapshotMetadata);
+    const snapshotMetadata = generateSnapshot(config.TUF_TTL.IMAGE.SNAPSHOT, newSnapshotVersion, snapshotKeyPair, targetsMetadata.signed.version);
+    const timestampMetadata = generateTimestamp(config.TUF_TTL.IMAGE.TIMESTAMP, newTimeStampVersion, timestampKeyPair, snapshotMetadata.signed.version);
 
 
     // perform db writes in transaction

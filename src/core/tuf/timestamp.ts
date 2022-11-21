@@ -10,7 +10,7 @@ import { IKeyPair, ISnapshotTUF, ITimestampSignedTUF, ITimestampTUF } from '../.
 /**
  * Creates a signed tuf timestamp metadata object
  */
-export const generateTimestamp = (ttl: (number|string)[], version: number, timestampKeyPair: IKeyPair, snapshotMetadata: ISnapshotTUF): ITimestampTUF => {
+export const generateTimestamp = (ttl: (number|string)[], version: number, timestampKeyPair: IKeyPair, snaphostVersion: number): ITimestampTUF => {
 
     // generate tuf key object
     const timestampTufKey = generateTufKey(timestampKeyPair.publicKey);
@@ -26,7 +26,7 @@ export const generateTimestamp = (ttl: (number|string)[], version: number, times
         version,
         meta: {
             'snapshot.json': {
-                version: snapshotMetadata.signed.version,
+                version: snaphostVersion,
                 // length: toCanonical(snapshotMetadata).length,
                 // hashes: {
                 //     sha256: generateHash(toCanonical(snapshotMetadata), { algorithm: 'SHA256' }),

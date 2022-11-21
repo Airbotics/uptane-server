@@ -29,16 +29,16 @@ const config = {
     // tuf
     TUF_SPEC_VERSION: '1.0.30',                                                 // TUF spec we're using (more of a const that config for now...)
     TUF_CONSISTENT_SNAPSHOT: true,                                              // whether we use consistent snapshots (more of a const that config for now...)
-    TUF_EXPIRY_WINDOW: [3, 'hour'],                                             // if a TUF metadata is due to expiry within this number of <units> it will be resigned
+    TUF_EXPIRY_WINDOW: [2, 'minute'],                                             // if a TUF metadata is due to expiry within this number of <units> it will be resigned
     TUF_TTL: {
         DIRECTOR: {
-            ROOT: [365, 'day'],                                                 // expiry of director root metadata in days
+            ROOT: [4, 'minute'],                                                 // expiry of director root metadata in days
             TARGETS: [1, 'day'],                                                // expiry of director targets metadata in days
             SNAPSHOT: [1, 'day'],                                               // expiry of director snapshot metadata in days
             TIMESTAMP: [1, 'day'],                                              // expiry of director timestamp metadata in days
         },
         IMAGE: {
-            ROOT: [365, 'day'],                                                 // expiry of image root metadata in days
+            ROOT: [4, 'minute'],                                                 // expiry of image root metadata in days
             TARGETS: [365, 'day'],                                              // expiry of image targets metadata in days
             SNAPSHOT: [1, 'day'],                                               // expiry of image snapshot metadata in days
             TIMESTAMP: [1, 'day'],                                              // expiry of image timestamp metadata in days
@@ -52,7 +52,7 @@ const config = {
     AWS_S3_ENDPOINT: process.env.AWS_S3_ENDPOINT,                               // aws s3 endpoint to connect to
 
     // background worker
-    WORKER_CRON: '0 * * * *',                                                   // cron to run background worker, i.e. every hour
+    WORKER_CRON: '* * * * *',                                                   // cron to run background worker, i.e. every hour
     USE_NODE_SCHEDULER: true,                                                   // whether to use the nodejs scheduler to run workers, for development
 
     // manifest processing

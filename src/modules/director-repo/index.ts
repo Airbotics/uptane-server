@@ -216,7 +216,7 @@ const determineEcusToUpdate = async (robotManifest: IRobotManifest) => {
 
     const ecuSerials = Object.keys(robotManifest.signed.ecu_version_reports);
 
-    const ecusToUpdate: { ecu_serial: string; image: Image }[] = [];
+    const ecusToUpdate: { ecu_serial: string; is_primary: boolean; image: Image }[] = [];
 
     //Lets loop through the ecu version reports one last time
     for (const ecuSerial of ecuSerials) {
@@ -240,7 +240,11 @@ const determineEcusToUpdate = async (robotManifest: IRobotManifest) => {
             robotManifest.signed.ecu_version_reports[ecuSerial].signed.installed_image.hashes.sha256) continue;
 
         //There is a rollout and the image sha is not the same as what was reported, need to update new tuf metadata
-        ecusToUpdate.push({ecu_serial: ecuSerial, image: latestRollout[0].image})
+        ecusToUpdate.push({
+            ecu_serial: ecuSerial, 
+            is_primary: ecuSerial === robotManifest.signed.primary_ecu_serial,
+            image: latestRollout[0].image
+        })
 
     }
 
@@ -251,7 +255,7 @@ const determineEcusToUpdate = async (robotManifest: IRobotManifest) => {
 const generateNewMetadata = async (
     namespace_id: string, 
     robotManifest: IRobotManifest,
-    ecus: { ecu_serial: string; image: Image }[] ) => {
+    ecus: { ecu_serial: string; is_primary: boolean; image: Image }[] ) => {
 
     for (const ecu of ecus) {
 

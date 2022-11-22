@@ -1,5 +1,5 @@
 import express from 'express';
-import { keyStorage } from '../../core/key-storage';
+import { keyStorage, loadKeyPair } from '../../core/key-storage';
 import config from '../../config';
 import { logger } from '../../core/logger';
 import { generateKeyPair } from '../../core/crypto';
@@ -10,7 +10,6 @@ import { robotManifestSchema } from './schemas';
 import { IKeyPair, IRobotManifest, ITargetsImages } from '../../types';
 import { toCanonical } from '../../core/utils';
 import { generateSnapshot, generateTargets, generateTimestamp, getLatestMetadataVersion } from '../../core/tuf';
-
 
 const router = express.Router();
 
@@ -55,16 +54,13 @@ const router = express.Router();
 
 
 
-const robotManifestChecks = async (robotManifest: IRobotManifest, namespace_id: string) => {
-
-    //We are gonna need these so many times so pull them out once
-    const ecuSerials = Object.keys(robotManifest.signed.ecu_version_reports);
+const robotManifestChecks = async (robotManifest: IRobotManifest, namespaceID: string, ecuSerials: string[]) => {
 
     //Do the async stuff needed for the checks functions here
     const robot = await prisma.robot.findUnique({
         where: {
             namespace_id_id: {
-                namespace_id: namespace_id,
+                namespace_id: namespaceID,
                 id: robotManifest.signed.vin
             }
         },
@@ -212,9 +208,8 @@ const robotManifestChecks = async (robotManifest: IRobotManifest, namespace_id: 
 }
 
 
-const determineUpdateRequired = async (robotManifest: IRobotManifest): Promise<boolean> => {
+const determineUpdateRequired = async (robotManifest: IRobotManifest, ecuSerials: string[]): Promise<boolean> => {
 
-    const ecuSerials = Object.keys(robotManifest.signed.ecu_version_reports);
 
     //get all the 'rollouts' for each ecu reported
     const rolloutsPerEcu = await prisma.tmpEcuImages.findMany({
@@ -306,18 +301,63 @@ const generateNewMetadata = async (namespace_id: string, robot_id: string, ecuSe
         }
     }
     
-    //determine new targets metadata version
-    const newTargetsVersion = await getLatestMetadataVersion(namespace_id,TUFRepo.director, TUFRole.targets, robot_id) + 1;
-
+    //determine new metadata versions
+    const newTargetsVersion = await getLatestMetadataVersion(namespace_id, TUFRepo.director, TUFRole.targets, robot_id) + 1;
+    const newSnapshotVersion = await getLatestMetadataVersion(namespace_id, TUFRepo.director, TUFRole.snapshot, robot_id) + 1;
+    const newTimestampVersion = await getLatestMetadataVersion(namespace_id, TUFRepo.director, TUFRole.timestamp, robot_id) + 1;
+    
     //Read the keys for the director
-    const targetsKeyPair: IKeyPair = {
-        privateKey: await keyStorage.getKey(`${namespace_id}-director-targets-private`),
-        publicKey: await keyStorage.getKey(`${namespace_id}-director-targets-public`)
-    }
+    const targetsKeyPair = await loadKeyPair(namespace_id, TUFRepo.director, TUFRole.targets);
+    const snapshotKeyPair = await loadKeyPair(namespace_id, TUFRepo.director, TUFRole.snapshot);
+    const timestampKeyPair = await loadKeyPair(namespace_id, TUFRepo.director, TUFRole.timestamp);
 
+    //Generate the new metadata
     const targetsMetadata = generateTargets(config.TUF_TTL.IMAGE.TARGETS, newTargetsVersion, targetsKeyPair, targetsImages);
+    const snapshotMetadata = generateSnapshot(config.TUF_TTL.IMAGE.SNAPSHOT, newSnapshotVersion, snapshotKeyPair, targetsMetadata.signed.version);
+    const timestampMetadata = generateTimestamp(config.TUF_TTL.IMAGE.TIMESTAMP, newTimestampVersion, timestampKeyPair, snapshotMetadata.signed.version);
 
+     // perform db writes in transaction
+     await prisma.$transaction(async tx => {
 
+        // create tuf metadata
+        // prisma wants to be passed an `object` instead of our custom interface so we cast it
+        await tx.metadata.create({
+            data: {
+                namespace_id,
+                repo: TUFRepo.director,
+                role: TUFRole.targets,
+                robot_id: robot_id,
+                version: newTargetsVersion,
+                value: targetsMetadata as object,
+                expires_at: targetsMetadata.signed.expires
+            }
+        });
+
+        await tx.metadata.create({
+            data: {
+                namespace_id,
+                repo: TUFRepo.director,
+                role: TUFRole.snapshot,
+                robot_id: robot_id,
+                version: newSnapshotVersion,
+                value: snapshotMetadata as object,
+                expires_at: targetsMetadata.signed.expires
+            }
+        });
+
+        await tx.metadata.create({
+            data: {
+                namespace_id,
+                repo: TUFRepo.director,
+                role: TUFRole.timestamp,
+                robot_id: robot_id,
+                version: newTimestampVersion,
+                value: timestampMetadata as object,
+                expires_at: targetsMetadata.signed.expires
+            }
+        });
+
+     })
 
 }
 
@@ -341,10 +381,13 @@ router.post('/:namespace/robots/:robot_id/manifests', async (req, res) => {
         return res.status(400).send('could not process manifest');
     }
 
+    //We are gonna need these so many times so pull them out once
+    const ecuSerials = Object.keys(manifest.signed.ecu_version_reports);
+
     // Perform all of the checks
     try {
 
-        (await robotManifestChecks(manifest, namespace_id))
+        (await robotManifestChecks(manifest, namespace_id, ecuSerials))
             .validatePrimaryECUReport()
             .validateSchema()
             .validateRobotAndEcuRegistration()
@@ -399,7 +442,7 @@ router.post('/:namespace/robots/:robot_id/manifests', async (req, res) => {
      */
 
 
-    const updateRequired = await determineUpdateRequired(manifest);
+    const updateRequired = await determineUpdateRequired(manifest, ecuSerials);
 
     if(!updateRequired) {
         logger.info('processed manifest for robot and determined all ecus have already installed their latest images');
@@ -408,7 +451,7 @@ router.post('/:namespace/robots/:robot_id/manifests', async (req, res) => {
 
     //OK now we need to generate the new TUF targets, snapshot and timestamp files for each ecu that needs updated
     else {
-        await generateNewMetadata(namespace_id, robot_id, ec);
+        await generateNewMetadata(namespace_id, robot_id, ecuSerials);
     }
 
     /**

@@ -35,13 +35,14 @@ export const genKeyId = (roleKey: ITufKey): string => generateHash(toCanonical(r
  * 
  * This does not check if the namespace or repo exists.
  */
-export const getLatestMetadata = async (namespace_id: string, repo: TUFRepo, role: TUFRole): Promise<any> => {
+export const getLatestMetadata = async (namespace_id: string, repo: TUFRepo, role: TUFRole, robot_id: string | null = null ): Promise<any> => {
 
     const latest = await prisma.metadata.findFirst({
         where: {
             namespace_id,
             repo,
-            role
+            role,
+            robot_id
         },
         orderBy: {
             version: 'desc'
@@ -60,8 +61,8 @@ export const getLatestMetadata = async (namespace_id: string, repo: TUFRepo, rol
  * 
  * This does not check if the namespace or repo exists.
  */
-export const getLatestMetadataVersion = async (namespace_id: string, repo: TUFRepo, role: TUFRole): Promise<number> => {
-    const latest = await getLatestMetadata(namespace_id, repo, role);
+export const getLatestMetadataVersion = async (namespace_id: string, repo: TUFRepo, role: TUFRole, robot_id: string | null = null): Promise<number> => {
+    const latest = await getLatestMetadata(namespace_id, repo, role, robot_id);
     return latest ? latest.signed.version : 0;
 }
 

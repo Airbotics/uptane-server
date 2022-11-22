@@ -9,7 +9,7 @@ import { Prisma, TUFRepo, TUFRole, Image } from '@prisma/client';
 import { robotManifestSchema } from './schemas';
 import { IKeyPair, IRobotManifest, ITargetsImages } from '../../types';
 import { toCanonical } from '../../core/utils';
-import { generateSnapshot, generateTargets, generateTimestamp } from '../../core/tuf';
+import { generateSnapshot, generateTargets, generateTimestamp, getLatestMetadataVersion } from '../../core/tuf';
 
 
 const router = express.Router();
@@ -261,85 +261,61 @@ const determineUpdateRequired = async (robotManifest: IRobotManifest): Promise<b
 }
 
 
-const generateNewMetadata = async (namespace_id: string, robotManifest: IRobotManifest, ecus: { ecu_serial: string; image: Image }[] ) => {
+/**
+ * 
+ * This can definitely be optimised but will do while we focus on readability 
+ * rather than effiency. This is called after detecting if any of the ecus reported
+ * by a robot differ to what is defined in the tmp rollouts table (TmpEcuImages).
+ * We will generate the entite targets json from scratch and not try to compute which
+ * of the ecus 1 - N ecus are different
+ * 
+ */
+const generateNewMetadata = async (namespace_id: string, robot_id: string, ecuSerials: string[]) => {
 
-    //at least one of the ecus on a robot needs to be updated, lets generate the 
-    //whole metadata file again
-
-    for (const ecu of ecus) {
-
-        const latestTargetsMetadata = await prisma.metadata.findFirst({
-            select: { version: true },
-            where: {
-                namespace_id: namespace_id,
-                repo: TUFRepo.director,
-                role: TUFRole.targets,
-                value: {
-                    path: ['signed', 'custom', 'ecu_serial'],
-                    equals: ecu.ecu_serial
-                }
-            },
-            orderBy: {
-                version: 'desc'
+    //we're repeating ourselves.... will be refactored later
+    const rolloutsPerEcu = await prisma.tmpEcuImages.findMany({
+        distinct: ['ecu_id'],
+        where: {
+            ecu_id: {
+                in: ecuSerials
             }
-        });
-
-        //figure out the next targets version num
-        const newTargetsVersion = latestTargets ? latestTargets.version + 1 : 1;
-
-        const targetsKeyPair: IKeyPair = {
-            privateKey: await keyStorage.getKey(`${namespace_id}-director-targets-private`),
-            publicKey: await keyStorage.getKey(`${namespace_id}-director-targets-public`)
+        },
+        orderBy: {
+            created_at: 'desc'
+        },
+        include: {
+            image: true
         }
-
-        const targetsImages: ITargetsImages = {
-            [ecu.image.id]: {
-                custom: {
-                    ecu_serial: ecu.ecu_serial
-                },
-                length: ecu.image.size,
-                hashes: {
-                    sha256: ecu.image.sha256,
-                    sha512: ecu.image.sha512
-                }
-            }
-        };
-
-        const latestTimestamp = await prisma.metadata.findFirst({
-            where: {
-                namespace_id: namespace_id,
-                repo: TUFRepo.director,
-                role: TUFRole.timestamp
-            },
-            orderBy: {
-                version: 'desc'
-            }
-        });
+    });
 
 
-        const latestSnapshot = await prisma.metadata.findFirst({
-            where: {
-                namespace_id: namespace_id,
-                repo: TUFRepo.director,
-                role: TUFRole.snapshot
-            },
-            orderBy: {
-                version: 'desc'
-            }
-        });
-
-        const targetsMetadata = generateTargets(config.TUF_TTL.IMAGE.TARGETS, newTargetsVersion, targetsKeyPair, targetsImages);
-
+    // Lets generate the whole metadata file again
+    const targetsImages: ITargetsImages = {}
     
+    for (const ecuRollout of rolloutsPerEcu) {
+
+        targetsImages[ecuRollout.ecu_id] = {
+            custom: {
+                ecu_serial: ecuRollout.ecu_id
+            },
+            length: ecuRollout.image.size,
+            hashes: {
+                sha256: ecuRollout.image.sha256,
+                sha512: ecuRollout.image.sha512,
+            }
+        }
+    }
     
-        //TODO: FINISH THIS
-        
+    //determine new targets metadata version
+    const newTargetsVersion = await getLatestMetadataVersion(namespace_id,TUFRepo.director, TUFRole.targets, robot_id) + 1;
 
-
-
+    //Read the keys for the director
+    const targetsKeyPair: IKeyPair = {
+        privateKey: await keyStorage.getKey(`${namespace_id}-director-targets-private`),
+        publicKey: await keyStorage.getKey(`${namespace_id}-director-targets-public`)
     }
 
-
+    const targetsMetadata = generateTargets(config.TUF_TTL.IMAGE.TARGETS, newTargetsVersion, targetsKeyPair, targetsImages);
 
 
 
@@ -432,8 +408,7 @@ router.post('/:namespace/robots/:robot_id/manifests', async (req, res) => {
 
     //OK now we need to generate the new TUF targets, snapshot and timestamp files for each ecu that needs updated
     else {
-    
-        await generateNewMetadata(namespace_id, manifest, robot_id);
+        await generateNewMetadata(namespace_id, robot_id, ec);
     }
 
     /**

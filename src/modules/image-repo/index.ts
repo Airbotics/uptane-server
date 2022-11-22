@@ -6,8 +6,8 @@ import config from '../../config';
 import { prisma } from '../../core/postgres';
 import { logger } from '../../core/logger';
 import { generateHash } from '../../core/crypto';
-import { generateSnapshot, generateTargets, generateTimestamp } from '../../core/tuf';
-import { keyStorage } from '../../core/key-storage';
+import { generateSnapshot, generateTargets, generateTimestamp, getLatestMetadata, getLatestMetadataVersion } from '../../core/tuf';
+import { keyStorage, loadKeyPair } from '../../core/key-storage';
 import { IKeyPair, ITargetsImages } from '../../types';
 
 
@@ -66,91 +66,40 @@ router.post('/:namespace/images', express.raw({ type: '*/*' }), async (req, res)
         return res.status(400).send('could not upload image');
     }
 
-    // get hashes of image
+    // get image id and hashes
+    const imageId = uuidv4();
     const sha256 = generateHash(imageContent, { algorithm: 'SHA256' });
     const sha512 = generateHash(imageContent, { algorithm: 'SHA512' });
-
-    // count the number of previous targets, snapshot and timestamp
-    // this gets the most recently created metadata and grabs its version
-    // NOTE: this assumes the version column in the table is always in sync with what
-    // is stored in the metadata json field
-    const latestTargets = await prisma.metadata.findFirst({
-        where: {
-            namespace_id,
-            repo: TUFRepo.image,
-            role: TUFRole.targets
-        },
-        orderBy: {
-            version: 'desc'
-        }
-    });
-
-    const latestSnapshot = await prisma.metadata.findFirst({
-        where: {
-            namespace_id,
-            repo: TUFRepo.image,
-            role: TUFRole.snapshot
-        },
-        orderBy: {
-            version: 'desc'
-        }
-    });
-
-    const latestTimestamp = await prisma.metadata.findFirst({
-        where: {
-            namespace_id,
-            repo: TUFRepo.image,
-            role: TUFRole.timestamp
-        },
-        orderBy: {
-            version: 'desc'
-        }
-    });
-
-    // add one to get the new version as TUF uses 1-based indexing for metadata files
-    const newTargetsVersion = latestTargets ? latestTargets.version + 1 : 1;
-    const newSnapshotVersion = latestSnapshot ? latestSnapshot.version + 1 : 1;
-    const newTimeStampVersion = latestTimestamp ? latestTimestamp.version + 1 : 1;
-
-
+    
+    // get new versions
+    const newTargetsVersion = await getLatestMetadataVersion(namespace_id, TUFRepo.image, TUFRole.targets) + 1;
+    const newSnapshotVersion = await getLatestMetadataVersion(namespace_id, TUFRepo.image, TUFRole.snapshot) + 1;
+    const newTimestampVersion = await getLatestMetadataVersion(namespace_id, TUFRepo.image, TUFRole.timestamp) + 1;
+    
     // read in keys from key storage
-    const targetsKeyPair: IKeyPair = {
-        privateKey: await keyStorage.getKey(`${namespace_id}-image-targets-private`),
-        publicKey: await keyStorage.getKey(`${namespace_id}-image-targets-public`)
-    }
-
-    const snapshotKeyPair: IKeyPair = {
-        privateKey: await keyStorage.getKey(`${namespace_id}-image-snapshot-private`),
-        publicKey: await keyStorage.getKey(`${namespace_id}-image-snapshot-public`)
-    }
-
-    const timestampKeyPair: IKeyPair = {
-        privateKey: await keyStorage.getKey(`${namespace_id}-image-timestamp-private`),
-        publicKey: await keyStorage.getKey(`${namespace_id}-image-timestamp-public`)
-    }
-
+    const targetsKeyPair = await loadKeyPair(namespace_id, TUFRepo.image, TUFRole.targets);
+    const snapshotKeyPair = await loadKeyPair(namespace_id, TUFRepo.image, TUFRole.snapshot);
+    const timestampKeyPair = await loadKeyPair(namespace_id, TUFRepo.image, TUFRole.timestamp);
+    
     // assemble information about this image to be put in the targets.json metadata
-    // we need to know what the image id is at this point so we create a uuid in js, this will
-    // be used in the inventory db, tuf metadata and blob storage. there is a very small chance of a uuid collision here
-    const imageId = uuidv4();
+    // we grab the previous targets portion of the targets metadata if it exists and 
+    // append this new iamge to it, otherwise we start with an empty object
+    const latestTargets = await getLatestMetadata(namespace_id, TUFRepo.image, TUFRole.targets);
 
-    const targetsImages: ITargetsImages = {
-        [imageId]: {
-            custom: {},
-            length: size,
-            hashes: {
-                sha256,
-                sha512
-            }
+    const targetsImages = latestTargets ? latestTargets.signed.targets : {};
+    targetsImages[imageId] = {
+        custom: {},
+        length: size,
+        hashes: {
+            sha256,
+            sha512
         }
     };
-
 
     // generate new set of tuf metadata (apart from root)
     const targetsMetadata = generateTargets(config.TUF_TTL.IMAGE.TARGETS, newTargetsVersion, targetsKeyPair, targetsImages);
     const snapshotMetadata = generateSnapshot(config.TUF_TTL.IMAGE.SNAPSHOT, newSnapshotVersion, snapshotKeyPair, targetsMetadata.signed.version);
-    const timestampMetadata = generateTimestamp(config.TUF_TTL.IMAGE.TIMESTAMP, newTimeStampVersion, timestampKeyPair, snapshotMetadata.signed.version);
-
+    const timestampMetadata = generateTimestamp(config.TUF_TTL.IMAGE.TIMESTAMP, newTimestampVersion, timestampKeyPair, snapshotMetadata.signed.version);
 
     // perform db writes in transaction
     await prisma.$transaction(async tx => {
@@ -184,12 +133,11 @@ router.post('/:namespace/images', express.raw({ type: '*/*' }), async (req, res)
                 namespace_id,
                 repo: TUFRepo.image,
                 role: TUFRole.timestamp,
-                version: newTimeStampVersion,
+                version: newTimestampVersion,
                 value: timestampMetadata as object,
                 expires_at: targetsMetadata.signed.expires
             }
         });
-
 
         // create reference to image in db
         await tx.image.create({

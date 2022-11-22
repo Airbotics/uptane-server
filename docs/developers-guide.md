@@ -100,6 +100,14 @@ You can then inspect the schema and contents with:
 npx prisma studio --schema ./src/prisma/schema.prisma
 ```
 
+If you want a SQL session you can connect to it using:
+
+```
+PGPASSWORD=password psql -h localhost -p 5432  -U user -d db
+```
+
+NOTE: none of this should be done in production.
+
 
 ## Working with s3
 

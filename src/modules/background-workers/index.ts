@@ -3,33 +3,10 @@ import { TUFRepo, TUFRole } from '@prisma/client';
 import { prisma } from '../../core/postgres';
 import config from '../../config';
 import { logger } from '../../core/logger';
-import { generateRoot, generateSnapshot, generateTargets, generateTimestamp } from '../../core/tuf';
-import { IKeyPair, ISnapshotTUF, ITargetsTUF, ITimestampTUF } from '../../types';
-import { keyStorage } from '../../core/key-storage';
+import { generateRoot, generateSnapshot, generateTargets, generateTimestamp, getLatestMetadataVersion } from '../../core/tuf';
+import { ISnapshotTUF, ITargetsTUF, ITimestampTUF } from '../../types';
+import { loadKeyPair } from '../../core/key-storage';
 
-
-const getLatestMetadataVersion = async (namespace_id: string, repo: TUFRepo, role: TUFRole): Promise<number> => {
-
-    const latest = await prisma.metadata.findFirst({
-        where: {
-            namespace_id,
-            repo,
-            role
-        },
-        orderBy: {
-            version: 'desc'
-        }
-    });
-
-    return latest ? latest.version : 0;
-}
-
-const getKeyPair = async (namespace_id: string, repo: TUFRepo, role: TUFRole): Promise<IKeyPair> => {
-    return {
-        privateKey: await keyStorage.getKey(`${namespace_id}-${repo}-${role}-private`),
-        publicKey: await keyStorage.getKey(`${namespace_id}-${repo}-${role}-public`)
-    }
-}
 
 
 /**
@@ -71,10 +48,10 @@ const processRootRoles = async () => {
             logger.debug(`detected version ${root.version} of root for ${root.repo} repo in ${root.namespace_id} namespace is about to expire`);
 
             // read in keys from key storage
-            const rootKeyPair = await getKeyPair(root.namespace_id, root.repo, TUFRole.root);
-            const targetsKeyPair = await getKeyPair(root.namespace_id, root.repo, TUFRole.targets);
-            const snapshotKeyPair = await getKeyPair(root.namespace_id, root.repo, TUFRole.snapshot);
-            const timestampKeyPair = await getKeyPair(root.namespace_id, root.repo, TUFRole.timestamp);
+            const rootKeyPair = await loadKeyPair(root.namespace_id, root.repo, TUFRole.root);
+            const targetsKeyPair = await loadKeyPair(root.namespace_id, root.repo, TUFRole.targets);
+            const snapshotKeyPair = await loadKeyPair(root.namespace_id, root.repo, TUFRole.snapshot);
+            const timestampKeyPair = await loadKeyPair(root.namespace_id, root.repo, TUFRole.timestamp);
 
             // bump the version
             const newVeresion = root.version + 1;
@@ -150,9 +127,9 @@ const processTargetRoles = async () => {
             const newTimeStampVersion = await getLatestMetadataVersion(targets.namespace_id, targets.repo, TUFRole.timestamp) + 1;
 
             // read in keys from key storage
-            const targetsKeyPair = await getKeyPair(targets.namespace_id, targets.repo, TUFRole.targets);
-            const snapshotKeyPair = await getKeyPair(targets.namespace_id, targets.repo, TUFRole.snapshot);
-            const timestampKeyPair = await getKeyPair(targets.namespace_id, targets.repo, TUFRole.timestamp);
+            const targetsKeyPair = await loadKeyPair(targets.namespace_id, targets.repo, TUFRole.targets);
+            const snapshotKeyPair = await loadKeyPair(targets.namespace_id, targets.repo, TUFRole.snapshot);
+            const timestampKeyPair = await loadKeyPair(targets.namespace_id, targets.repo, TUFRole.timestamp);
 
             // get expiry depending on repo
             const targetsTTL = targets.repo === TUFRepo.director ? config.TUF_TTL.DIRECTOR.TARGETS : config.TUF_TTL.IMAGE.TARGETS;
@@ -246,8 +223,8 @@ const processSnapshotRoles = async () => {
             const newTimeStampVersion = await getLatestMetadataVersion(snapshot.namespace_id, snapshot.repo, TUFRole.timestamp) + 1;
 
             // read in keys from key storage
-            const snapshotKeyPair = await getKeyPair(snapshot.namespace_id, snapshot.repo, TUFRole.snapshot);
-            const timestampKeyPair = await getKeyPair(snapshot.namespace_id, snapshot.repo, TUFRole.timestamp);
+            const snapshotKeyPair = await loadKeyPair(snapshot.namespace_id, snapshot.repo, TUFRole.snapshot);
+            const timestampKeyPair = await loadKeyPair(snapshot.namespace_id, snapshot.repo, TUFRole.timestamp);
 
             // get expiry depending on repo
             const snapshotTTL = snapshot.repo === TUFRepo.director ? config.TUF_TTL.DIRECTOR.SNAPSHOT : config.TUF_TTL.IMAGE.SNAPSHOT;
@@ -328,7 +305,7 @@ const processTimestampRoles = async () => {
             const newTimestampVersion = timestamp.version + 1;
 
             // read in keys from key storage
-            const timestampKeyPair = await getKeyPair(timestamp.namespace_id, timestamp.repo, TUFRole.timestamp);
+            const timestampKeyPair = await loadKeyPair(timestamp.namespace_id, timestamp.repo, TUFRole.timestamp);
 
             // get expiry depending on repo
             const timestampTTL = timestamp.repo === TUFRepo.director ? config.TUF_TTL.DIRECTOR.TIMESTAMP : config.TUF_TTL.IMAGE.TIMESTAMP;

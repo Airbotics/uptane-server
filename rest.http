@@ -2,7 +2,7 @@
 
 @BASE_URL=http://localhost:8001
 @API_VERSION=v0
-@NAMESPACE=a2cf3473-0c64-44ef-8bc4-a8b5e5852d82
+@NAMESPACE=594d4bbd-17cb-4306-ad70-1396ee4394b6
 @IMAGE=91497b2c-3554-4adb-b78a-54072faa39b7
 @ROBOT=649de690-6de8-43c0-b662-c32ca597dd8d
 
@@ -33,7 +33,7 @@ DELETE {{BASE_URL}}/api/{{API_VERSION}}/admin/namespaces/{{NAMESPACE}} HTTP/1.1
 
 
 # -----------------------------------------
-# Director repo - tuf
+# Director repo
 # -----------------------------------------
 
 ### get metadata
@@ -43,10 +43,6 @@ GET {{BASE_URL}}/api/{{API_VERSION}}/director/{{NAMESPACE}}/1.root.json HTTP/1.1
 ### get timestamp
 GET {{BASE_URL}}/api/{{API_VERSION}}/director/{{NAMESPACE}}/timestamp.json HTTP/1.1
 
-
-# -----------------------------------------
-# Director repo - robots
-# -----------------------------------------
 
 ### create a robot
 POST {{BASE_URL}}/api/{{API_VERSION}}/director/{{NAMESPACE}}/robots HTTP/1.1
@@ -66,23 +62,16 @@ POST {{BASE_URL}}/api/{{API_VERSION}}/director/{{NAMESPACE}}/robots/{{ROBOT}}/ec
 
 
 # -----------------------------------------
-# Image repo - tuf
+# Image repo
 # -----------------------------------------
 
 ### get metadata
-GET {{BASE_URL}}/api/{{API_VERSION}}/image/{{NAMESPACE}}/1.root.json HTTP/1.1
+GET {{BASE_URL}}/api/{{API_VERSION}}/image/{{NAMESPACE}}/1.targets.json HTTP/1.1
 
 
 ### get timestamp
 GET {{BASE_URL}}/api/{{API_VERSION}}/image/{{NAMESPACE}}/timestamp.json HTTP/1.1
 
-
-
-
-
-# -----------------------------------------
-# Image repo - images
-# -----------------------------------------
 
 ### upload an image
 POST {{BASE_URL}}/api/{{API_VERSION}}/image/{{NAMESPACE}}/images HTTP/1.1

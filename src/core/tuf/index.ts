@@ -4,10 +4,14 @@ import { generateRoot } from './root';
 import { generateTargets } from './targets';
 import { generateSnapshot } from './snapshot';
 import { generateTimestamp } from './timestamp';
-import { ITufKey } from '../../types';
+import { IRootTUF, ITufKey } from '../../types';
+import { prisma } from '../postgres';
+import { Metadata, TUFRepo, TUFRole } from '@prisma/client';
 
 /**
  * Generates a TUF key given a public key.
+ * 
+ * NOTE: only RSA is supported now.
  */
 export const generateTufKey = (publicKey: string): ITufKey => ({
     keytype: 'rsa',
@@ -19,9 +23,47 @@ export const generateTufKey = (publicKey: string): ITufKey => ({
 
 
 /**
- * Generates a key id given a TUF key
+ * Generates a key id given a TUF key.
  */
 export const genKeyId = (roleKey: ITufKey): string => generateHash(toCanonical(roleKey), { algorithm: 'SHA256' });
+
+
+/**
+ * Gets the latest metadata of a given role in a repo in a namespace.
+ * 
+ * Will return `null` if it does not exist.
+ * 
+ * This does not check if the namespace or repo exists.
+ */
+export const getLatestMetadata = async (namespace_id: string, repo: TUFRepo, role: TUFRole): Promise<any> => {
+
+    const latest = await prisma.metadata.findFirst({
+        where: {
+            namespace_id,
+            repo,
+            role
+        },
+        orderBy: {
+            version: 'desc'
+        }
+    });
+
+    return latest ? latest.value : null;
+}
+
+
+/**
+ * Gets the lastest version of a given role in a repo in a namespace.
+ * 
+ * Will return `0` if it does not exist. This gets the most recently created metadata and grabs its version, 
+ * assumes the version column in the table is always in sync with what is stored in the metadata json field.
+ * 
+ * This does not check if the namespace or repo exists.
+ */
+export const getLatestMetadataVersion = async (namespace_id: string, repo: TUFRepo, role: TUFRole): Promise<number> => {
+    const latest = await getLatestMetadata(namespace_id, repo, role);
+    return latest ? latest.signed.version : 0;
+}
 
 
 // export the remaining tuf functions

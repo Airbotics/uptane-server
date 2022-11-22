@@ -212,54 +212,63 @@ const robotManifestChecks = async (robotManifest: IRobotManifest, namespace_id: 
 }
 
 
-const determineEcusToUpdate = async (robotManifest: IRobotManifest) => {
+const determineUpdateRequired = async (robotManifest: IRobotManifest): Promise<boolean> => {
 
     const ecuSerials = Object.keys(robotManifest.signed.ecu_version_reports);
 
-    const ecusToUpdate: { ecu_serial: string; is_primary: boolean; image: Image }[] = [];
+    //get all the 'rollouts' for each ecu reported
+    const rolloutsPerEcu = await prisma.tmpEcuImages.findMany({
+        distinct: ['ecu_id'],
+        where: {
+            ecu_id: {
+                in: ecuSerials
+            }
+        },
+        orderBy: {
+            created_at: 'desc'
+        },
+        include: {
+            image: true
+        }
+    })
 
-    //Lets loop through the ecu version reports one last time
     for (const ecuSerial of ecuSerials) {
 
-        const latestRollout = await prisma.tmpEcuImages.findMany({
-            where: {
-                ecu_id: ecuSerial
-            },
-            orderBy: {
-                created_at: 'desc'
-            },
-            take: 1,
-            include: { image: true }
-        });
+        //Which (if any) of the ecus latest rollouts is this?
+        const idx = rolloutsPerEcu.findIndex(elem => elem.ecu_id === ecuSerial);
 
-        //There is no rollout for this ecu, dont need to update tuf metadata
-        if (latestRollout.length === 0) continue;
-
-        //There is a rollout but the image sha matches the one sent so dont need to update tuf metadata
-        if(latestRollout[0].image.sha256 === 
-            robotManifest.signed.ecu_version_reports[ecuSerial].signed.installed_image.hashes.sha256) continue;
-
-        //There is a rollout and the image sha is not the same as what was reported, need to update new tuf metadata
-        ecusToUpdate.push({
-            ecu_serial: ecuSerial, 
-            is_primary: ecuSerial === robotManifest.signed.primary_ecu_serial,
-            image: latestRollout[0].image
-        })
-
+        /*
+        The robot has reported an ecu with an installed image that is not associated
+        to any rollouts yet.This likely happens when the robot has it's factory image 
+        installed and has never been instructed to perform an update to any of its ecus
+        */
+        if(idx == -1) {
+            logger.info('ECU image is not in rollout')
+        }
+        else {
+            //The robot is reporting about an ecu that is associated with a rollout
+            //lets check if the image in the rollout is the different to the one being reported
+            if(rolloutsPerEcu[idx].image.sha256 !== 
+                robotManifest.signed.ecu_version_reports[ecuSerial].signed.installed_image.hashes.sha256)
+                {
+                    //there is a mismatch between rollout image and reported image, so an
+                    //upate to metadata is required
+                    return true;
+                }
+        }
     }
-
-    return ecusToUpdate;
+    return false;
 }
 
 
-const generateNewMetadata = async (
-    namespace_id: string, 
-    robotManifest: IRobotManifest,
-    ecus: { ecu_serial: string; is_primary: boolean; image: Image }[] ) => {
+const generateNewMetadata = async (namespace_id: string, robotManifest: IRobotManifest, ecus: { ecu_serial: string; image: Image }[] ) => {
+
+    //at least one of the ecus on a robot needs to be updated, lets generate the 
+    //whole metadata file again
 
     for (const ecu of ecus) {
 
-        const latestTargets = await prisma.metadata.findFirst({
+        const latestTargetsMetadata = await prisma.metadata.findFirst({
             select: { version: true },
             where: {
                 namespace_id: namespace_id,
@@ -414,17 +423,17 @@ router.post('/:namespace/robots/:robot_id/manifests', async (req, res) => {
      */
 
 
+    const updateRequired = await determineUpdateRequired(manifest);
 
-    const ecusToUpdate = await determineEcusToUpdate(manifest);
-
-    if(ecusToUpdate.length === 0) {
+    if(!updateRequired) {
         logger.info('processed manifest for robot and determined all ecus have already installed their latest images');
         return res.status(200).end();
     }
 
     //OK now we need to generate the new TUF targets, snapshot and timestamp files for each ecu that needs updated
     else {
-        await generateNewMetadata(namespace_id, manifest, ecusToUpdate);
+    
+        await generateNewMetadata(namespace_id, manifest, robot_id);
     }
 
     /**

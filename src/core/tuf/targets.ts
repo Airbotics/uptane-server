@@ -14,8 +14,7 @@ export const generateTargets = (
     ttl: (number | string)[], 
     version: number, 
     targetsKeyPair: IKeyPair, 
-    targetsImages: ITargetsImages,
-    custom?: any): ITargetsTUF => {
+    targetsImages: ITargetsImages): ITargetsTUF => {
 
     // generate tuf key object
     const targetsTufKey = generateTufKey(targetsKeyPair.publicKey);
@@ -31,10 +30,7 @@ export const generateTargets = (
         version,
         targets: targetsImages,
     };
-    
-    if(custom) {
-        signed['custom'] = custom;
-    }
+
 
     // canonicalise it
     const canonicalSigned = toCanonical(signed);

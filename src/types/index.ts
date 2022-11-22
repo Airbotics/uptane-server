@@ -97,7 +97,6 @@ export interface ITargetsSignedTUF {
     version: number;
     expires: string;
     delegations?: any;
-    custom?: any;
     targets: ITargetsImages;
 }
 

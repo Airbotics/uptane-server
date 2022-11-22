@@ -10,6 +10,7 @@ import { robotManifestSchema } from './schemas';
 import { IKeyPair, IRobotManifest, ITargetsImages } from '../../types';
 import { toCanonical } from '../../core/utils';
 import { generateSnapshot, generateTargets, generateTimestamp, getLatestMetadataVersion } from '../../core/tuf';
+import { ManifestErrors } from '../../core/consts/errors';
 
 const router = express.Router();
 
@@ -70,7 +71,7 @@ const robotManifestChecks = async (robotManifest: IRobotManifest, namespaceID: s
         }
     });
 
-    if (!robot) throw ('could not process manifest because the robot does not exist');
+    if (!robot) throw (ManifestErrors.RobotNotFound);
 
     //Load all the pub keys that are included in the ecu version reports. This should include the primary ecu
     const ecuPubKeys: { [ecu_serial: string]: string } = {};
@@ -83,44 +84,42 @@ const robotManifestChecks = async (robotManifest: IRobotManifest, namespaceID: s
         }
 
     } catch (e) {
-        throw (`Could not process manifest, the public key for one of the ecu version reports could not be loaded`)
+        throw (ManifestErrors.KeyNotLoaded)
     }
 
     const checks = {
 
         validateSchema: () => {
             const { error } = robotManifestSchema.validate(robotManifest)
-            if (error) throw (`Received an invalid manifest from a robot`);
+            if (error) throw (ManifestErrors.InvalidSchema);
             return checks;
         },
 
         validatePrimaryECUReport: () => {
             if (robotManifest.signed.ecu_version_reports[robotManifest.signed.primary_ecu_serial] === undefined) {
-                throw (`The robots manifest is missing an ecu version report from the primary ecu`);
+                throw (ManifestErrors.MissingPrimaryReport);
             }
             return checks;
         },
 
-        validateRobotAndEcuRegistration: () => {
-
-            if (!robot) throw (`Received a robot manifest from a robot that is not registered in the inventory db`);
+        validateEcuRegistration: () => {
 
             const ecusSerialsRegistered: string[] = robot.ecus.map(ecu => (ecu.id));
 
             if (ecuSerials.length !== ecusSerialsRegistered.length) {
-                throw ('Received a robot manifest that has a different number of ecus than are in the inventory db')
+                throw (ManifestErrors.MissingECUReport)
             }
 
             for (const ecuSerial of ecuSerials) {
                 if (!ecusSerialsRegistered.includes(ecuSerial)) {
-                    throw (`Received a robot manifest that contains an ecu that has not been registered in the inventory db`);
+                    throw (ManifestErrors.UnknownECUReport);
                 }
             }
 
             return checks;
         },
 
-        validatePrimarySignature: () => {
+        validateTopSignature: () => {
 
             const verified = verifySignature({
                 signature: robotManifest.signatures[0].sig,
@@ -129,7 +128,7 @@ const robotManifestChecks = async (robotManifest: IRobotManifest, namespaceID: s
                 data: toCanonical(robotManifest.signed)
             });
 
-            if (!verified) throw ('Received a robot manifest with an invalid signature')
+            if (!verified) throw (ManifestErrors.InvalidSignature)
 
             return checks;
 
@@ -146,7 +145,7 @@ const robotManifestChecks = async (robotManifest: IRobotManifest, namespaceID: s
                     data: toCanonical(robotManifest.signed)
                 });
 
-                if (!verified) throw ('Received an ECU version report with an invalid signature')
+                if (!verified) throw (ManifestErrors.InvalidReportSignature)
             }
 
             return checks;
@@ -165,7 +164,7 @@ const robotManifestChecks = async (robotManifest: IRobotManifest, namespaceID: s
                 }
 
                 if (previouslySentNonces.includes(robotManifest.signed.ecu_version_reports[ecuSerial].signed.nonce)) {
-                    throw ('One of the ECU version reports includes a nonce that has previously been sent.')
+                    throw (ManifestErrors.InvalidReportNonce)
                 }
             }
 
@@ -183,7 +182,7 @@ const robotManifestChecks = async (robotManifest: IRobotManifest, namespaceID: s
 
                 if (robotManifest.signed.ecu_version_reports[ecuSerial].signed.time >= now ||
                     robotManifest.signed.ecu_version_reports[ecuSerial].signed.time < (now - validForSecs)) {
-                    throw ('One of the ECU version reports includes an expired timestamp')
+                    throw (ManifestErrors.ExpiredReport)
                 }
             }
 
@@ -194,7 +193,7 @@ const robotManifestChecks = async (robotManifest: IRobotManifest, namespaceID: s
 
             for (const ecuSerial of ecuSerials) {
                 if (robotManifest.signed.ecu_version_reports[ecuSerial].signed.attacks_detected !== '') {
-                    throw ('One of the ECU version reports includes an identified attack!')
+                    throw (ManifestErrors.AttackIdentified)
                 }
             }
 
@@ -341,7 +340,7 @@ const generateNewMetadata = async (namespace_id: string, robot_id: string, ecuSe
                 robot_id: robot_id,
                 version: newSnapshotVersion,
                 value: snapshotMetadata as object,
-                expires_at: targetsMetadata.signed.expires
+                expires_at: snapshotMetadata.signed.expires
             }
         });
 
@@ -353,7 +352,7 @@ const generateNewMetadata = async (namespace_id: string, robot_id: string, ecuSe
                 robot_id: robot_id,
                 version: newTimestampVersion,
                 value: timestampMetadata as object,
-                expires_at: targetsMetadata.signed.expires
+                expires_at: timestampMetadata.signed.expires
             }
         });
 
@@ -390,8 +389,8 @@ router.post('/:namespace/robots/:robot_id/manifests', async (req, res) => {
         (await robotManifestChecks(manifest, namespace_id, ecuSerials))
             .validatePrimaryECUReport()
             .validateSchema()
-            .validateRobotAndEcuRegistration()
-            .validatePrimarySignature()
+            .validateEcuRegistration()
+            .validateTopSignature()
             .validateReportSignatures()
             .validateNonces()
             .validateTime()

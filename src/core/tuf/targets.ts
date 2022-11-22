@@ -10,7 +10,12 @@ import { IKeyPair, ITargetsSignedTUF, ITargetsTUF, ITargetsImages } from '../../
 /**
  * Creates a signed tuf targets metadata object
  */
-export const generateTargets = (ttl: (number | string)[], version: number, targetsKeyPair: IKeyPair, targetsImages: ITargetsImages): ITargetsTUF => {
+export const generateTargets = (
+    ttl: (number | string)[], 
+    version: number, 
+    targetsKeyPair: IKeyPair, 
+    targetsImages: ITargetsImages,
+    custom?: any): ITargetsTUF => {
 
     // generate tuf key object
     const targetsTufKey = generateTufKey(targetsKeyPair.publicKey);
@@ -24,8 +29,12 @@ export const generateTargets = (ttl: (number | string)[], version: number, targe
         expires: dayjs().add(ttl[0] as number, ttl[1] as ManipulateType).format(),
         spec_version: config.TUF_SPEC_VERSION,
         version,
-        targets: targetsImages
+        targets: targetsImages,
     };
+    
+    if(custom) {
+        signed['custom'] = custom;
+    }
 
     // canonicalise it
     const canonicalSigned = toCanonical(signed);

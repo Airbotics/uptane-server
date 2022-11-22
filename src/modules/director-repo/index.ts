@@ -5,10 +5,11 @@ import { logger } from '../../core/logger';
 import { generateKeyPair } from '../../core/crypto';
 import { verifySignature } from '../../core/crypto/signatures';
 import { prisma } from '../../core/postgres';
-import { Prisma, TUFRepo, TUFRole } from '@prisma/client';
+import { Prisma, TUFRepo, TUFRole, Image } from '@prisma/client';
 import { robotManifestSchema } from './schemas';
-import { IRobotManifest } from '../../types';
+import { IKeyPair, IRobotManifest, ITargetsImages } from '../../types';
 import { toCanonical } from '../../core/utils';
+import { generateSnapshot, generateTargets, generateTimestamp } from '../../core/tuf';
 
 
 const router = express.Router();
@@ -79,7 +80,7 @@ const robotManifestChecks = async (robotManifest: IRobotManifest, namespace_id: 
     const ecuPubKeys: { [ecu_serial: string]: string } = {};
 
     try {
-        
+
         for (const ecuSerial of ecuSerials) {
             ecuPubKeys[ecuSerial] = await keyStorage.getKey(
                 robotManifest.signed.ecu_version_reports[ecuSerial].signatures[0].keyid);
@@ -215,12 +216,12 @@ const determineEcusToUpdate = async (robotManifest: IRobotManifest) => {
 
     const ecuSerials = Object.keys(robotManifest.signed.ecu_version_reports);
 
-    const ecusToUpdate: { ecu_serial: string; image_id: string }[] = [];
+    const ecusToUpdate: { ecu_serial: string; image: Image }[] = [];
 
     //Lets loop through the ecu version reports one last time
     for (const ecuSerial of ecuSerials) {
 
-        const latestRollout = await prisma.tempEcuImages.findMany({
+        const latestRollout = await prisma.tmpEcuImages.findMany({
             where: {
                 ecu_id: ecuSerial
             },
@@ -239,7 +240,7 @@ const determineEcusToUpdate = async (robotManifest: IRobotManifest) => {
             robotManifest.signed.ecu_version_reports[ecuSerial].signed.installed_image.hashes.sha256) continue;
 
         //There is a rollout and the image sha is not the same as what was reported, need to update new tuf metadata
-        ecusToUpdate.push({ecu_serial: ecuSerial, image_id: latestRollout[0].image_id})
+        ecusToUpdate.push({ecu_serial: ecuSerial, image: latestRollout[0].image})
 
     }
 
@@ -247,7 +248,87 @@ const determineEcusToUpdate = async (robotManifest: IRobotManifest) => {
 }
 
 
-const generateTufMetadata = async (ecuID: string, installedImgSha256: string) => {
+const generateNewMetadata = async (
+    namespace_id: string, 
+    robotManifest: IRobotManifest,
+    ecus: { ecu_serial: string; image: Image }[] ) => {
+
+    for (const ecu of ecus) {
+
+        const latestTargets = await prisma.metadata.findFirst({
+            select: { version: true },
+            where: {
+                namespace_id: namespace_id,
+                repo: TUFRepo.director,
+                role: TUFRole.targets,
+                value: {
+                    path: ['signed', 'custom', 'ecu_serial'],
+                    equals: ecu.ecu_serial
+                }
+            },
+            orderBy: {
+                version: 'desc'
+            }
+        });
+
+        //figure out the next targets version num
+        const newTargetsVersion = latestTargets ? latestTargets.version + 1 : 1;
+
+        const targetsKeyPair: IKeyPair = {
+            privateKey: await keyStorage.getKey(`${namespace_id}-director-targets-private`),
+            publicKey: await keyStorage.getKey(`${namespace_id}-director-targets-public`)
+        }
+
+        const targetsImages: ITargetsImages = {
+            [ecu.image.id]: {
+                custom: {
+                    ecu_serial: ecu.ecu_serial
+                },
+                length: ecu.image.size,
+                hashes: {
+                    sha256: ecu.image.sha256,
+                    sha512: ecu.image.sha512
+                }
+            }
+        };
+
+        const latestTimestamp = await prisma.metadata.findFirst({
+            where: {
+                namespace_id: namespace_id,
+                repo: TUFRepo.director,
+                role: TUFRole.timestamp
+            },
+            orderBy: {
+                version: 'desc'
+            }
+        });
+
+
+        const latestSnapshot = await prisma.metadata.findFirst({
+            where: {
+                namespace_id: namespace_id,
+                repo: TUFRepo.director,
+                role: TUFRole.snapshot
+            },
+            orderBy: {
+                version: 'desc'
+            }
+        });
+
+        const targetsMetadata = generateTargets(config.TUF_TTL.IMAGE.TARGETS, newTargetsVersion, targetsKeyPair, targetsImages);
+
+    
+    
+        //TODO: FINISH THIS
+        
+
+
+
+    }
+
+
+
+
 
 }
 
@@ -329,17 +410,17 @@ router.post('/:namespace/robots/:robot_id/manifests', async (req, res) => {
      */
 
 
-    //Lets loop through the ecu version reports one last time
-    const ecusToUpdate = determineEcusToUpdate(manifest);
 
-    if((await ecusToUpdate).length === 0) {
+    const ecusToUpdate = await determineEcusToUpdate(manifest);
+
+    if(ecusToUpdate.length === 0) {
         logger.info('processed manifest for robot and determined all ecus have already installed their latest images');
         return res.status(200).end();
     }
 
     //OK now we need to generate the new TUF targets, snapshot and timestamp files for each ecu that needs updated
     else {
-
+        await generateNewMetadata(namespace_id, manifest, ecusToUpdate);
     }
 
     /**
@@ -544,12 +625,12 @@ router.delete('/:namespace/robots/:robot_id', async (req, res) => {
 /**
  * Create a rollout.
  * 
- * Creates an association betwen a robot and image.
+ * Creates an association betwen an ecu and image.
  */
 router.post('/:namespace/rollouts', async (req, res) => {
 
     const {
-        robot_id,
+        ecu_id,
         image_id
     } = req.body;
 
@@ -569,14 +650,14 @@ router.post('/:namespace/rollouts', async (req, res) => {
     }
 
     // check robot exists
-    const robotCount = await prisma.robot.count({
+    const ecuCount = await prisma.ecu.count({
         where: {
-            id: robot_id
+            id: ecu_id
         }
     });
 
-    if (robotCount === 0) {
-        logger.warn('could not create a rollout because robot does not exist');
+    if (ecuCount === 0) {
+        logger.warn('could not create a rollout because ecu does not exist');
         return res.status(400).send('could not create rollout');
     }
 
@@ -592,23 +673,21 @@ router.post('/:namespace/rollouts', async (req, res) => {
         return res.status(400).send('could not create rollout');
     }
 
-    const rollout = await prisma.rollout.create({
+    const tmpRollout = await prisma.tmpEcuImages.create({
         data: {
-            namespace_id,
             image_id,
-            robot_id
+            ecu_id
         }
     });
 
     const response = {
-        id: rollout.id,
-        image_id: rollout.image_id,
-        robot_id: rollout.robot_id,
-        created_at: rollout.created_at,
-        updated_at: rollout.updated_at
+        image_id: tmpRollout.image_id,
+        ecu_id: tmpRollout.ecu_id,
+        created_at: tmpRollout.created_at,
+        updated_at: tmpRollout.updated_at
     };
 
-    logger.info('created rollout');
+    logger.info('created tmp rollout');
     return res.status(200).json(response);
 
 });

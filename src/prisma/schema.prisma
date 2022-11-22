@@ -43,7 +43,6 @@ model Namespace {
     robots              Robot[]
     ecus                Ecu[]
     robot_manifests     RobotManifest[]
-    rollouts            Rollout[]
 
     @@map("namespaces")
 }
@@ -61,11 +60,9 @@ model Image {
     created_at          DateTime        @default(now())
     updated_at          DateTime        @updatedAt
 
-    rollouts            Rollout[]
-    tmp_ecu_images      TempEcuImages[]
-
-
     namespace           Namespace       @relation(fields: [namespace_id], references: [id], onDelete: Cascade)
+
+    tmp_ecu_images      TmpEcuImages[]
 
     @@unique([namespace_id, id])
     @@map("images")
@@ -76,6 +73,7 @@ model Image {
 model Metadata {
     id                  String          @default(uuid())
     namespace_id        String
+    robot_id            String?
     role                TUFRole                                 // director or image repo
     repo                TUFRepo                                 // root, targets, snapshot or timestamp
     version             Int                                     // must match the version in the signed portion of the metadata
@@ -83,7 +81,9 @@ model Metadata {
 
     created_at          DateTime        @default(now())
     expires_at          DateTime                                // this should always match the 'expires' field in the signed portion
+
     namespace           Namespace       @relation(fields: [namespace_id], references: [id], onDelete: Cascade)
+    robot               Robot?          @relation(fields: [robot_id], references: [id], onDelete: Cascade)
     
 
     @@id([namespace_id, id])
@@ -97,7 +97,7 @@ model Metadata {
 // TODO
 // - provisioned - compound attribute, whether all ecus have provisioned
 model Robot {
-    id                  String          @default(uuid())
+    id                  String          @id @default(uuid()) @unique
     namespace_id        String
 
     created_at          DateTime        @default(now())
@@ -107,9 +107,9 @@ model Robot {
 
     ecus                Ecu[]
     robot_manifests     RobotManifest[]
-    rollouts            Rollout[]
+    metadata            Metadata[]
 
-    @@id([namespace_id, id])
+    @@unique([namespace_id, id])
     @@map("robots")
 }
 
@@ -131,7 +131,7 @@ model Ecu {
     namespace           Namespace       @relation(fields: [namespace_id], references: [id], onDelete: Cascade)
     robot               Robot           @relation(fields: [namespace_id, robot_id], references: [namespace_id, id], onDelete: Cascade)
 
-    tmp_ecu_images      TempEcuImages[]
+    tmp_ecu_images      TmpEcuImages[]
 
 
     @@unique([namespace_id, id])
@@ -155,26 +155,6 @@ model RobotManifest {
     @@map("robot_manifests")
 }
 
-
-// rollouts
-// TODO this is a temporary table
-model Rollout {
-    id                  String          @default(uuid())
-    namespace_id        String
-
-    robot_id            String
-    image_id            String
-
-    created_at          DateTime        @default(now())
-    updated_at          DateTime        @updatedAt
-
-    namespace           Namespace       @relation(fields: [namespace_id], references: [id], onDelete: Cascade)
-    robot               Robot           @relation(fields: [namespace_id, robot_id], references: [namespace_id, id], onDelete: Cascade)
-    image               Image           @relation(fields: [namespace_id, image_id], references: [namespace_id, id], onDelete: Cascade)
-
-    @@id([namespace_id, id])
-    @@map("rollouts")
-}
 
 
 // ostree references
@@ -215,7 +195,7 @@ model Object {
 
 
 // TODO this is a temporary table
-model TempEcuImages {
+model TmpEcuImages {
     ecu_id              String
     image_id            String
 

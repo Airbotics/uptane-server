@@ -6,7 +6,8 @@
     "license": "AGPL-3.0",
     "scripts": {
         "start": "nodemon --config ./nodemon.json src/index.ts",
-        "generate": "npx prisma generate --schema ./src/prisma/schema.prisma"
+        "generate": "npx prisma generate --schema ./src/prisma/schema.prisma",
+        "test": "jest -i"
     },
     "dependencies": {
         "@aws-sdk/client-s3": "^3.213.0",
@@ -22,13 +23,13 @@
         "node-schedule": "^2.1.0",
         "prisma": "^4.6.1",
         "tsc": "^2.0.4",
-        "typescript": "^4.9.3",
         "uuid": "^9.0.0",
         "winston": "^3.8.2"
     },
     "devDependencies": {
         "@types/express": "^4.17.13",
         "@types/hpp": "^0.2.2",
+        "@types/jest": "^29.2.3",
         "@types/joi": "^17.2.3",
         "@types/node": "^18.8.1",
         "@types/node-schedule": "^2.1.0",
@@ -37,7 +38,11 @@
         "@typescript-eslint/parser": "^5.43.0",
         "eslint": "^8.0.1",
         "eslint-config-google": "^0.14.0",
+        "jest": "^29.3.1",
+        "jest-mock-extended": "^3.0.1",
         "nodemon": "^2.0.13",
-        "ts-node": "^10.3.0"
+        "ts-jest": "^29.0.3",
+        "ts-node": "^10.3.0",
+        "typescript": "^4.9.3"
     }
 }

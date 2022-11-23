@@ -26,6 +26,16 @@ Examples:
 
 - _making infrastructure go brrrr_
 
+
+## Testing
+
+We make use of [jest](https://jestjs.io/) for testing all ts components. Currently the repo is configured to run any file with a `spec.ts` extension. However all tests are and should be placed in `/tests/<module>/<test>.spec.ts`.
+
+
+### Running tests
+You should be able to run all tests with `npm test` 
+
+
 ## Environment variables
 
 We use the `dotenv` to read environment variables into the app. This reads from a `.env` file at the project's root directory. It should be populated with these variables:

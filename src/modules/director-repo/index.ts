@@ -4,8 +4,8 @@ import config from '../../config';
 import { logger } from '../../core/logger';
 import { generateKeyPair } from '../../core/crypto';
 import { verifySignature } from '../../core/crypto/signatures';
-import { prisma } from '../../core/postgres';
-import { Prisma, TUFRepo, TUFRole, Image } from '@prisma/client';
+import prisma from '../../core/postgres';
+import { TUFRepo, TUFRole, Image } from '@prisma/client';
 import { robotManifestSchema } from './schemas';
 import { IKeyPair, IRobotManifest, ITargetsImages } from '../../types';
 import { toCanonical } from '../../core/utils';
@@ -55,8 +55,8 @@ const router = express.Router();
 
 
 
-const robotManifestChecks = async (robotManifest: IRobotManifest, namespaceID: string, ecuSerials: string[]) => {
-
+export const robotManifestChecks = async (robotManifest: IRobotManifest, namespaceID: string, ecuSerials: string[]) => {
+    
     //Do the async stuff needed for the checks functions here
     const robot = await prisma.robot.findUnique({
         where: {

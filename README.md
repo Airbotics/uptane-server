@@ -127,7 +127,7 @@ Along with these, we're building the usual features you would expect from a OTA 
 
 ## Docs
 
-Documentation is available [here](docs/index.md).
+Documentation is available [here](docs/README.md).
 
 
 

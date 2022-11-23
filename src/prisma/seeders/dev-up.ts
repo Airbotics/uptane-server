@@ -14,6 +14,29 @@ import { IKeyPair, IRootTUF, ITargetsImages, ITargetsTUF } from '../../types';
 import { ISnapshotTUF, ITimestampTUF } from '../../types/index';
 
 
+/**
+ * 
+ * NOTE: This seeder is designed to be one in conjunction with dev-down.ts
+ * 
+ * if you attempt to run this twice in a row before running dev-down.ts
+ * you will see db constraint errors
+ * 
+ * Also the key pairs that this seeder use from res/test-keys are TEST KEYS
+ * and they SHOULD NEVER EVER BE USED OUTSIDE OF A TESTING ENVIRONMENT 
+ * 
+ * If you want to start from fresh simply run dev-down.ts first
+ * 
+ * This seeder creates the following records
+ * 
+ * 1. One test namespace
+ * 2. Two test images (one for primary and secondary ecus) 
+ * 3. One test robot 
+ * 4. Two test ECUs (primary and secondary) for the test robot
+ * 5. A full set of TUF Metadata for the 4 top level roles in the image repo
+ * 6. Two tmp rollouts, mapping the two test images to the two test ECUs
+ * 
+ */
+
 const NAMESPACE_ID = 'test-namespace';
 const ROBOT_ID = 'test-robot';
 const PRIMARY_IMAGE_ID = 'test-primary-image';
@@ -239,9 +262,7 @@ const createTmpRollout = async () => {
         ]
     })
 
-
     console.log('dev seeder created tmp rollout');
-
 
 }
 

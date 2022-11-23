@@ -124,7 +124,7 @@ router.post('/:namespace/images', express.raw({ type: '*/*' }), async (req, res)
                 role: TUFRole.snapshot,
                 version: newSnapshotVersion,
                 value: snapshotMetadata as object,
-                expires_at: targetsMetadata.signed.expires
+                expires_at: snapshotMetadata.signed.expires
             }
         });
 
@@ -135,7 +135,7 @@ router.post('/:namespace/images', express.raw({ type: '*/*' }), async (req, res)
                 role: TUFRole.timestamp,
                 version: newTimestampVersion,
                 value: timestampMetadata as object,
-                expires_at: targetsMetadata.signed.expires
+                expires_at: timestampMetadata.signed.expires
             }
         });
 

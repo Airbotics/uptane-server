@@ -9,11 +9,15 @@ import {
 } from "@prisma/client";
 import { IKeyPair, IRootTUF, ITargetsImages, ITargetsTUF } from '../../../types';
 import { ISnapshotTUF, ITimestampTUF } from '../../../types/index';
+import path from 'path';
+import config from '../../../config';
 
 
 /**
  * 
- * PREREQUISITES: This seeder requires 
+ * PREREQUISITES: This seeder requires some key pairs to be generated before.
+ * Please run the gen-keys script in the utils dir to ensure this seeder runs 
+ * correctly
  * 
  * 
  * NOTE: This seeder is designed to be one in conjunction with dev-down.ts
@@ -266,7 +270,15 @@ const createTmpRollout = async () => {
 
 (async () => {
 
+    //check if the keys have been generated
+    //This should probably check for all keys but just checks image root for now
+    const seedRootCertPath = path.join(__filename, '../../../../../',  config.KEYS_FS_STORAGE_DIR, `${SEED_NAMESPACE_ID}-image-root-public.pem`)
 
+    if(!fs.existsSync(seedRootCertPath)) {
+        console.log('This seeder requires certs to be generated first');
+        console.log('Try running: \nnpx ts-node src/seeders/utils/gen-keys.ts\n');
+        return;
+    }
 
     await createNamespace();
     await createImage();

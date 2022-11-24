@@ -28,8 +28,8 @@ class KeyStorageProvider implements IKeyStorageProvider {
         }
     }
 
-    async putKey(id: string, privKey: string): Promise<void> {
-        return this.strategy.putKey(id, privKey);
+    async putKey(id: string, key: string): Promise<void> {
+        return this.strategy.putKey(id, key);
     }
 
     async getKey(id: string): Promise<string> {

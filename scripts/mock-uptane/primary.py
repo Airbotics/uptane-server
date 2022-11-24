@@ -13,11 +13,11 @@ import uuid
 
 METADATA_EXTENSION = '.json'
 
-IMAGE_REPO_PORT = 5000
-IMAGE_REPO_HOST = f'http://localhost:{IMAGE_REPO_PORT}/image'
+IMAGE_REPO_PORT = 8001
+IMAGE_REPO_HOST = f'http://localhost:{IMAGE_REPO_PORT}/api/v0/image'
 
-DIRECTOR_REPO_PORT = 5000
-DIRECTOR_REPO_HOST = f'http://localhost:{DIRECTOR_REPO_PORT}/director'
+DIRECTOR_REPO_PORT = 8001
+DIRECTOR_REPO_HOST = f'http://localhost:{DIRECTOR_REPO_PORT}/api/v0/director'
 
 
 IMAGE_REPO_NAME = 'image-repo'
@@ -30,10 +30,13 @@ DIRECTOR_REPO_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'p
 DIRECTOR_REPO_META_DIR = os.path.join(DIRECTOR_REPO_DIR, 'metadata')
 DIRECTOR_REPO_TARGETS_DIR = os.path.join(DIRECTOR_REPO_DIR, 'targets')
 
-VIN = 'test-robot'
+NAMESPACE = 'test-namespace'
+ROBOT_ID = 'test-robot'
 PRIMARY_ECU_SERIAL = 'test-primary-ecu'
 SECONDARY_ECU_SERIAL = 'test-secondary-ecu'
 KEY_ROOT_PATH = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', '..', 'uptane', 'keys'))
+
+
 
 '''
 
@@ -241,7 +244,7 @@ class Primary():
       robot_manifest = {
         'signatures': [],
         'signed': {
-          'vin': VIN,
+          'vin': ROBOT_ID,
           'primary_ecu_serial': PRIMARY_ECU_SERIAL,
           'ecu_version_reports': {
             PRIMARY_ECU_SERIAL: generate_ecu_version_report(PRIMARY_ECU_SERIAL, primary_ecu_key, 'primary.txt', 'primary'),
@@ -266,14 +269,17 @@ class Primary():
     
     #TODO check the signed_vehicle_manifest has valid schema
 
-    url = f'{DIRECTOR_REPO_HOST}/vehicles/{VIN}/manifest'
+    url = f'{DIRECTOR_REPO_HOST}/{NAMESPACE}/robots/{ROBOT_ID}/manifests'
 
     try:
       res = requests.post(url, json = signed_vehicle_manifest)
       if res.status_code == 200:
         print(f'{GREEN}{str(res.status_code)} successfully sent vehicle manifest to the director {ENDCOLORS}') 
       else:
-        print(f'{RED} HTTP {str(res.status_code)} while trying to send the vehicle manifest to the director') 
+        print(f'{RED}HTTP {str(res.status_code)} while trying to send the vehicle manifest to the director{ENDCOLORS}') 
+        print(f'{RED}Server error: {str(res.text)} {ENDCOLORS}') 
+
+        # print(f'{RED} HTTP {str(res.message)} while trying to send the vehicle manifest to the director') 
     except requests.exceptions.RequestException:
       print(f'{RED}primary has blown up trying to submit vehicle manifest to director') 
 
@@ -430,8 +436,7 @@ def main():
   #Send manifest to director
   manifest = primary.generate_signed_vehicle_manifest()
 
-  print(manifest)
-  # primary.submit_vehicle_manifest_to_director(manifest)
+  primary.submit_vehicle_manifest_to_director(manifest)
 
   #Attempt an update cycles
   # primary.update_cycle()

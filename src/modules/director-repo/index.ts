@@ -76,11 +76,15 @@ export const robotManifestChecks = async (robotManifest: IRobotManifest, namespa
     //Load all the pub keys that are included in the ecu version reports. This should include the primary ecu
     const ecuPubKeys: { [ecu_serial: string]: string } = {};
 
+    console.log(robotManifest);
+    
+
     try {
 
         for (const ecuSerial of ecuSerials) {
-            ecuPubKeys[ecuSerial] = await keyStorage.getKey(
-                robotManifest.signed.ecu_version_reports[ecuSerial].signatures[0].keyid);
+            console.log(ecuSerial);
+            
+            ecuPubKeys[ecuSerial] = await keyStorage.getKey(ecuSerial);
         }
 
     } catch (e) {
@@ -92,6 +96,8 @@ export const robotManifestChecks = async (robotManifest: IRobotManifest, namespa
         validateSchema: () => {
             const { error } = robotManifestSchema.validate(robotManifest)
             if (error) throw (ManifestErrors.InvalidSchema);
+            logger.info('hello')
+            
             return checks;
         },
 
@@ -398,6 +404,7 @@ router.post('/:namespace/robots/:robot_id/manifests', async (req, res) => {
     } catch (e) {
         logger.error('Unable to accept robot manifest');
         logger.error(e);
+        return res.status(400).send(e)
     }
 
 

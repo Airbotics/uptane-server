@@ -29,10 +29,10 @@ app.get('/', (req, res) => {
     return res.status(200).send('Welcome to the Airbotics API');
 });
 
-app.post('/devices', (req,res) => {
-    console.log(req.body)
-    return res.status(400).end()
-})
+// app.post('/devices', (req,res) => {
+//     console.log(req.body)
+//     return res.status(400).end()
+// })
 
 
 // mount modules

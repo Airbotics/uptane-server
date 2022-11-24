@@ -14,6 +14,11 @@ This notice should be included at the top of every source code file:
  */
 ```
 
+## Documentation
+
+If you add a page to documentation, you'll need to add it to the `SUMMARY.MD` document for it to be listed.
+
+
 ## Commit messages
 
 We don't use structured commit messages (yet) and keep our commit messages short, simple and description in lowercase present tense. We'll probably change this over time. 

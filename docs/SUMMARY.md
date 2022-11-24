@@ -2,6 +2,8 @@
 
 ## General
 
+- [Welcome to Airbotics](README.md)
+
 - [User guide](user-guide.md)
 
 - [Developers guide](developers-guide.md)
@@ -14,7 +16,7 @@
 
 ## Architecture
 
-- [Architecture](architecture.md)
+- [Overview](architecture.md)
 
     - [Admin module](modules/admin.md)
 

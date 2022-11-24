@@ -124,6 +124,23 @@ PGPASSWORD=password psql -h localhost -p 5432  -U user -d db
 NOTE: none of this should be done in production.
 
 
+## Seeding Postgres
+
+Once you have postgres running, you can seed it using the scripts found in `src/prisma/seeders`. The scripts here work in pairs and should always include an *up* script and *down* script. The *up* should create some records in the locally running database, and the *down* should drop these records.
+
+Example running the *dev* seeder:
+
+Up
+```
+npx ts-node npx ts-node src/prisma/seeders/dev-up.ts
+```
+Down
+```
+npx ts-node npx ts-node src/prisma/seeders/dev-down.ts
+```
+Although these scripts are only acting on the locally running db, be careful with down scripts as the dropping of records cannot be undone.
+
+
 ## Working with s3
 
 We like to use AWS and s3 for storing blobs. We tend to use [localstack](https://localstack.cloud/) for development, this runs a mocked AWS cloud locally. You can swap this out with some other provider.

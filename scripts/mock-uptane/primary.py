@@ -30,10 +30,10 @@ DIRECTOR_REPO_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'p
 DIRECTOR_REPO_META_DIR = os.path.join(DIRECTOR_REPO_DIR, 'metadata')
 DIRECTOR_REPO_TARGETS_DIR = os.path.join(DIRECTOR_REPO_DIR, 'targets')
 
-NAMESPACE = 'test-namespace'
-ROBOT_ID = 'test-robot'
-PRIMARY_ECU_SERIAL = 'test-primary-ecu'
-SECONDARY_ECU_SERIAL = 'test-secondary-ecu'
+NAMESPACE = 'seed'
+ROBOT_ID = 'seed-robot'
+PRIMARY_ECU_SERIAL = 'seed-primary-ecu'
+SECONDARY_ECU_SERIAL = 'seed-secondary-ecu'
 KEY_ROOT_PATH = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', '..', 'uptane', 'keys'))
 
 

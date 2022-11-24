@@ -145,6 +145,7 @@ model RobotManifest {
     namespace_id        String
     robot_id            String
     value               Json            // holds entire signed manifest
+    valid               Boolean
 
     created_at          DateTime        @default(now())
 

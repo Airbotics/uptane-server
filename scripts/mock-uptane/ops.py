@@ -42,7 +42,8 @@ def generate_keys():
         with open(os.path.join(KEY_ROOT_PATH, f'{role}.json'), 'w') as f:
             f.write(json.dumps(key))
 
-    write_key('primary')
+    write_key('primary-ecu')
+    write_key('secondary-ecu')
     write_key('timeserver')
     write_key('director-root')
     write_key('director-targets')
@@ -102,7 +103,7 @@ def init_inventory():
 
     print('initialising inventory with test vehicle')
 
-    primary_key = _load_key('primary')
+    primary_key = _load_key('primary-ecu')
 
     try:
         vehicle_body = {

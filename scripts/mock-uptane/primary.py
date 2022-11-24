@@ -9,6 +9,7 @@ import hashlib
 from styles import GREEN, RED, YELLOW, ENDCOLORS
 import time
 import json 
+import uuid
 
 METADATA_EXTENSION = '.json'
 
@@ -29,8 +30,9 @@ DIRECTOR_REPO_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'p
 DIRECTOR_REPO_META_DIR = os.path.join(DIRECTOR_REPO_DIR, 'metadata')
 DIRECTOR_REPO_TARGETS_DIR = os.path.join(DIRECTOR_REPO_DIR, 'targets')
 
-VIN = 'batmobile'
-ECU_SERIAL = 'ECU1234'
+VIN = 'test-robot'
+PRIMARY_ECU_SERIAL = 'test-primary-ecu'
+SECONDARY_ECU_SERIAL = 'test-secondary-ecu'
 KEY_ROOT_PATH = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', '..', 'uptane', 'keys'))
 
 '''
@@ -181,10 +183,8 @@ metadata for that image.
 
 class Primary():
 
-  def __init__(self, vin, ecu_serial, timeserver_public_key):
-    self.vin = vin
-    self.ecu_serial = ecu_serial
-    self.timeserver_public_key = timeserver_public_key
+  def __init__(self):
+
 
     self.director_updater = Updater(
         metadata_dir=DIRECTOR_REPO_META_DIR,
@@ -205,67 +205,59 @@ class Primary():
       Creates ECU manifest that complies with Uptane Spec 5.4.2.1
       """
 
-      def generate_primary_ecu_version_report(primary_key):
+      def generate_ecu_version_report(ecu_serial, privKey, file_name, file_body):
         
-        payload = {
-          'ecu_serial': self.ecu_serial,
-          'current_time': str(self.clock),
-          'attacks_detected': '',
-          'nonce': '', # TODO
-          'installed_image': {
-            'filename': '',
-            'length': '',
-            'hashes': {
-              'sha256': '',
-              'sha512': '',
-            }
+        ecu_report = {
+          'signatures': [],
+          'signed': {
+            'ecu_serial': ecu_serial,
+            'time': str(self.clock),
+            'nonce': str(uuid.uuid4()),
+            'attacks_detected': '',
+            'installed_image': {
+              'filename': file_name,
+              'length': len(file_body.encode('utf-8')),
+              'hashes': {
+                'sha256': hashlib.sha256(file_body.encode('utf-8')).hexdigest(),
+                'sha512': hashlib.sha512(file_body.encode('utf-8')).hexdigest(),
+              }
+            } 
           }
         }
 
-        # The installed image is simply the last updated file in the installed imgage directory
-        os.chdir(IMAGE_REPO_TARGETS_DIR)
-        installed_images = sorted(filter(os.path.isfile, os.listdir('.')), key=os.path.getmtime)
+        report_signed_canonical = encode_canonical(ecu_report['signed'])
+        report_signature = create_signature(privKey, report_signed_canonical.encode('utf-8'))
+        ecu_report['signatures'].append(report_signature)
+        
+        return ecu_report
 
-        if len(installed_images) != 0: 
-          payload['installed_image']['filename'] = installed_images[-1]
-          payload['installed_image']['length'] = os.path.getsize(f'{IMAGE_REPO_TARGETS_DIR}/{installed_images[-1]}')
-          
-          with open(os.path.join(IMAGE_REPO_TARGETS_DIR, installed_images[-1]), 'rb') as f:
-            file_bytes = f.read()
-            payload['installed_image']['hashes']['sha256'] = hashlib.sha256(file_bytes).hexdigest()
-            payload['installed_image']['hashes']['sha512'] = hashlib.sha512(file_bytes).hexdigest()
-            
 
-        payload_canonical = encode_canonical(payload).encode('utf-8')
-        payload_signature = create_signature(primary_key, payload_canonical)
-        return {
-          'signatures': [payload_signature],
-          'signed': payload
+
+      # Load the ECU keys
+      primary_ecu_key = _load_key('primary-ecu')
+      secondary_ecu_key = _load_key('secondary-ecu')
+
+      # Init the robot manifest and generate the ecu version reports
+      robot_manifest = {
+        'signatures': [],
+        'signed': {
+          'vin': VIN,
+          'primary_ecu_serial': PRIMARY_ECU_SERIAL,
+          'ecu_version_reports': {
+            PRIMARY_ECU_SERIAL: generate_ecu_version_report(PRIMARY_ECU_SERIAL, primary_ecu_key, 'primary.txt', 'primary'),
+            SECONDARY_ECU_SERIAL: generate_ecu_version_report(SECONDARY_ECU_SERIAL, secondary_ecu_key, 'secondary.txt', 'secondary')
+          }
         }
-
-
-      primary_tuf_key = _load_key('primary')
-
-      vehicle_manifest_payload = {
-        'vin': self.vin,
-        'primary_ecu_serial': self.ecu_serial,
-        'ecu_version_manifests': {
-          self.ecu_serial: generate_primary_ecu_version_report(primary_tuf_key)
-        } # forget about secondary ECUs for the time being
       }
 
       # Canonicalize the signed portion of the manifest
-      vehicle_manifest_payload_canonical = encode_canonical(vehicle_manifest_payload).encode('utf-8')
+      manifest_signed_canonical = encode_canonical(robot_manifest['signed'])
 
       # Sign the signed portion of the manifest with the primarys keys
-      vehicle_manifest_signature = create_signature(primary_tuf_key, vehicle_manifest_payload_canonical)
-
-      vehicle_manifest = {
-        'signatures': [vehicle_manifest_signature],
-        'signed': vehicle_manifest_payload,
-      }
-
-      return vehicle_manifest
+      manifest_signature = create_signature(primary_ecu_key, manifest_signed_canonical.encode('utf-8'))
+      robot_manifest['signatures'].append(manifest_signature)
+    
+      return robot_manifest
     
 
 
@@ -311,8 +303,10 @@ class Primary():
     self.image_updater.refresh()
 
 
+  
+  
   def get_target_list_from_director(self):
-    # battle of the chimps, newer updater client lost the abilty to quickly grab
+    # newer updater client lost the abilty to quickly grab
     # get_target_list_from_director from 0.9.8
     
     directed_targets = json.loads(self.director_updater._load_local_metadata('targets').decode())
@@ -360,7 +354,6 @@ class Primary():
       print(f'{RED}{e}{ENDCOLORS}')
       return
     print(f'{GREEN}Metadata from director and image repo was fetched{ENDCOLORS}')
-
 
     directed_targets = self.get_target_list_from_director()
 
@@ -430,20 +423,18 @@ class Primary():
 
 
 def main():
-  primary = Primary(
-    VIN, 
-    ECU_SERIAL,
-   _load_key('timeserver')
-  )
+  primary = Primary()
 
   primary.get_signed_time([])
 
   #Send manifest to director
   manifest = primary.generate_signed_vehicle_manifest()
-  primary.submit_vehicle_manifest_to_director(manifest)
+
+  print(manifest)
+  # primary.submit_vehicle_manifest_to_director(manifest)
 
   #Attempt an update cycles
-  primary.update_cycle()
+  # primary.update_cycle()
 
   
 

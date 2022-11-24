@@ -132,11 +132,11 @@ Example running the *dev* seeder:
 
 Up
 ```
-npx ts-node npx ts-node src/prisma/seeders/dev-up.ts
+npx ts-node src/prisma/seeders/dev-up.ts
 ```
 Down
 ```
-npx ts-node npx ts-node src/prisma/seeders/dev-down.ts
+npx ts-node src/prisma/seeders/dev-down.ts
 ```
 Although these scripts are only acting on the locally running db, be careful with down scripts as the dropping of records cannot be undone.
 

@@ -250,7 +250,7 @@ class Primary():
           'vin': ROBOT_ID,
           'primary_ecu_serial': PRIMARY_ECU_SERIAL,
           'ecu_version_reports': {
-            PRIMARY_ECU_SERIAL: generate_ecu_version_report(PRIMARY_ECU_SERIAL, primary_ecu_tuf_key, 'primary.txt', 'primary'),
+            PRIMARY_ECU_SERIAL: generate_ecu_version_report(PRIMARY_ECU_SERIAL, primary_ecu_tuf_key, 'primary2.txt', 'primary2'),
             SECONDARY_ECU_SERIAL: generate_ecu_version_report(SECONDARY_ECU_SERIAL, secondary_ecu_tuf_key, 'secondary.txt', 'secondary')
           }
         }

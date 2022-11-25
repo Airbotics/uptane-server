@@ -195,11 +195,12 @@ export const robotManifestChecks = async (robotManifest: IRobotManifest, namespa
  * 
  * For each ECU determine if the reported installed image is different to the latest one 
  * we have on record, if it is, we need to generate new tuf metadata for the ecu. Otherwise
- * we can infer that the ECU is running the latest avaiable image
+ * we can infer that the ECU is running the latest avaiable image. There is also a check to 
+ * see if the latest rollout has been acknowledged so we don't generate new metadata more than once.
  * 
  * NOTE: THIS WILL BE REPLACED VERY SOON
  */
-const determineUpdateRequired = async (robotManifest: IRobotManifest, ecuSerials: string[]): Promise<boolean> => {
+const determineNewMetadaRequired = async (robotManifest: IRobotManifest, ecuSerials: string[]): Promise<boolean> => {
 
 
     //get all the 'rollouts' for each ecu reported
@@ -231,14 +232,25 @@ const determineUpdateRequired = async (robotManifest: IRobotManifest, ecuSerials
         if (idx == -1) {
             logger.info('ECU image is not in rollout')
         }
+
         else {
-            //The robot is reporting about an ecu that is associated with a rollout
-            //lets check if the image in the rollout is the different to the one being reported
-            if (rolloutsPerEcu[idx].image.sha256 !==
-                robotManifest.signed.ecu_version_reports[ecuSerial].signed.installed_image.hashes.sha256) {
-                //there is a mismatch between rollout image and reported image, so an
-                //upate to metadata is required
-                return true;
+
+            /*
+            The robot is reporting an ecu that is associated with a rollout
+            Lets first check if the rollout has been acknowledged, If it has, we have 
+            already generated the corresponding metadata files, so we dont have to do anything
+            */
+            if(rolloutsPerEcu[idx].acknowledged) {
+                logger.info('Metadata has already been generated for this ECUs image')
+            }
+
+            else {
+                if (rolloutsPerEcu[idx].image.sha256 !==
+                    robotManifest.signed.ecu_version_reports[ecuSerial].signed.installed_image.hashes.sha256) {
+        
+                    //there is a mismatch between rollout image and reported image, so we must generate new metadata
+                    return true;
+                }
             }
         }
     }
@@ -347,6 +359,18 @@ const generateNewMetadata = async (namespace_id: string, robot_id: string, ecuSe
             }
         });
 
+        //Update the acknowledged field in the rollouts table
+        await prisma.tmpEcuImages.updateMany({
+            where: {
+                ecu_id: {
+                    in: ecuSerials
+                }
+            },
+            data: {
+                acknowledged: true
+            }
+        })
+
     })
 }
 
@@ -397,7 +421,7 @@ router.post('/:namespace/robots/:robot_id/manifests', async (req, res) => {
          * snapshot and timestamp files for each ecu that needs updated.
          */
 
-        const updateRequired = await determineUpdateRequired(manifest, ecuSerials);
+        const updateRequired = await determineNewMetadaRequired(manifest, ecuSerials);
 
         if (!updateRequired) {
             logger.info('processed manifest for robot and determined all ecus have already installed their latest images');

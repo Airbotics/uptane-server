@@ -4,7 +4,7 @@ import shutil
 import os
 import json
 from securesystemslib.keys import generate_rsa_key
-from common import VIN, PRIMARY_ECU_SERIAL, API_URL, DB_ROOT_PATH, _load_key, PRIMARY_FS_ROOT_PATH
+from common import write_tuf_key, VIN, PRIMARY_ECU_SERIAL, API_URL, DB_ROOT_PATH, _load_key, PRIMARY_FS_ROOT_PATH, KEYS_ROOT_PATH
 
 def init_db():
     print('initing db')
@@ -34,25 +34,17 @@ def generate_keys():
 
     print('generating keys')
 
-    KEY_ROOT_PATH = os.path.join(os.path.dirname(__file__), 'db', 'keys')
-
-    def write_key(role):
-
-        key = generate_rsa_key(bits=2048, scheme='rsassa-pss-sha256')
-        with open(os.path.join(KEY_ROOT_PATH, f'{role}.json'), 'w') as f:
-            f.write(json.dumps(key))
-
-    write_key('primary-ecu')
-    write_key('secondary-ecu')
-    write_key('timeserver')
-    write_key('director-root')
-    write_key('director-targets')
-    write_key('director-snapshot')
-    write_key('director-timestamp')
-    write_key('image-root')
-    write_key('image-targets')
-    write_key('image-snapshot')
-    write_key('image-timestamp')
+    write_tuf_key('primary-ecu')
+    write_tuf_key('secondary-ecu')
+    write_tuf_key('timeserver')
+    write_tuf_key('director-root')
+    write_tuf_key('director-targets')
+    write_tuf_key('director-snapshot')
+    write_tuf_key('director-timestamp')
+    write_tuf_key('image-root')
+    write_tuf_key('image-targets')
+    write_tuf_key('image-snapshot')
+    write_tuf_key('image-timestamp')
 
 
 def init_repos():

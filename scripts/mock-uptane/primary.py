@@ -4,7 +4,7 @@ from tuf.api.exceptions import RepositoryError
 from securesystemslib.formats import encode_canonical
 from securesystemslib.keys import create_signature
 import requests 
-from common import _load_key, pretty_dict
+from common import load_pem_key, generate_priv_tuf_key
 import hashlib
 from styles import GREEN, RED, YELLOW, ENDCOLORS
 import time
@@ -208,7 +208,7 @@ class Primary():
       Creates ECU manifest that complies with Uptane Spec 5.4.2.1
       """
 
-      def generate_ecu_version_report(ecu_serial, privKey, file_name, file_body):
+      def generate_ecu_version_report(ecu_serial, priv_tuf_key, file_name, file_body):
         
         ecu_report = {
           'signatures': [],
@@ -227,18 +227,21 @@ class Primary():
             } 
           }
         }
-
+        
         report_signed_canonical = encode_canonical(ecu_report['signed'])
-        report_signature = create_signature(privKey, report_signed_canonical.encode('utf-8'))
+        report_signature = create_signature(priv_tuf_key, report_signed_canonical.encode('utf-8'))
         ecu_report['signatures'].append(report_signature)
         
         return ecu_report
 
 
 
-      # Load the ECU keys
-      primary_ecu_key = _load_key('primary-ecu')
-      secondary_ecu_key = _load_key('secondary-ecu')
+      # Load the ECU private keys from pem files
+      primary_ecu_key = load_pem_key(f'{NAMESPACE}-{PRIMARY_ECU_SERIAL}-private')
+      secondary_ecu_key = load_pem_key(f'{NAMESPACE}-{SECONDARY_ECU_SERIAL}-private')
+
+      primary_ecu_tuf_key = generate_priv_tuf_key(primary_ecu_key)
+      secondary_ecu_tuf_key = generate_priv_tuf_key(secondary_ecu_key)
 
       # Init the robot manifest and generate the ecu version reports
       robot_manifest = {
@@ -247,8 +250,8 @@ class Primary():
           'vin': ROBOT_ID,
           'primary_ecu_serial': PRIMARY_ECU_SERIAL,
           'ecu_version_reports': {
-            PRIMARY_ECU_SERIAL: generate_ecu_version_report(PRIMARY_ECU_SERIAL, primary_ecu_key, 'primary.txt', 'primary'),
-            SECONDARY_ECU_SERIAL: generate_ecu_version_report(SECONDARY_ECU_SERIAL, secondary_ecu_key, 'secondary.txt', 'secondary')
+            PRIMARY_ECU_SERIAL: generate_ecu_version_report(PRIMARY_ECU_SERIAL, primary_ecu_tuf_key, 'primary.txt', 'primary'),
+            SECONDARY_ECU_SERIAL: generate_ecu_version_report(SECONDARY_ECU_SERIAL, secondary_ecu_tuf_key, 'secondary.txt', 'secondary')
           }
         }
       }
@@ -257,7 +260,7 @@ class Primary():
       manifest_signed_canonical = encode_canonical(robot_manifest['signed'])
 
       # Sign the signed portion of the manifest with the primarys keys
-      manifest_signature = create_signature(primary_ecu_key, manifest_signed_canonical.encode('utf-8'))
+      manifest_signature = create_signature(primary_ecu_tuf_key, manifest_signed_canonical.encode('utf-8'))
       robot_manifest['signatures'].append(manifest_signature)
     
       return robot_manifest

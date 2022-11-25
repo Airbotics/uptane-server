@@ -37,7 +37,7 @@ type VerifySigParams = {
     data: string;
 }
 
-export const verifySignature = async (params: VerifySigParams) => {
+export const verifySignature = (params: VerifySigParams): boolean => {
 
     return crypto.verify(
         params.algorithm,

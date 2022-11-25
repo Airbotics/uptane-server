@@ -95,14 +95,14 @@ export const robotManifestChecks = async (robotManifest: IRobotManifest, namespa
         },
 
         validateTopSignature: () => {
-
-            const verified = verifySignature({
+            
+            const verified: boolean = verifySignature({
                 signature: robotManifest.signatures[0].sig,
                 pubKey: ecuPubKeys[robotManifest.signed.primary_ecu_serial],
                 algorithm: 'RSA-SHA256',
                 data: toCanonical(robotManifest.signed)
             });
-
+            
             if (!verified) throw (ManifestErrors.InvalidSignature)
 
             return checks;
@@ -117,10 +117,11 @@ export const robotManifestChecks = async (robotManifest: IRobotManifest, namespa
                     signature: robotManifest.signed.ecu_version_reports[ecuSerial].signatures[0].sig,
                     pubKey: ecuPubKeys[ecuSerial],
                     algorithm: 'RSA-SHA256',
-                    data: toCanonical(robotManifest.signed)
+                    data: toCanonical(robotManifest.signed.ecu_version_reports[ecuSerial].signed)
                 });
 
-                if (!verified) throw (ManifestErrors.InvalidReportSignature)
+                if (!verified) throw (ManifestErrors.InvalidReportSignature);
+
             }
 
             return checks;

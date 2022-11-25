@@ -1,7 +1,8 @@
-import dayjs, { ManipulateType } from 'dayjs';
+import { ManipulateType } from 'dayjs';
 import config from '../../config';
 import { ETUFRole } from '../consts';
 import { toCanonical } from '../utils';
+import { dayjs } from '../time';
 import { generateSignature } from '../crypto';
 import { generateTufKey, genKeyId } from './index';
 import { IKeyPair, ITargetsSignedTUF, ITargetsTUF, ITargetsImages } from '../../types';
@@ -25,7 +26,7 @@ export const generateTargets = (
     // generate the signed portion of the targets metadata
     const signed: ITargetsSignedTUF = {
         _type: ETUFRole.Targets,
-        expires: dayjs().add(ttl[0] as number, ttl[1] as ManipulateType).format(),
+        expires: dayjs().add(ttl[0] as number, ttl[1] as ManipulateType).utc().format(),
         spec_version: config.TUF_SPEC_VERSION,
         version,
         targets: targetsImages,

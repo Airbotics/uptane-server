@@ -1,5 +1,5 @@
-import dayjs from 'dayjs';
 import winston from 'winston';
+import { dayjs } from './time';
 import config from '../config';
 
 export const logger = winston.createLogger({

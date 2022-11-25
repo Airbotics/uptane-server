@@ -1,10 +1,11 @@
-import dayjs, { ManipulateType } from 'dayjs';
+import { ManipulateType } from 'dayjs';
 import config from '../../config';
 import { ETUFRole } from '../consts';
 import { toCanonical } from '../utils';
-import { generateHash, generateSignature } from '../crypto';
+import { dayjs } from '../time';
+import { generateSignature } from '../crypto';
 import { generateTufKey, genKeyId } from './index';
-import { IKeyPair, ISnapshotTUF, ITimestampSignedTUF, ITimestampTUF } from '../../types';
+import { IKeyPair, ITimestampSignedTUF, ITimestampTUF } from '../../types';
 
 
 /**
@@ -21,7 +22,7 @@ export const generateTimestamp = (ttl: (number|string)[], version: number, times
     // generate the signed portion of the timestamp metadata
     const signed: ITimestampSignedTUF = {
         _type: ETUFRole.Timestamp,
-        expires: dayjs().add(ttl[0] as number, ttl[1] as ManipulateType).format(),
+        expires: dayjs().add(ttl[0] as number, ttl[1] as ManipulateType).utc().format(),
         spec_version: config.TUF_SPEC_VERSION,
         version,
         meta: {

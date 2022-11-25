@@ -35,14 +35,6 @@ router.post('/namespaces', async (req, res) => {
     // create initial root.json for image repo, we'll start it off at 1
     const version = 1;
 
-    // generate image repo root.json
-    const imageRepoRoot = generateRoot(config.TUF_TTL.IMAGE.ROOT,
-        version,
-        imageRootKey,
-        imageTargetsKey,
-        imageSnapshotKey,
-        imageTimestampKey
-    );
 
     // generate directory repo root.json
     const directorRepoRoot = generateRoot(config.TUF_TTL.DIRECTOR.ROOT,
@@ -51,6 +43,15 @@ router.post('/namespaces', async (req, res) => {
         directorTargetsKey,
         directorSnapshotKey,
         directorTimestampKey
+    );
+
+    // generate image repo root.json
+    const imageRepoRoot = generateRoot(config.TUF_TTL.IMAGE.ROOT,
+        version,
+        imageRootKey,
+        imageTargetsKey,
+        imageSnapshotKey,
+        imageTimestampKey
     );
 
 

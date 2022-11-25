@@ -1,7 +1,8 @@
-import dayjs, { ManipulateType } from 'dayjs';
+import { ManipulateType } from 'dayjs';
 import config from '../../config';
 import { ETUFRole } from '../consts';
 import { toCanonical } from '../utils';
+import { dayjs } from '../time';
 import { generateSignature } from '../crypto';
 import { generateTufKey, genKeyId } from './index';
 import { IKeyPair, IRootSignedTUF, IRootTUF } from '../../types';
@@ -28,7 +29,7 @@ export const generateRoot = (ttl: (number|string)[], version: number, rootKeyPai
     const signed: IRootSignedTUF = {
         _type: ETUFRole.Root,
         consistent_snapshot: config.TUF_CONSISTENT_SNAPSHOT,
-        expires: dayjs().add(ttl[0] as number, ttl[1] as ManipulateType).format(),
+        expires: dayjs().add(ttl[0] as number, ttl[1] as ManipulateType).utc().format(),
         spec_version: config.TUF_SPEC_VERSION,
         version,
         keys: {

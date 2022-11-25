@@ -29,7 +29,7 @@ export const generateRoot = (ttl: (number|string)[], version: number, rootKeyPai
     const signed: IRootSignedTUF = {
         _type: ETUFRole.Root,
         consistent_snapshot: config.TUF_CONSISTENT_SNAPSHOT,
-        expires: dayjs().add(ttl[0] as number, ttl[1] as ManipulateType).utc().format(),
+        expires: dayjs().add(ttl[0] as number, ttl[1] as ManipulateType).format(config.TUF_TIME_FORMAT),
         spec_version: config.TUF_SPEC_VERSION,
         version,
         keys: {

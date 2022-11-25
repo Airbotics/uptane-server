@@ -31,6 +31,7 @@ const config = {
     TUF_SPEC_VERSION: '1.0.30',                                                 // TUF spec we're using (more of a const that config for now...)
     TUF_CONSISTENT_SNAPSHOT: true,                                              // whether we use consistent snapshots (more of a const that config for now...)
     TUF_EXPIRY_WINDOW: [3, 'hour'],                                             // if a TUF metadata is due to expiry within this number of <units> it will be resigned
+    TUF_TIME_FORMAT: 'YYYY-MM-DDTHH:mm:ss[Z]',
     TUF_TTL: {
         DIRECTOR: {
             ROOT: [365, 'day'],                                                 // expiry of director root metadata in days

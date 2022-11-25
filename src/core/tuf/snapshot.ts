@@ -22,7 +22,7 @@ export const generateSnapshot = (ttl: (number | string)[], version: number, snap
     // generate the signed portion of the snapshot metadata
     const signed: ISnapshotSignedTUF = {
         _type: ETUFRole.Snapshot,
-        expires: dayjs().add(ttl[0] as number, ttl[1] as ManipulateType).utc().format(),
+        expires: dayjs().add(ttl[0] as number, ttl[1] as ManipulateType).format(config.TUF_TIME_FORMAT),
         spec_version: config.TUF_SPEC_VERSION,
         version,
         meta: {

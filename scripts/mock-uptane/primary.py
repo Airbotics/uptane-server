@@ -4,20 +4,29 @@ from tuf.api.exceptions import RepositoryError
 from securesystemslib.formats import encode_canonical
 from securesystemslib.keys import create_signature
 import requests 
-from common import load_pem_key, generate_priv_tuf_key
+from common import load_pem_key, generate_priv_tuf_key, _get_time
 import hashlib
 from styles import GREEN, RED, YELLOW, ENDCOLORS
 import time
 import json 
 import uuid
+from pprint import pprint
+import sys
 
 METADATA_EXTENSION = '.json'
 
+NAMESPACE = 'seed'
+ROBOT_ID = 'seed-robot'
+PRIMARY_ECU_SERIAL = 'seed-primary-ecu'
+SECONDARY_ECU_SERIAL = 'seed-secondary-ecu'
+KEY_ROOT_PATH = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', '..', 'uptane', 'keys'))
+
+
 IMAGE_REPO_PORT = 8001
-IMAGE_REPO_HOST = f'http://localhost:{IMAGE_REPO_PORT}/api/v0/image'
+IMAGE_REPO_HOST = f'http://localhost:{IMAGE_REPO_PORT}/api/v0/image/{NAMESPACE}'
 
 DIRECTOR_REPO_PORT = 8001
-DIRECTOR_REPO_HOST = f'http://localhost:{DIRECTOR_REPO_PORT}/api/v0/director'
+DIRECTOR_REPO_HOST = f'http://localhost:{DIRECTOR_REPO_PORT}/api/v0/director/{NAMESPACE}'
 
 
 IMAGE_REPO_NAME = 'image-repo'
@@ -29,12 +38,6 @@ DIRECTOR_REPO_NAME = 'director-repo'
 DIRECTOR_REPO_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'primary-fs', DIRECTOR_REPO_NAME)
 DIRECTOR_REPO_META_DIR = os.path.join(DIRECTOR_REPO_DIR, 'metadata')
 DIRECTOR_REPO_TARGETS_DIR = os.path.join(DIRECTOR_REPO_DIR, 'targets')
-
-NAMESPACE = 'seed'
-ROBOT_ID = 'seed-robot'
-PRIMARY_ECU_SERIAL = 'seed-primary-ecu'
-SECONDARY_ECU_SERIAL = 'seed-secondary-ecu'
-KEY_ROOT_PATH = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', '..', 'uptane', 'keys'))
 
 
 
@@ -214,7 +217,7 @@ class Primary():
           'signatures': [],
           'signed': {
             'ecu_serial': ecu_serial,
-            'time': str(self.clock),
+            'time': _get_time(),
             'nonce': str(uuid.uuid4()),
             'attacks_detected': '',
             'installed_image': {
@@ -250,7 +253,7 @@ class Primary():
           'vin': ROBOT_ID,
           'primary_ecu_serial': PRIMARY_ECU_SERIAL,
           'ecu_version_reports': {
-            PRIMARY_ECU_SERIAL: generate_ecu_version_report(PRIMARY_ECU_SERIAL, primary_ecu_tuf_key, 'primary2.txt', 'primary2'),
+            PRIMARY_ECU_SERIAL: generate_ecu_version_report(PRIMARY_ECU_SERIAL, primary_ecu_tuf_key, 'primary.txt', 'primary2'),
             SECONDARY_ECU_SERIAL: generate_ecu_version_report(SECONDARY_ECU_SERIAL, secondary_ecu_tuf_key, 'secondary.txt', 'secondary')
           }
         }
@@ -272,7 +275,7 @@ class Primary():
     
     #TODO check the signed_vehicle_manifest has valid schema
 
-    url = f'{DIRECTOR_REPO_HOST}/{NAMESPACE}/robots/{ROBOT_ID}/manifests'
+    url = f'{DIRECTOR_REPO_HOST}/robots/{ROBOT_ID}/manifests'
 
     try:
       res = requests.post(url, json = signed_vehicle_manifest)
@@ -294,7 +297,7 @@ class Primary():
     '''
     Forget about getting a correct signed time from a timeserver for now
     '''
-    self.clock = time.time()
+    self.clock = _get_time()
     pass
 
 
@@ -432,7 +435,79 @@ class Primary():
 
 
 def main():
+
+  print(f'{GREEN}Creating mocked primary client...{ENDCOLORS}')
+
   primary = Primary()
+
+  actions = [
+    '1. Inspect generated robot manifest',
+    '2. Generate and send robot manifest',
+    '3. Refresh top level metadata',
+    '4. Run update cycle',
+    '5. "Install" image on primary ECU',
+    '6. "Install" image on secondary ECU',
+    '7. "Report" detected attack on ECU'
+  ]
+
+  while True:
+    # ask the user for an action
+    action = input('\nWhat would you like to do ("q" to quit)?\n' + '\n'.join(actions) + '\n: ')
+    if action == 'q':
+      sys.exit(1)
+    action_idx = 0
+    try: 
+      action_idx = (int(action))
+    except ValueError:
+      print(f'{RED}Please enter a number{ENDCOLORS}')
+      continue
+    if(action_idx < 1 or action_idx > len(actions)):
+      print(f'{RED}Please enter a number between 1 and {str(len(actions))}{ENDCOLORS}')
+      continue
+    
+    primary.get_signed_time([])
+
+    #inspect generated manifests
+    if action_idx == 1:
+      print(f'{GREEN}The generated vehcile manifest is: {ENDCOLORS}')
+      print(json.dumps(primary.generate_signed_vehicle_manifest(), indent=2))
+      pass
+
+    #generate and send manifest
+    elif action_idx == 2:
+      print(f'{GREEN}Attempting to send manifest to director{ENDCOLORS}')
+      manifest = primary.generate_signed_vehicle_manifest()
+      primary.submit_vehicle_manifest_to_director(manifest)
+
+
+    #Refresh top level metadata
+    elif action_idx == 3:
+      print(f'{GREEN}Attempting to refresh top level metadata{ENDCOLORS}')
+      primary.refresh_toplevel_metadata()
+      pass
+
+    #Run update cycle
+    elif action_idx == 4:
+      print(f'{GREEN}Attempting to run update cycle{ENDCOLORS}')
+      pass
+
+    #Change the 'installed' image on the primary
+    elif action_idx == 5:
+      print(f'{GREEN}Attempting to run update cycle{ENDCOLORS}')
+      pass
+
+    #Change the 'installed' image on the secondary
+    elif action_idx == 6:
+      print(f'{GREEN}Attempting to run update cycle{ENDCOLORS}')
+      pass
+
+    #Report an identified attack
+    elif action_idx == 7:
+      print(f'{GREEN}Attempting to run update cycle{ENDCOLORS}')
+      pass
+
+    else: 
+      print('Unknown action')
 
   primary.get_signed_time([])
 

@@ -5,7 +5,7 @@ import { logger } from '../../core/logger';
 import { generateKeyPair } from '../../core/crypto';
 import { verifySignature } from '../../core/crypto/signatures';
 import prisma from '../../core/postgres';
-import { TUFRepo, TUFRole, Image } from '@prisma/client';
+import { TUFRepo, TUFRole, Image, Prisma } from '@prisma/client';
 import { robotManifestSchema } from './schemas';
 import { IKeyPair, IRobotManifest, ITargetsImages } from '../../types';
 import { toCanonical } from '../../core/utils';
@@ -47,6 +47,7 @@ export const robotManifestChecks = async (robotManifest: IRobotManifest, namespa
         }
     });
 
+    
     if (!robot) throw (ManifestErrors.RobotNotFound);
 
     //Load all the pub keys that are included in the ecu version reports. This should include the primary ecu
@@ -66,7 +67,9 @@ export const robotManifestChecks = async (robotManifest: IRobotManifest, namespa
 
         validateSchema: () => {
             const { error } = robotManifestSchema.validate(robotManifest);
+            
             if (error) throw (ManifestErrors.InvalidSchema);
+            
             return checks;
         },
 
@@ -141,9 +144,6 @@ export const robotManifestChecks = async (robotManifest: IRobotManifest, namespa
                 }
 
                 if (previouslySentNonces.includes(robotManifest.signed.ecu_version_reports[ecuSerial].signed.nonce)) {
-                    console.log(previouslySentNonces);
-                    console.log(robotManifest.signed.ecu_version_reports[ecuSerial].signed.nonce);
-
                     throw (ManifestErrors.InvalidReportNonce)
                 }
             }
@@ -172,7 +172,6 @@ export const robotManifestChecks = async (robotManifest: IRobotManifest, namespa
         validateAttacks: () => {
 
             for (const ecuSerial of ecuSerials) {
-                console.log(robotManifest.signed.ecu_version_reports[ecuSerial].signed.attacks_detected);
 
                 if (robotManifest.signed.ecu_version_reports[ecuSerial].signed.attacks_detected !== '') {
                     throw (ManifestErrors.AttackIdentified)
@@ -302,6 +301,7 @@ const generateNewMetadata = async (namespace_id: string, robot_id: string, ecuSe
             }
         }
     }
+ 
 
     //determine new metadata versions
     const newTargetsVersion = await getLatestMetadataVersion(namespace_id, TUFRepo.director, TUFRole.targets, robot_id) + 1;
@@ -800,8 +800,7 @@ router.get('/:namespace/:version.:role.json', async (req, res) => {
     }
 
     // check it hasnt expired
-    // TODO    
-
+    // TODO
     return res.status(200).send(metadata.value);
 
 });
@@ -831,12 +830,10 @@ router.get('/:namespace/timestamp.json', async (req, res) => {
         return res.status(404).end();
     }
 
-    const mostRecentTimestamp = timestamps[0];
-
+    const mostRecentTimestamp = timestamps[0].value as Prisma.JsonObject;
     // check it hasnt expired
     // TODO    
-
-    return res.status(200).send(mostRecentTimestamp.value);
+    return res.status(200).send(mostRecentTimestamp);
 
 });
 

@@ -26,7 +26,7 @@ export const generateTargets = (
     // generate the signed portion of the targets metadata
     const signed: ITargetsSignedTUF = {
         _type: ETUFRole.Targets,
-        expires: dayjs().add(ttl[0] as number, ttl[1] as ManipulateType).utc().format(),
+        expires: dayjs().add(ttl[0] as number, ttl[1] as ManipulateType).format(config.TUF_TIME_FORMAT),
         spec_version: config.TUF_SPEC_VERSION,
         version,
         targets: targetsImages,

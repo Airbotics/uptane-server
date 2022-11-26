@@ -1,5 +1,6 @@
 import express, { Request, Response, NextFunction } from 'express';
 import hpp from 'hpp';
+import fs from 'fs'
 import helmet from 'helmet';
 import schedule from 'node-schedule';
 import config from './config'
@@ -17,7 +18,7 @@ app.use(helmet());
 app.use(hpp());
 app.use(express.json({ limit: config.MAX_JSON_REQUEST_SIZE }));
 
-// log which endpoints are hit
+// log which endpoints are hit, will only log in development
 app.use((req, res, next) => {
     logger.debug(`${req.method} - ${req.originalUrl}`);
     next();
@@ -28,11 +29,6 @@ app.use((req, res, next) => {
 app.get('/', (req, res) => {
     return res.status(200).send('Welcome to the Airbotics API');
 });
-
-// app.post('/devices', (req,res) => {
-//     console.log(req.body)
-//     return res.status(400).end()
-// })
 
 
 // mount modules

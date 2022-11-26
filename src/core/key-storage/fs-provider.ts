@@ -22,7 +22,7 @@ export class FilesystemProvider implements IKeyStorageProvider {
 
     async putKey(id: string, key: string): Promise<void> {
         const filePathKey = path.resolve(path.join(this.keysPath, id));
-        fs.writeFileSync(filePathKey, key);
+        fs.writeFileSync(filePathKey, key, 'ascii');
     }
 
     async getKey(id: string): Promise<string> {

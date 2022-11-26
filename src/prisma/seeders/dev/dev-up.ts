@@ -148,23 +148,23 @@ const createImageRepoMetadata = async () => {
     console.log('dev seeder creating image repo metadata...');
 
     const rootKeyPair: IKeyPair = {
-        publicKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-image-root-public.pem`),
-        privateKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-image-root-private.pem`),
+        publicKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-image-root-public`),
+        privateKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-image-root-private`),
     }
 
     const targetKeyPair: IKeyPair = {
-        publicKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-image-targets-public.pem`),
-        privateKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-image-targets-private.pem`),
+        publicKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-image-targets-public`),
+        privateKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-image-targets-private`),
     }
 
     const snapshotKeyPair: IKeyPair = {
-        publicKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-image-snapshot-public.pem`),
-        privateKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-image-snapshot-private.pem`),
+        publicKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-image-snapshot-public`),
+        privateKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-image-snapshot-private`),
     }
 
     const timestampKeyPair: IKeyPair = {
-        publicKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-image-timestamp-public.pem`),
-        privateKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-image-timestamp-private.pem`),
+        publicKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-image-timestamp-public`),
+        privateKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-image-timestamp-private`),
     }
 
     // generate root metadata
@@ -272,7 +272,7 @@ const createTmpRollout = async () => {
 
     //check if the keys have been generated
     //This should probably check for all keys but just checks image root for now
-    const seedRootCertPath = path.join(__filename, '../../../../../',  config.KEYS_FS_STORAGE_DIR, `${SEED_NAMESPACE_ID}-image-root-public.pem`)
+    const seedRootCertPath = path.join(__filename, '../../../../../',  config.KEYS_FS_STORAGE_DIR, `${SEED_NAMESPACE_ID}-image-root-public`)
 
     if(!fs.existsSync(seedRootCertPath)) {
         console.log('This seeder requires certs to be generated first');

@@ -43,6 +43,7 @@ model Namespace {
     robots              Robot[]
     ecus                Ecu[]
     robot_manifests     RobotManifest[]
+    network_reports     NetworkReport[]
 
     @@map("namespaces")
 }
@@ -95,7 +96,7 @@ model Metadata {
 // robots on which Airbotics will update software
 // these are called vehicles in the Update spec
 // TODO
-// - provisioned - compound attribute, whether all ecus have provisioned
+// - add provisioned field: compound attribute, whether all ecus have provisioned
 model Robot {
     id                  String          @id @default(uuid()) @unique
     namespace_id        String
@@ -108,6 +109,7 @@ model Robot {
     ecus                Ecu[]
     robot_manifests     RobotManifest[]
     metadata            Metadata[]
+    network_reports     NetworkReport[]
 
     @@unique([namespace_id, id])
     @@map("robots")
@@ -117,7 +119,7 @@ model Robot {
 // ecus on robots
 // NOTE we could potentially remove the namespace id here
 // TODO 
-// - last_seen
+// - add last_seen field
 model Ecu {
     id                  String          @id @default(uuid()) @unique
     namespace_id        String
@@ -136,6 +138,29 @@ model Ecu {
 
     @@unique([namespace_id, id])
     @@map("ecus")
+}
+
+// a network report from a robot
+// NOTE we could include the id of the ecu that sent it, but it will likely
+// always be the primary, and the primary will never change
+model NetworkReport {
+    id                  String          @id @default(uuid()) @unique
+    namespace_id        String
+    robot_id            String
+
+    hostname            String?
+    local_ipv4          String?
+    mac                 String?
+
+    created_at          DateTime        @default(now())
+    updated_at          DateTime        @updatedAt
+
+    namespace           Namespace       @relation(fields: [namespace_id], references: [id], onDelete: Cascade)
+    robot               Robot           @relation(fields: [namespace_id, robot_id], references: [namespace_id, id], onDelete: Cascade)
+
+
+    @@unique([namespace_id, id])
+    @@map("network_reports")
 }
 
 

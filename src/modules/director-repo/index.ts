@@ -55,7 +55,7 @@ export const robotManifestChecks = async (robotManifest: IRobotManifest, namespa
     try {
 
         for (const ecuSerial of ecuSerials) {
-            ecuPubKeys[ecuSerial] = await keyStorage.getKey(`${namespaceID}-${ecuSerial}-public.pem`);
+            ecuPubKeys[ecuSerial] = await keyStorage.getKey(`${namespaceID}-${ecuSerial}-public`);
         }
 
     } catch (e) {
@@ -375,11 +375,16 @@ const generateNewMetadata = async (namespace_id: string, robot_id: string, ecuSe
 }
 
 
-
-router.post('/:namespace/robots/:robot_id/manifests', async (req, res) => {
+/**
+ * Process a manifest from a robot
+ */
+router.put('/:namespace/manifests', async (req, res) => {
 
     const namespace_id: string = req.params.namespace;
-    const robot_id: string = req.params.robot_id;
+
+    // TODO robot id will be provided in mutual tls cert, 
+    // for now we hardcode it 
+    const robot_id: string = ''
     const manifest: IRobotManifest = req.body;
 
     let valid = true;
@@ -462,6 +467,50 @@ router.post('/:namespace/robots/:robot_id/manifests', async (req, res) => {
 
 
 /**
+ * Ingest network info reported by a robot
+ */
+router.put('/:namespace/system_info/network', async (req,res) => {
+
+    const namespace_id = req.params.namespace;
+
+    const {
+        hostname,
+        local_ipv4,
+        mac
+    } = req.body;
+
+    // TODO robot id will be provided in mutual tls cert, 
+    // for now we hardcode it 
+    const TMP_ROBOT_ID = ''
+
+    // check namespace exists
+    const namespaceCount = await prisma.namespace.count({
+        where: {
+            id: namespace_id
+        }
+    });
+
+    if (namespaceCount === 0) {
+        logger.warn('could not create robot because namespace does not exist');
+        return res.status(400).send('could not create robot');
+    }
+
+
+    await prisma.networkReport.create({
+        data: {
+            namespace_id,
+            robot_id: TMP_ROBOT_ID,
+            hostname,
+            local_ipv4,
+            mac
+        }
+    });
+
+    return res.status(200).end()
+})
+
+
+/**
  * Create a robot in a namespace.
  * 
  * Creates a robot and one primary ecu for it, also creates a key pair for it,
@@ -469,6 +518,7 @@ router.post('/:namespace/robots/:robot_id/manifests', async (req, res) => {
  * the response contains the bootstrapping credentials the primary requires to
  * provision itself with us
  */
+/*
 router.post('/:namespace/robots', async (req, res) => {
 
     const namespace_id = req.params.namespace;
@@ -520,6 +570,8 @@ router.post('/:namespace/robots', async (req, res) => {
     return res.status(200).json(response);
 
 });
+*/
+
 
 
 /**

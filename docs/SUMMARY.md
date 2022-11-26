@@ -19,6 +19,7 @@
 
 - [Image repository module](architecture/image-repository.md)
 
+
 ## Developers
 
 - [Overview](developers/index.md)
@@ -28,6 +29,7 @@
 - [Working with s3](developers/working-with-s3.md)
 
 - [Scripts](developers/scripts.md)
+
 
 ## Resources
 

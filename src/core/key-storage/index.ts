@@ -9,8 +9,8 @@ import config from '../../config';
  */
 export const loadKeyPair = async (namespace_id: string, repo: TUFRepo, role: TUFRole): Promise<IKeyPair> => {
     return {
-        privateKey: await keyStorage.getKey(`${namespace_id}-${repo}-${role}-private.pem`),
-        publicKey: await keyStorage.getKey(`${namespace_id}-${repo}-${role}-public.pem`)
+        privateKey: await keyStorage.getKey(`${namespace_id}-${repo}-${role}-private`),
+        publicKey: await keyStorage.getKey(`${namespace_id}-${repo}-${role}-public`)
     }
 }
 

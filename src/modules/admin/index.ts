@@ -1,8 +1,9 @@
 import express from 'express';
 import { TUFRepo, TUFRole } from '@prisma/client';
+import forge from 'node-forge';
 import { prisma } from '../../core/postgres';
 import config from '../../config';
-import { generateKeyPair } from '../../core/crypto';
+import { generateCertificate, generateKeyPair } from '../../core/crypto';
 import { keyStorage } from '../../core/key-storage';
 import { blobStorage } from '../../core/blob-storage';
 import { generateRoot } from '../../core/tuf';
@@ -16,12 +17,15 @@ const router = express.Router();
  * 
  * - Creates namespace in db.
  * - Creats bucket in blob storage to hold its blobs.
- * - Generates online private keys (these will be replaced by offline keys in time).
- * - Creates image repo root.json and saves it to db.
+ * - Generates online TUF keys.
+ * - Creates initial image and director root.json metadata files and saves them to the db.
+ * - Creates a root CA for this namespace.
  */
 router.post('/namespaces', async (req, res) => {
 
-    // generate 8 key pairs, 4 top-level metadata keys for 2 repos
+    // generate 8 TUF key pairs, 4 top-level metadata keys for 2 repos
+    // generate a single root ca key pair
+    // NOTE unify how keys are generated
     const imageRootKey = generateKeyPair(config.KEY_TYPE);
     const imageTargetsKey = generateKeyPair(config.KEY_TYPE);
     const imageSnapshotKey = generateKeyPair(config.KEY_TYPE);
@@ -32,9 +36,14 @@ router.post('/namespaces', async (req, res) => {
     const directorSnapshotKey = generateKeyPair(config.KEY_TYPE);
     const directorTimestampKey = generateKeyPair(config.KEY_TYPE);
 
-    // create initial root.json for image repo, we'll start it off at 1
-    const version = 1;
+    const rootCaKeyPair = forge.pki.rsa.generateKeyPair(2048);
 
+    // generate root ca cert, this is the root cert so we don't pass in a parent
+    const rootCert = generateCertificate(rootCaKeyPair);
+
+
+    // create initial root.json for TUF repos, we'll start them off at 1
+    const version = 1;
 
     // generate directory repo root.json
     const directorRepoRoot = generateRoot(config.TUF_TTL.DIRECTOR.ROOT,
@@ -90,6 +99,13 @@ router.post('/namespaces', async (req, res) => {
         // create bucket in blob storage
         await blobStorage.createBucket(namespace.id);
 
+        // store the cert in blob storage, its a public cert so no harm putting it there
+        await blobStorage.putObject(namespace.id, 'rootca', forge.pki.certificateToPem(rootCert));
+
+        // store root ca keys
+        await keyStorage.putKey(`${namespace.id}-rootca-private`, forge.pki.privateKeyToPem(rootCaKeyPair.privateKey));
+        await keyStorage.putKey(`${namespace.id}-rootca-public`, forge.pki.publicKeyToPem(rootCaKeyPair.publicKey));
+
         // store image repo private keys
         await keyStorage.putKey(`${namespace.id}-image-root-private`, imageRootKey.privateKey);
         await keyStorage.putKey(`${namespace.id}-image-targets-private`, imageTargetsKey.privateKey);
@@ -130,7 +146,6 @@ router.post('/namespaces', async (req, res) => {
 });
 
 
-
 /**
  * List namespaces
  */
@@ -151,7 +166,6 @@ router.get('/namespaces', async (req, res) => {
     return res.status(200).json(response);
 
 });
-
 
 
 /**
@@ -179,7 +193,7 @@ router.delete('/namespaces/:namespace', async (req, res) => {
     await prisma.$transaction(async tx => {
 
         // delete namespace in db
-        const namespaceObj = await tx.namespace.delete({
+        await tx.namespace.delete({
             where: {
                 id: namespace
             }
@@ -189,6 +203,9 @@ router.delete('/namespaces/:namespace', async (req, res) => {
         await blobStorage.deleteBucket(namespace);
 
         // delete keys associated with this namespace
+        await keyStorage.deleteKey(`${namespace}-rootca-private`);
+        await keyStorage.deleteKey(`${namespace}-rootca-public`);
+
         await keyStorage.deleteKey(`${namespace}-image-root-private`);
         await keyStorage.deleteKey(`${namespace}-image-targets-private`);
         await keyStorage.deleteKey(`${namespace}-image-snapshot-private`);

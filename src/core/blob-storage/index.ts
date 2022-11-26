@@ -32,7 +32,7 @@ class BlobStorageProvider implements IBlobStorageProvider {
         return this.strategy.deleteBucket(bucketId);
     }
 
-    async putObject(bucketId: string, objectId: string, content: Buffer): Promise<void> {
+    async putObject(bucketId: string, objectId: string, content: Buffer | string): Promise<void> {
         return this.strategy.putObject(bucketId, objectId, content);
     }
 

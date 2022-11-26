@@ -1,7 +1,7 @@
 export interface IBlobStorageProvider {
     createBucket(bucketId: string): Promise<void>;
     deleteBucket(bucketId: string): Promise<void>;
-    putObject(bucketId: string, objectId: string, content: Buffer): Promise<void>;
+    putObject(bucketId: string, objectId: string, content: Buffer | string): Promise<void>;
     getObject(bucketId: string, objectId: string): Promise<Buffer | string>;
     deleteObject(bucketId: string, objectId: string): Promise<void>;
 }

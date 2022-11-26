@@ -22,7 +22,7 @@ export class FsBlobProvider implements IBlobStorageProvider {
         fs.rmdirSync(filePath, { recursive: true });
     }
 
-    async putObject(bucketId: string, objectId: string, content: Buffer): Promise<void> {
+    async putObject(bucketId: string, objectId: string, content: Buffer | string): Promise<void> {
         const filePath = path.resolve(path.join(config.BLOB_FS_STORAGE_DIR, bucketId, objectId));
         fs.mkdirSync(path.dirname(filePath), { recursive: true });
         fs.writeFileSync(filePath, content);

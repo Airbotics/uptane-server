@@ -62,6 +62,9 @@ const config = {
     // logs
     LOGS_DIR: '.logs',                                                          // local log directory
 
+    // root ca
+    ROOT_CA_TTL: [10, 'year'],                                                  // expiry of the root ca cert
+
 
 };
 

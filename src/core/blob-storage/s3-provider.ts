@@ -72,7 +72,7 @@ export class s3BlobProvider implements IBlobStorageProvider {
         }
     }
 
-    async putObject(bucketId: string, objectId: string, content: Buffer): Promise<void> {
+    async putObject(bucketId: string, objectId: string, content: Buffer | string): Promise<void> {
         const params = {
             Bucket: bucketId,
             Key: objectId,

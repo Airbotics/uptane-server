@@ -4,20 +4,25 @@ import { dayjs } from '../time';
 import config from '../../config';
 import { ManipulateType } from 'dayjs';
 
-interface ICertParent {
-    commonName: string;
-    keyPair: forge.pki.KeyPair;
-    cert: forge.pki.Certificate;
+interface ICertOpts {
+    commonName: string; // not the common name of the parent
+    keyPair: forge.pki.KeyPair; // key pair of the parent
+    cert: forge.pki.Certificate; // cert of the parent
 }
 
-export const generateCertificate = (myKeyPair: forge.pki.KeyPair, parent?: ICertParent): forge.pki.Certificate=> {
+/**
+ * Generates a certificate.
+ * 
+ * If this is a root CA then `opts` should be `undefined`, otherwise it should be defined.
+ */
+export const generateCertificate = (myKeyPair: forge.pki.KeyPair, opts?: ICertOpts): forge.pki.Certificate=> {
 
     const cert = forge.pki.createCertificate();
 
     const attrs: forge.pki.CertificateField[] = [
         {
             shortName: 'CN',
-            value: parent ? parent.commonName : 'air-root'
+            value: opts ? opts.commonName : config.ROOT_CA_CN
         },
         {
             shortName: 'O',
@@ -40,7 +45,7 @@ export const generateCertificate = (myKeyPair: forge.pki.KeyPair, parent?: ICert
     const extensions: any[] = [
         {
             name: 'basicConstraints',
-            cA: !parent // if there is no parent, then this should be set to
+            cA: !opts // if there is no opts/parent cert, then this should be set to true since it is the root ca
         },
         {
             name: 'keyUsage',
@@ -59,11 +64,11 @@ export const generateCertificate = (myKeyPair: forge.pki.KeyPair, parent?: ICert
     cert.validity.notAfter = dayjs().add(config.ROOT_CA_TTL[0] as number, config.ROOT_CA_TTL[1] as ManipulateType).toDate();
     cert.setExtensions(extensions);
     cert.setSubject(attrs);
-    cert.setIssuer(parent ? parent.cert.subject.attributes : attrs);
+    cert.setIssuer(opts ? opts.cert.subject.attributes : attrs);
     cert.publicKey = myKeyPair.publicKey;
 
     // sign the cert
-    cert.sign(parent ? parent.keyPair.privateKey : myKeyPair.privateKey, forge.md.sha256.create());
+    cert.sign(opts ? opts.keyPair.privateKey : myKeyPair.privateKey, forge.md.sha256.create());
 
     return cert;
 }

@@ -2,7 +2,7 @@
 
 @BASE_URL=http://localhost:8001
 @API_VERSION=v0
-@NAMESPACE=30a40152-0785-4a5a-a588-99867c99e042
+@NAMESPACE=384ba2c6-5c81-4b62-8e46-dc5f43466d6b
 @IMAGE=91497b2c-3554-4adb-b78a-54072faa39b7
 @ROBOT=649de690-6de8-43c0-b662-c32ca597dd8d
 
@@ -32,6 +32,10 @@ GET {{BASE_URL}}/api/{{API_VERSION}}/admin/namespaces HTTP/1.1
 DELETE {{BASE_URL}}/api/{{API_VERSION}}/admin/namespaces/{{NAMESPACE}} HTTP/1.1
 
 
+### create provisioning credentials
+POST {{BASE_URL}}/api/{{API_VERSION}}/admin/namespaces/{{NAMESPACE}}/provisioning-credentials HTTP/1.1
+
+
 # -----------------------------------------
 # Director repo
 # -----------------------------------------
@@ -58,6 +62,8 @@ DELETE {{BASE_URL}}/api/{{API_VERSION}}/director/{{NAMESPACE}}/robots/{{ROBOT}} 
 
 ### add ecu to robot
 POST {{BASE_URL}}/api/{{API_VERSION}}/director/{{NAMESPACE}}/robots/{{ROBOT}}/ecus HTTP/1.1
+
+
 
 
 

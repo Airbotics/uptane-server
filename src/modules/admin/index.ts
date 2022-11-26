@@ -1,5 +1,7 @@
 import express from 'express';
 import { TUFRepo, TUFRole } from '@prisma/client';
+import { v4 as uuidv4 } from 'uuid';
+import archiver from 'archiver';
 import forge from 'node-forge';
 import { prisma } from '../../core/postgres';
 import config from '../../config';
@@ -38,7 +40,7 @@ router.post('/namespaces', async (req, res) => {
 
     const rootCaKeyPair = forge.pki.rsa.generateKeyPair(2048);
 
-    // generate root ca cert, this is the root cert so we don't pass in a parent
+    // generate root ca cert, this is the root cert so we don't pass in any opts
     const rootCert = generateCertificate(rootCaKeyPair);
 
 
@@ -100,7 +102,7 @@ router.post('/namespaces', async (req, res) => {
         await blobStorage.createBucket(namespace.id);
 
         // store the cert in blob storage, its a public cert so no harm putting it there
-        await blobStorage.putObject(namespace.id, 'rootca', forge.pki.certificateToPem(rootCert));
+        await blobStorage.putObject(namespace.id, 'rootca-cert', forge.pki.certificateToPem(rootCert));
 
         // store root ca keys
         await keyStorage.putKey(`${namespace.id}-rootca-private`, forge.pki.privateKeyToPem(rootCaKeyPair.privateKey));
@@ -233,6 +235,69 @@ router.delete('/namespaces/:namespace', async (req, res) => {
 
 });
 
+
+/**
+ * Create a provisioning credentials
+ */
+router.post('/namespaces/:namespace/provisioning-credentials', async (req, res) => {
+
+    const namespace = req.params.namespace;
+
+    const namespaceCount = await prisma.namespace.count({
+        where: {
+            id: namespace
+        }
+    });
+
+    if (namespaceCount === 0) {
+        logger.warn('could not create provisioning key because namespace does not exist');
+        return res.status(400).send('could not create provisioning key');
+    }
+
+    // create provisioning key
+    const provisioningKeyPair = forge.pki.rsa.generateKeyPair(2048);
+
+    // load root ca and key, used to sign provisioning cert
+    const rootCaPrivateKeyStr = await keyStorage.getKey(`${namespace}-rootca-private`);
+    const rootCaPublicKeyStr = await keyStorage.getKey(`${namespace}-rootca-public`);
+    const rootCaCertStr = await blobStorage.getObject(namespace, 'rootca-cert') as string;
+    const rootCaCert = forge.pki.certificateFromPem(rootCaCertStr);
+
+    // generate provisioning cert using root ca as parent
+    const opts = {
+        commonName: uuidv4(),
+        cert: rootCaCert,
+        keyPair: {
+            privateKey: forge.pki.privateKeyFromPem(rootCaPrivateKeyStr),
+            publicKey: forge.pki.publicKeyFromPem(rootCaPublicKeyStr)
+        }
+    };
+    const provisioningCert = generateCertificate(provisioningKeyPair, opts);
+
+    // bundle into pcks12, no password set
+    const p12 = forge.pkcs12.toPkcs12Asn1(provisioningKeyPair.privateKey, [provisioningCert, rootCaCert], null, { algorithm: 'aes256' });
+
+    // base64 enecode
+    var p12b64 = forge.util.encode64(forge.asn1.toDer(p12).getBytes());
+
+    
+    // create credentials.zip
+    // const output = fs.createWriteStream(__dirname + '/example.zip');
+    const archive = archiver('zip');
+    
+    archive.append(`https://${config.HOSTNAME}:${config.PORT}/api/v0/`, { name: 'autoprov.url' });
+    archive.append(p12b64, { name: 'autoprov_credentials.p12' });
+    archive.finalize();
+    
+    // TODO catch archive on error event
+    // TODO record credentials creation in db to enable revocation, expiry, auditing, etc.
+
+    logger.info('provisioning credentials have been created');
+
+    res.status(200);
+    archive.pipe(res);
+
+});
 
 
 export default router;

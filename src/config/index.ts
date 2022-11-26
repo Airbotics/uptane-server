@@ -16,6 +16,7 @@ const config = {
     PORT: process.env.PORT || 8001,                                             // port the server listens on
     NODE_ENV: process.env.NODE_ENV || 'development',                            // mode to run the server in, 'production' or 'development'
     MAX_JSON_REQUEST_SIZE: '100mb',                                             // max json size we accept
+    HOSTNAME: 'localhost',                                                      // hostname of the server 
 
     // blob storage
     BLOB_STORAGE_PROVIDER: EBlobStorageProvider.Fs,                             // blob storage provider to use
@@ -64,6 +65,7 @@ const config = {
 
     // root ca
     ROOT_CA_TTL: [10, 'year'],                                                  // expiry of the root ca cert
+    ROOT_CA_CN: 'airbotics-root',                                               // common name of the root ca
 
 
 };

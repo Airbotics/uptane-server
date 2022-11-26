@@ -16,47 +16,23 @@ const router = express.Router();
 
 
 /**
- * Process a manifest sent by a primary
- * 
- * If all verification checks pass, and a new image is set to be deployed onto some 
- * of the robots ecus then this creates a new set of director repo tuf metadata
- * 
- * From the spec...
- * 
- * [Uptane Spec 5.4.2.1]
- * • The Primary SHALL build a vehicle version manifest.
- * • Once the complete manifest is built, the Primary CAN send the manifest to the Director repository.
- * • However, it is not strictly required that the Primary send the manifest until (after/before?) 
- * it downloads and verifies the tuf metadata
- * 
- * [Uptane Spec 5.4.2.1.1]
- * • The vehicle version manifest is a metadata structure that SHALL contain the following information
- *      • signatures: a signature of the payload from the primacy ECU 
- *      • payload:
- *          • VIN
- *          • ECU unqique ID
- *          • A list of ECU version reports, one of which SHOULD be the report for the primary itself
- * 
- * [Uptane Spec 5.4.2.1.2]
-    * 
- * • An ECU version report is a metadata structure that SHALL contain the following information:
- *      • signatures: a signature of the payload by the corresponding ECU
- *      • payload: 
- *          • The ECUs unique identifier
- *          • The filename, length, and hashes of its currently installed image
- *          • An indicator of any detected security attack
- *          • The latest time the ECU can verify at the time this version report was generated
- *          • A nonce or counter to prevent a replay of the ECU version report. This value SHALL change each update cycle
- * 
- * 
+ * checks:
+ * - robot exists
+ * - all ecu public key can be loaded
+ * - valid schema
+ * - primary ecus version report is included
+ * - all ecu reports are inluded
+ * - no unknown ecu reports are included
+ * - top level signature is signed by primary ecu private key
+ * - each ecu report signature is signed by corresponding ecu private key
+ * - each nonce in the ecu report has never been sent before
+ * - no ecu reports have expired
+ * - no ecu reports have any reported attacks
+ * - probably a few more in time..
  * 
  */
-
-
-
-
 export const robotManifestChecks = async (robotManifest: IRobotManifest, namespaceID: string, ecuSerials: string[]) => {
-    
+
     //Do the async stuff needed for the checks functions here
     const robot = await prisma.robot.findUnique({
         where: {
@@ -79,8 +55,7 @@ export const robotManifestChecks = async (robotManifest: IRobotManifest, namespa
     try {
 
         for (const ecuSerial of ecuSerials) {
-            ecuPubKeys[ecuSerial] = await keyStorage.getKey(
-                robotManifest.signed.ecu_version_reports[ecuSerial].signatures[0].keyid);
+            ecuPubKeys[ecuSerial] = await keyStorage.getKey(`${namespaceID}-${ecuSerial}-public.pem`);
         }
 
     } catch (e) {
@@ -90,7 +65,7 @@ export const robotManifestChecks = async (robotManifest: IRobotManifest, namespa
     const checks = {
 
         validateSchema: () => {
-            const { error } = robotManifestSchema.validate(robotManifest)
+            const { error } = robotManifestSchema.validate(robotManifest);
             if (error) throw (ManifestErrors.InvalidSchema);
             return checks;
         },
@@ -120,14 +95,14 @@ export const robotManifestChecks = async (robotManifest: IRobotManifest, namespa
         },
 
         validateTopSignature: () => {
-
-            const verified = verifySignature({
+            
+            const verified: boolean = verifySignature({
                 signature: robotManifest.signatures[0].sig,
                 pubKey: ecuPubKeys[robotManifest.signed.primary_ecu_serial],
                 algorithm: 'RSA-SHA256',
                 data: toCanonical(robotManifest.signed)
             });
-
+            
             if (!verified) throw (ManifestErrors.InvalidSignature)
 
             return checks;
@@ -142,10 +117,11 @@ export const robotManifestChecks = async (robotManifest: IRobotManifest, namespa
                     signature: robotManifest.signed.ecu_version_reports[ecuSerial].signatures[0].sig,
                     pubKey: ecuPubKeys[ecuSerial],
                     algorithm: 'RSA-SHA256',
-                    data: toCanonical(robotManifest.signed)
+                    data: toCanonical(robotManifest.signed.ecu_version_reports[ecuSerial].signed)
                 });
 
-                if (!verified) throw (ManifestErrors.InvalidReportSignature)
+                if (!verified) throw (ManifestErrors.InvalidReportSignature);
+
             }
 
             return checks;
@@ -158,12 +134,16 @@ export const robotManifestChecks = async (robotManifest: IRobotManifest, namespa
 
                 const previouslySentNonces: string[] = [];
 
-                for(const manifest of robot.robot_manifests) {
-                    const fullManfest = JSON.parse(manifest.value as string);
-                    previouslySentNonces.push(fullManfest['signed']['ecu_version_reports'][ecuSerial]['signed']['nonce'])
+                for (const manifest of robot.robot_manifests) {
+                    //TODO fix typing
+                    const fullManifest = manifest.value as any;
+                    previouslySentNonces.push(fullManifest['signed']['ecu_version_reports'][ecuSerial]['signed']['nonce']);
                 }
 
                 if (previouslySentNonces.includes(robotManifest.signed.ecu_version_reports[ecuSerial].signed.nonce)) {
+                    console.log(previouslySentNonces);
+                    console.log(robotManifest.signed.ecu_version_reports[ecuSerial].signed.nonce);
+
                     throw (ManifestErrors.InvalidReportNonce)
                 }
             }
@@ -176,12 +156,12 @@ export const robotManifestChecks = async (robotManifest: IRobotManifest, namespa
             const now = Math.floor(new Date().getTime() / 1000); //Assume this time is trusted for now
 
             for (const ecuSerial of ecuSerials) {
-                
+
                 const validForSecs: number = (ecuSerial === robotManifest.signed.primary_ecu_serial) ?
                     Number(config.PRIMARY_ECU_VALID_FOR_SECS) : Number(config.SECONDARY_ECU_VALID_FOR_SECS);
 
-                if (robotManifest.signed.ecu_version_reports[ecuSerial].signed.time >= now ||
-                    robotManifest.signed.ecu_version_reports[ecuSerial].signed.time < (now - validForSecs)) {
+
+                if (robotManifest.signed.ecu_version_reports[ecuSerial].signed.time < (now - validForSecs)) {
                     throw (ManifestErrors.ExpiredReport)
                 }
             }
@@ -192,6 +172,8 @@ export const robotManifestChecks = async (robotManifest: IRobotManifest, namespa
         validateAttacks: () => {
 
             for (const ecuSerial of ecuSerials) {
+                console.log(robotManifest.signed.ecu_version_reports[ecuSerial].signed.attacks_detected);
+
                 if (robotManifest.signed.ecu_version_reports[ecuSerial].signed.attacks_detected !== '') {
                     throw (ManifestErrors.AttackIdentified)
                 }
@@ -199,7 +181,6 @@ export const robotManifestChecks = async (robotManifest: IRobotManifest, namespa
 
             return checks;
         }
-
     }
 
     return checks;
@@ -207,7 +188,19 @@ export const robotManifestChecks = async (robotManifest: IRobotManifest, namespa
 }
 
 
-const determineUpdateRequired = async (robotManifest: IRobotManifest, ecuSerials: string[]): Promise<boolean> => {
+/**
+ * For now we have a tmp table that simply maps ecu serials and images to make it easier
+ * to test a full uptane runthrough. We will figure out how to do all the joining between rollouts,
+ * stacks, versions, ecus etc. in due course when the schema becomes clearer.
+ * 
+ * For each ECU determine if the reported installed image is different to the latest one 
+ * we have on record, if it is, we need to generate new tuf metadata for the ecu. Otherwise
+ * we can infer that the ECU is running the latest avaiable image. There is also a check to 
+ * see if the latest rollout has been acknowledged so we don't generate new metadata more than once.
+ * 
+ * NOTE: THIS WILL BE REPLACED VERY SOON
+ */
+const determineNewMetadaRequired = async (robotManifest: IRobotManifest, ecuSerials: string[]): Promise<boolean> => {
 
 
     //get all the 'rollouts' for each ecu reported
@@ -236,19 +229,29 @@ const determineUpdateRequired = async (robotManifest: IRobotManifest, ecuSerials
         to any rollouts yet.This likely happens when the robot has it's factory image 
         installed and has never been instructed to perform an update to any of its ecus
         */
-        if(idx == -1) {
+        if (idx == -1) {
             logger.info('ECU image is not in rollout')
         }
+
         else {
-            //The robot is reporting about an ecu that is associated with a rollout
-            //lets check if the image in the rollout is the different to the one being reported
-            if(rolloutsPerEcu[idx].image.sha256 !== 
-                robotManifest.signed.ecu_version_reports[ecuSerial].signed.installed_image.hashes.sha256)
-                {
-                    //there is a mismatch between rollout image and reported image, so an
-                    //upate to metadata is required
+
+            /*
+            The robot is reporting an ecu that is associated with a rollout
+            Lets first check if the rollout has been acknowledged, If it has, we have 
+            already generated the corresponding metadata files, so we dont have to do anything
+            */
+            if(rolloutsPerEcu[idx].acknowledged) {
+                logger.info('Metadata has already been generated for this ECUs image')
+            }
+
+            else {
+                if (rolloutsPerEcu[idx].image.sha256 !==
+                    robotManifest.signed.ecu_version_reports[ecuSerial].signed.installed_image.hashes.sha256) {
+        
+                    //there is a mismatch between rollout image and reported image, so we must generate new metadata
                     return true;
                 }
+            }
         }
     }
     return false;
@@ -285,7 +288,7 @@ const generateNewMetadata = async (namespace_id: string, robot_id: string, ecuSe
 
     // Lets generate the whole metadata file again
     const targetsImages: ITargetsImages = {}
-    
+
     for (const ecuRollout of rolloutsPerEcu) {
 
         targetsImages[ecuRollout.ecu_id] = {
@@ -299,12 +302,12 @@ const generateNewMetadata = async (namespace_id: string, robot_id: string, ecuSe
             }
         }
     }
-    
+
     //determine new metadata versions
     const newTargetsVersion = await getLatestMetadataVersion(namespace_id, TUFRepo.director, TUFRole.targets, robot_id) + 1;
     const newSnapshotVersion = await getLatestMetadataVersion(namespace_id, TUFRepo.director, TUFRole.snapshot, robot_id) + 1;
     const newTimestampVersion = await getLatestMetadataVersion(namespace_id, TUFRepo.director, TUFRole.timestamp, robot_id) + 1;
-    
+
     //Read the keys for the director
     const targetsKeyPair = await loadKeyPair(namespace_id, TUFRepo.director, TUFRole.targets);
     const snapshotKeyPair = await loadKeyPair(namespace_id, TUFRepo.director, TUFRole.snapshot);
@@ -315,8 +318,8 @@ const generateNewMetadata = async (namespace_id: string, robot_id: string, ecuSe
     const snapshotMetadata = generateSnapshot(config.TUF_TTL.IMAGE.SNAPSHOT, newSnapshotVersion, snapshotKeyPair, targetsMetadata.signed.version);
     const timestampMetadata = generateTimestamp(config.TUF_TTL.IMAGE.TIMESTAMP, newTimestampVersion, timestampKeyPair, snapshotMetadata.signed.version);
 
-     // perform db writes in transaction
-     await prisma.$transaction(async tx => {
+    // perform db writes in transaction
+    await prisma.$transaction(async tx => {
 
         // create tuf metadata
         // prisma wants to be passed an `object` instead of our custom interface so we cast it
@@ -356,8 +359,19 @@ const generateNewMetadata = async (namespace_id: string, robot_id: string, ecuSe
             }
         });
 
-     })
+        //Update the acknowledged field in the rollouts table
+        await prisma.tmpEcuImages.updateMany({
+            where: {
+                ecu_id: {
+                    in: ecuSerials
+                }
+            },
+            data: {
+                acknowledged: true
+            }
+        })
 
+    })
 }
 
 
@@ -367,6 +381,8 @@ router.post('/:namespace/robots/:robot_id/manifests', async (req, res) => {
     const namespace_id: string = req.params.namespace;
     const robot_id: string = req.params.robot_id;
     const manifest: IRobotManifest = req.body;
+
+    let valid = true;
 
     // check namespace exists
     const namespaceCount = await prisma.namespace.count({
@@ -383,9 +399,9 @@ router.post('/:namespace/robots/:robot_id/manifests', async (req, res) => {
     //We are gonna need these so many times so pull them out once
     const ecuSerials = Object.keys(manifest.signed.ecu_version_reports);
 
-    // Perform all of the checks
     try {
 
+        // Perform all of the checks
         (await robotManifestChecks(manifest, namespace_id, ecuSerials))
             .validatePrimaryECUReport()
             .validateSchema()
@@ -394,72 +410,52 @@ router.post('/:namespace/robots/:robot_id/manifests', async (req, res) => {
             .validateReportSignatures()
             .validateNonces()
             .validateTime()
+            .validateAttacks()
 
-    } catch (e) {
+        /**
+         * if we get to this point we believe we have a manifest that is in good order
+         * now we can inspect the images that were reported and decide what to do.
+         * in airbotics, images are deployed to robots through rollouts so we consult that table.
+         * if the robot is up-to-date then no new tuf metadata needs to be created, so we gracefully
+         * exit and thank the primary for its time. Otherwise we need to generate new TUF targets, 
+         * snapshot and timestamp files for each ecu that needs updated.
+         */
+
+        const updateRequired = await determineNewMetadaRequired(manifest, ecuSerials);
+
+        if (!updateRequired) {
+            logger.info('processed manifest for robot and determined all ecus have already installed their latest images');
+        }
+
+        else {
+            await generateNewMetadata(namespace_id, robot_id, ecuSerials);
+            logger.info('processed manifest for robot and created new tuf metadata');
+        }
+
+        // phew we made it
+        return res.status(200).end();
+
+
+    }
+    catch (e) {
+        valid = false;
         logger.error('Unable to accept robot manifest');
         logger.error(e);
+        return res.status(400).send(e)
     }
+    finally {
 
+        //Regardless of what happened above, lets save the sent manifest
+        await prisma.robotManifest.create({
+            data: {
+                namespace_id: namespace_id,
+                robot_id: robot_id,
+                value: manifest as object,
+                valid: valid
+            }
+        })
 
-    /**
-     * now we perform an unholy amount of checks, if any of them have failed we flag 
-     * this robot for review
-     * 
-     * checks:
-     * - validate the schema is correct                                                     [x]
-     * - check the primary ecus version report is included                                  [x]
-     * - check the vin in the manifest is in the inventory db                               [x]
-     * - check all ecus on this robot in the inventory db are in the manifest               [x]
-     * - check there are no additional ecus                                                 [x]
-     * - verify the top-level signature of the manifest                                     [x]
-     * - verify every signature for all other ecus in the manifest                          [x]
-     * - check the nonce in each ecu has not been used before                               [x]
-     * - check no any attacks have been reported by the ecus                                [x]
-     * - check the images reported by each of the ecus correspond to the last set that were sent down
-     * - probably a few more in time..
-     */
-
-    /**
-     * if we get to this point we believe we have a manifest that is in good order
-     * now we can inspect the images that were reported and decide what to do.
-     * in airbotics, images are deployed to robots through rollouts so we consult that table.
-     * if the robot is up-to-date then no new tuf metadata needs to be created, so we gracefully
-     * exit and thank the primary for its time.
-     */
-
-
-    /**
-     * For now we have a tmp table that simply maps ecu serials and images to make it easier
-     * to test a full uptane runthrough. We will figure out how to do all the joining between rollouts,
-     * stacks, versions, ecus etc. in due course when the schema becomes clearer.
-     * 
-     * For each ECU determine if the reported installed image is different to the latest one 
-     * we have on record, if it is, we need to generate new tuf metadata for the ecu. Otherwise
-     * we can infer that the ECU is running the latest avaiable image
-     * 
-     * NOTE: THIS WILL BE REPLACED VERY SOON
-     */
-
-
-    const updateRequired = await determineUpdateRequired(manifest, ecuSerials);
-
-    if(!updateRequired) {
-        logger.info('processed manifest for robot and determined all ecus have already installed their latest images');
-        return res.status(200).end();
     }
-
-    //OK now we need to generate the new TUF targets, snapshot and timestamp files for each ecu that needs updated
-    else {
-        await generateNewMetadata(namespace_id, robot_id, ecuSerials);
-    }
-
-    /**
-     * finally, if we get here then we have created new tuf metadata which is ready for
-     * the ecus the next time it requests it, which will probably be soon. that was a lot...
-     */
-
-    logger.info('processed manifest for robot and created new tuf metadata');
-    return res.status(200).end();
 
 });
 

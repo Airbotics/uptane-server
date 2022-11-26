@@ -13,7 +13,10 @@
         "paths": {
             "*": [
                 "./node_modules/*"
-            ]
+            ],
+            "@airbotics-core/*": ["src/core/*"],
+            "@airbotics-config": ["src/config/"],
+            "@airbotics-modules/*": ["src/modules/*"],
         },
         "typeRoots": [
             "./src/types",

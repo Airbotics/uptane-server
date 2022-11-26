@@ -9,8 +9,8 @@ import config from '../../config';
  */
 export const loadKeyPair = async (namespace_id: string, repo: TUFRepo, role: TUFRole): Promise<IKeyPair> => {
     return {
-        privateKey: await keyStorage.getKey(`${namespace_id}-${repo}-${role}-private`),
-        publicKey: await keyStorage.getKey(`${namespace_id}-${repo}-${role}-public`)
+        privateKey: await keyStorage.getKey(`${namespace_id}-${repo}-${role}-private.pem`),
+        publicKey: await keyStorage.getKey(`${namespace_id}-${repo}-${role}-public.pem`)
     }
 }
 
@@ -28,8 +28,8 @@ class KeyStorageProvider implements IKeyStorageProvider {
         }
     }
 
-    async putKey(id: string, privKey: string): Promise<void> {
-        return this.strategy.putKey(id, privKey);
+    async putKey(id: string, key: string): Promise<void> {
+        return this.strategy.putKey(id, key);
     }
 
     async getKey(id: string): Promise<string> {

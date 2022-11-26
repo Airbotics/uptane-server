@@ -145,6 +145,7 @@ model RobotManifest {
     namespace_id        String
     robot_id            String
     value               Json            // holds entire signed manifest
+    valid               Boolean
 
     created_at          DateTime        @default(now())
 
@@ -201,6 +202,7 @@ model TmpEcuImages {
 
     created_at          DateTime        @default(now())
     updated_at          DateTime        @updatedAt
+    acknowledged        Boolean         @default(false)
 
     ecu                 Ecu             @relation(fields: [ecu_id], references: [id], onDelete: Cascade)
     image               Image           @relation(fields: [image_id], references: [id], onDelete: Cascade)

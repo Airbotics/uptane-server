@@ -10,30 +10,29 @@
 
 - [API](api.md)
 
-- [Scripts](scripts.md)
 
 ## Architecture
 
 - [Overview](architecture/index.md)
 
-    - [Director repository module](architecture/director-repository.md)
+- [Director repository module](architecture/director-repository.md)
 
-    - [Image repository module](architecture/image-repository.md)
+- [Image repository module](architecture/image-repository.md)
 
 ## Developers
 
-- [Developers guide](developers/index.md)
+- [Overview](developers/index.md)
 
-    - [Working with Postgres](developers/working-with-postgres.md)
+- [Working with Postgres](developers/working-with-postgres.md)
 
-    - [Working with s3](developers/working-with-s3.md)
+- [Working with s3](developers/working-with-s3.md)
+
+- [Scripts](developers/scripts.md)
 
 ## Resources
 
-- [Overview](resources/index.md)
+- [Landscape of software deployment](resources/deployment-landscape.md)
 
-    - [Landscape of software deployment](resources/deployment-landscape.md)
-    
-    - [The Update Framework primer](resources/tuf-primer.md)
+- [The Update Framework primer](resources/tuf-primer.md)
 
-    - [Glossary](resources/glossary.md)
+- [Glossary](resources/glossary.md)

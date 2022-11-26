@@ -1,4 +1,4 @@
-import prisma from '../../core/postgres';
+import prisma from '../../../core/postgres';
 
 
 /**

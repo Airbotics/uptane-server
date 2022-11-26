@@ -13,22 +13,26 @@ import { IKeyStorageProvider } from '../../types';
  */
 export class FilesystemProvider implements IKeyStorageProvider {
 
-    FILENAME = 'private.pem'
+    private keysPath: string;
+    
+    constructor() {
+        this.keysPath = path.resolve(path.join(__filename, '..', '..', '..', '..', config.KEYS_FS_STORAGE_DIR));
+        fs.mkdirSync(this.keysPath, { recursive: true });
+    }
 
-    async putKey(id: string, privKey: string): Promise<void> {
-        const filePathKey = path.resolve(path.join(config.KEYS_FS_STORAGE_DIR, id, this.FILENAME));
-        fs.mkdirSync(path.dirname(filePathKey), { recursive: true });
-        fs.writeFileSync(filePathKey, privKey);
+    async putKey(id: string, key: string): Promise<void> {
+        const filePathKey = path.resolve(path.join(this.keysPath, id));
+        fs.writeFileSync(filePathKey, key);
     }
 
     async getKey(id: string): Promise<string> {
-        const filePathKey = path.resolve(path.join(config.KEYS_FS_STORAGE_DIR, id, this.FILENAME));
+        const filePathKey = path.resolve(path.join(this.keysPath, id));
         return fs.readFileSync(filePathKey).toString();
     }
 
     async deleteKey(id: string): Promise<void> {
-        const filePathKey = path.resolve(path.join(config.KEYS_FS_STORAGE_DIR, id));
-        return fs.rmdirSync(filePathKey, { recursive: true });
+        const filePathKey = path.resolve(path.join(this.keysPath, id));
+        return fs.rmSync(filePathKey)
     }
 
 }

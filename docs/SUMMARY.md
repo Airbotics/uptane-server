@@ -2,11 +2,9 @@
 
 ## General
 
-- [Welcome to Airbotics](README.md)
+- [Welcome to Airbotics](index.md)
 
 - [User guide](user-guide.md)
-
-- [Developers guide](developers-guide.md)
 
 - [Key management](key-management.md)
 
@@ -16,14 +14,26 @@
 
 ## Architecture
 
-- [Overview](architecture.md)
+- [Overview](architecture/index.md)
 
-    - [Admin module](modules/admin.md)
+    - [Director repository module](architecture/director-repository.md)
 
-    - [Director repository module](modules/director-repository.md)
+    - [Image repository module](architecture/image-repository.md)
 
-    - [Image repository module](modules/image-repository.md)
+## Developers
 
-    - [Treehub module](modules/treehub.md)
+- [Developers guide](developers/index.md)
 
-    - [Background workers](modules/background-workers.md)
+    - [Working with Postgres](developers/working-with-postgres.md)
+
+    - [Working with s3](developers/working-with-s3.md)
+
+## Resources
+
+- [Overview](resources/index.md)
+
+    - [Landscape of software deployment](resources/deployment-landscape.md)
+    
+    - [The Update Framework primer](resources/tuf-primer.md)
+
+    - [Glossary](resources/glossary.md)

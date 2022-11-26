@@ -127,7 +127,7 @@ Along with these, we're building the usual features you would expect from a OTA 
 
 ## Docs
 
-A web version of the documentation is available [here](docs.airbotics.io), the source for which is available [here](docs/README.md). We use [GitBook](https://www.gitbook.com/) to host our documentation, it is synced with the `main` branch of this repo and will automatically update itself whenever there is a change here.
+A web version of the documentation is available [here](https://docs.airbotics.io), the source for which is available [here](docs/index.md). We use [GitBook](https://www.gitbook.com/) to host our documentation, it is synced with the `main` branch of this repo and will automatically update itself whenever there is a change here.
 
 
 
@@ -146,7 +146,7 @@ A web version of the documentation is available [here](docs.airbotics.io), the s
 - [ ] Orbit (general availability) - ready for scale and production use cases.
 
 
-
+You can see the current state of our progress in our [Roadmap](https://github.com/orgs/Airbotics/projects/1).
 
 
 

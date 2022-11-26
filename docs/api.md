@@ -14,13 +14,12 @@ After that comes the version of the API being used, versions are of the form `v0
 
 The convention we follow is:
 
-PUT - for upserting
-
-POST - for creating
-
-GET - for reading
-
-DELETE - for deleting
+| Method   | Purpose                 |
+| -------- | ----------------------- |
+| `PUT`    | Upserting a resource    |
+| `POST`   | Creating a new resource |
+| `GET`    | Reading a resource      |
+| `DELETE` | Deleting a resource     |
 
 ## Responses
 

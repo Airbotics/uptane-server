@@ -12,8 +12,6 @@ Description: Handles actions taken by human adminstrators.
 
 Base URL: `/api/<version>/admin/...`
 
-More: [documentation](modules/admin.md).
-
 ### Director repo
 
 Description: Uptane director repository.
@@ -36,12 +34,9 @@ Description: A remote ostree repository.
 
 Base URL: `/api/<version>/treehub/...`
 
-More: [documentation](modules/treehub.md).
 
 ### Background workers
 
 Description: These workers periodically perform actions in the background without admin intervention.
 
 Base URL: `N/a`
-
-More: [documentation](modules/background-workers.md).

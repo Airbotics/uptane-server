@@ -9,13 +9,29 @@ import hashlib
 CONSTANTS
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 
-VIN = '123456'
-PRIMARY_ECU_SERIAL = 'ECU1234'
-DB_ROOT_PATH = 'db'
-KEYS_ROOT_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), '.keys')
-API_URL = 'http://localhost:5000'
-DB_ROOT_PATH = os.path.join(os.path.dirname(__file__), 'db')
+NAMESPACE = 'seed'
+ROBOT_ID = 'seed-robot'
+PRIMARY_ECU_SERIAL = 'seed-primary-ecu'
+SECONDARY_ECU_SERIAL = 'seed-secondary-ecu'
+
+KEYS_PATH = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), '.keys')
 PRIMARY_FS_ROOT_PATH = os.path.join(os.path.dirname(__file__), 'primary-fs')
+
+IMAGE_REPO_PORT = 8001
+DIRECTOR_REPO_PORT = 8001
+IMAGE_REPO_HOST = f'http://localhost:{IMAGE_REPO_PORT}/api/v0/image/{NAMESPACE}'
+DIRECTOR_REPO_HOST = f'http://localhost:{DIRECTOR_REPO_PORT}/api/v0/director/{NAMESPACE}'
+
+IMAGE_REPO_NAME = 'image-repo'
+IMAGE_REPO_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'primary-fs', IMAGE_REPO_NAME)
+IMAGE_REPO_META_DIR = os.path.join(IMAGE_REPO_DIR, 'metadata')
+IMAGE_REPO_TARGETS_DIR = os.path.join(IMAGE_REPO_DIR, 'targets')
+
+DIRECTOR_REPO_NAME = 'director-repo'
+DIRECTOR_REPO_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'primary-fs', DIRECTOR_REPO_NAME)
+DIRECTOR_REPO_META_DIR = os.path.join(DIRECTOR_REPO_DIR, 'metadata')
+DIRECTOR_REPO_TARGETS_DIR = os.path.join(DIRECTOR_REPO_DIR, 'targets')
+
 
 
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''
@@ -28,6 +44,7 @@ def _get_time():
 
 def _in(days):
     return datetime.utcnow().replace(microsecond=0) + timedelta(days=days)
+
 
 def pretty_dict(d, indent=0):
    for key, value in d.items():
@@ -42,22 +59,20 @@ def pretty_dict(d, indent=0):
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''
 KEYS
 '''''''''''''''''''''''''''''''''''''''''''''''''''''''''
-#Write a key that's already in a TUFKey format
-def write_tuf_key(key_name):
+# Generate an rsa keypair and write the two keys to local key storage for testing
+def create_and_write_key_pair(key_name):
     key = generate_rsa_key(bits=2048, scheme='rsassa-pss-sha256')
-    with open(os.path.join(KEYS_ROOT_PATH, f'{key_name}.json'), 'w') as f:
-        f.write(json.dumps(key))
+    pub_key_path = os.path.join(KEYS_PATH, f"{key_name}-public.pem")
+    priv_key_path = os.path.join(KEYS_PATH, f"{key_name}-private.pem")
+    
+    with open(pub_key_path, 'w') as pub, open(priv_key_path, 'w') as priv:
+        pub.write(key['keyval']['public'])
+        pub.write(key['keyval']['private'])
 
 
-#Read a key that's already in a TUFKey format
-def read_tuf_key(key_name):
-    with open(os.path.join(KEYS_ROOT_PATH, f'{key_name}.json'), 'r') as f:
-        return json.loads(f.read())
-
-
-#Read a key pair in pem format
+#Read a pem key from local key storage
 def load_pem_key(key_name):
-    with open(os.path.join(KEYS_ROOT_PATH, f'{key_name}.pem'), 'r') as f:
+    with open(os.path.join(KEYS_PATH, f'{key_name}.pem'), 'r') as f:
         return f.read()
 
 

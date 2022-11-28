@@ -47,7 +47,7 @@ DIRECTOR_REPO_TARGETS_DIR = os.path.join(DIRECTOR_REPO_DIR, 'targets')
 
 ASSUMPTIONS 
 * Primary Key pair has been generated 
-* Director knows about this primary and it's associated vehicle
+* Director knows about this primary and it's associated robot
 * timeserver key available
 
 ---------------------------------------------------------------------------------------------------------------

@@ -245,6 +245,55 @@ const createImageRepoMetadata = async () => {
 }
 
 
+const createDirectorRepoRootMetadata = async () => {
+
+    console.log('dev seeder creating director repo root metadata...');
+
+    const rootKeyPair: IKeyPair = {
+        publicKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-director-root-public.pem`),
+        privateKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-director-root-private.pem`),
+    }
+
+    const targetKeyPair: IKeyPair = {
+        publicKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-director-targets-public.pem`),
+        privateKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-director-targets-private.pem`),
+    }
+
+    const snapshotKeyPair: IKeyPair = {
+        publicKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-director-snapshot-public.pem`),
+        privateKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-director-snapshot-private.pem`),
+    }
+
+    const timestampKeyPair: IKeyPair = {
+        publicKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-director-timestamp-public.pem`),
+        privateKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-director-timestamp-private.pem`),
+    }
+
+    const rootMetadata: IRootTUF = generateRoot(SEED_EXPIRES_AT,
+        1,
+        rootKeyPair,
+        targetKeyPair,
+        snapshotKeyPair,
+        timestampKeyPair
+    );
+
+    //Store the metadata in the db
+    await prisma.metadata.create({
+        data: {
+            namespace_id: SEED_NAMESPACE_ID,
+            role: TUFRole.root,
+            repo: TUFRepo.director,
+            version: 1,
+            value: rootMetadata as object,
+            expires_at: rootMetadata.signed.expires
+        }
+    });
+
+    console.log('dev seeder created director repo root metadata');
+
+}
+
+
 const createTmpRollout = async () => {
 
     console.log('dev seeder creating tmp rollout...');
@@ -285,6 +334,7 @@ const createTmpRollout = async () => {
     await createRobot();
     await createECUs();
     await createImageRepoMetadata();
+    await createDirectorRepoRootMetadata();
     await createTmpRollout();
 
 })()

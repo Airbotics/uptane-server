@@ -1,54 +1,25 @@
-import os
 from tuf.ngclient import Updater
-from tuf.api.exceptions import RepositoryError
 from securesystemslib.formats import encode_canonical
 from securesystemslib.keys import create_signature
 import requests 
-from common import load_pem_key, generate_priv_tuf_key, _get_time
 import hashlib
 from styles import GREEN, RED, YELLOW, ENDCOLORS
-import time
 import json 
 import uuid
-from pprint import pprint
 import sys
-
-METADATA_EXTENSION = '.json'
-
-NAMESPACE = 'seed'
-ROBOT_ID = 'seed-robot'
-PRIMARY_ECU_SERIAL = 'seed-primary-ecu'
-SECONDARY_ECU_SERIAL = 'seed-secondary-ecu'
-KEY_ROOT_PATH = os.path.abspath(os.path.join(os.path.dirname( __file__ ), '..', '..', 'uptane', 'keys'))
-
-
-IMAGE_REPO_PORT = 8001
-IMAGE_REPO_HOST = f'http://localhost:{IMAGE_REPO_PORT}/api/v0/image/{NAMESPACE}'
-
-DIRECTOR_REPO_PORT = 8001
-DIRECTOR_REPO_HOST = f'http://localhost:{DIRECTOR_REPO_PORT}/api/v0/director/{NAMESPACE}'
-
-
-IMAGE_REPO_NAME = 'image-repo'
-IMAGE_REPO_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'primary-fs', IMAGE_REPO_NAME)
-IMAGE_REPO_META_DIR = os.path.join(IMAGE_REPO_DIR, 'metadata')
-IMAGE_REPO_TARGETS_DIR = os.path.join(IMAGE_REPO_DIR, 'targets')
-
-DIRECTOR_REPO_NAME = 'director-repo'
-DIRECTOR_REPO_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'primary-fs', DIRECTOR_REPO_NAME)
-DIRECTOR_REPO_META_DIR = os.path.join(DIRECTOR_REPO_DIR, 'metadata')
-DIRECTOR_REPO_TARGETS_DIR = os.path.join(DIRECTOR_REPO_DIR, 'targets')
-
+from common import (load_pem_key, _get_time, generate_priv_tuf_key,
+  NAMESPACE, ROBOT_ID,
+  PRIMARY_ECU_SERIAL, SECONDARY_ECU_SERIAL, PRIMARY_FS_ROOT_PATH,
+  IMAGE_REPO_HOST, DIRECTOR_REPO_HOST, IMAGE_REPO_META_DIR, DIRECTOR_REPO_META_DIR,
+  DIRECTOR_REPO_TARGETS_DIR, IMAGE_REPO_TARGETS_DIR)
 
 
 '''
 
 ---------------------------------------------------------------------------------------------------------------
 
-ASSUMPTIONS 
-* Primary Key pair has been generated 
-* Director knows about this primary and it's associated robot
-* timeserver key available
+DOCUMENTATION 
+* Please see /docs/scripts.md for detailed instructions on how to use this script.
 
 ---------------------------------------------------------------------------------------------------------------
 
@@ -61,15 +32,6 @@ PREREQUISITES (Full verification ECUs) [Uptane Spec 5.4.1]
 2. Current time OR secure attestation of a sufficiently recent time
 3. An ECU signing key. This is a private key, unique to the ECU, used to sign ECU version reports and decrypt 
   images
-
-
-PREREQUISITE DATA
-* ECU private key - MUST BE AVAILBE FOR THE PRIMARY CLIENT TO READ AT `db/keys/primary.json`
-* Timeserver public key 
-* Currently installed version 
-* On first run (new installation), the Root metadata from both the Image and Director repositories. T
-* On subsequent runs,  The most recent Root, Timestamp, Targets, and Snapshot metadata from both the Image and 
-  Director repositories
 
 ---------------------------------------------------------------------------------------------------------------
 
@@ -392,7 +354,6 @@ class Primary():
       
       for verified_target in verified_targets:
         print(f"{GREEN}Attempting to download target: {verified_target['path']}{ENDCOLORS}")
-
         # self.image_updater.download_target(verified_target, verified_target['path'])
 
 
@@ -459,7 +420,7 @@ def main():
     try: 
       action_idx = (int(action))
     except ValueError:
-      print(f'{RED}Please enter a number{ENDCOLORS}')
+      print(f'{RED}Please enter a number!{ENDCOLORS}')
       continue
     if(action_idx < 1 or action_idx > len(actions)):
       print(f'{RED}Please enter a number between 1 and {str(len(actions))}{ENDCOLORS}')
@@ -489,36 +450,26 @@ def main():
     #Run update cycle
     elif action_idx == 4:
       print(f'{GREEN}Attempting to run update cycle{ENDCOLORS}')
-      pass
+      primary.update_cycle()
 
     #Change the 'installed' image on the primary
     elif action_idx == 5:
       print(f'{GREEN}Attempting to run update cycle{ENDCOLORS}')
-      pass
+      print('TODO: NOT IMPLEMENTED')
 
     #Change the 'installed' image on the secondary
     elif action_idx == 6:
       print(f'{GREEN}Attempting to run update cycle{ENDCOLORS}')
-      pass
+      print('TODO: NOT IMPLEMENTED')
 
     #Report an identified attack
     elif action_idx == 7:
       print(f'{GREEN}Attempting to run update cycle{ENDCOLORS}')
-      pass
+      print('TODO: NOT IMPLEMENTED')
+      
 
     else: 
       print('Unknown action')
-
-  primary.get_signed_time([])
-
-  #Send manifest to director
-  manifest = primary.generate_signed_vehicle_manifest()
-
-  primary.submit_vehicle_manifest_to_director(manifest)
-
-  #Attempt an update cycles
-  # primary.update_cycle()
-
   
 
 

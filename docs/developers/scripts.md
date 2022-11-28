@@ -1,96 +1,71 @@
-# Mock Uptane
+# Mock Uptane Client
+This set of scripts is here to provide a mocked uptane **client** to test against the server implementation in this repo.  
 
-## Setup Operations
-1. Initialise the **director** and **image** repos
-    * `python ops.py init-db`
-    * This will create the `db` file tree locally
-    * This includes dirs for the director, image, and inventory dbs and a dir for keys
-    * If this tree already exists, running this again will also clear it out and recreate the directories
-2. Generate all the necessary keys
-    * `python ops.py gen-keys`
-    * It will create and write keys for primay ecu, timeserver, 4 top level role keys for director and image repo
-    * Check the db filetree to see the generated keys
-3. Start the flask server
-    * `python server.py`
-4. Generate the initial TUF metadata for the the **director** and **image** repos
-    * `python ops.py init-repos`
-5. Initialise the vehicle filesystem that the primary client will write to
+## Server Prerequisites
+Before attempting to run the mock client, please ensure the server is running in the development envirnoment and you have performed the following
+
+1. Start the server:
+    * `docker-compose up postgres`
+    * `npm run start`
+2. Generate the necessary key pairs:
+    * `npx ts-node src/prisma/seeders/utils/gen-keys.ts`
+    * This will create key pairs for the 4 top level TUF roles for the image and director repo as well as pairs for the primary and secondary ECUs that the mocked client will use.
+    * This will write the key pairs to `<project-root>/.keys/`
+3. Seed the server with some initial data that can be used for testing
+    * `npx ts-node src/prisma/seeders/dev/dev-up.ts`
+
+
+## Client Prerequisites
+After the server prerequisites are in place, we can prepare the client.
+
+1. Init the primaries filesystem:
     * `python ops.py init-primary-fs`
-    * This will copy the `root.json` from the primary and director repo to the vehicle filesystem.
-6. Initialise the inventory db
-    * `python ops.py init-inventory`
-    * Note that these mock scripts are only designed to have an inventory of one vehicle
+    * If this tree already exists, running this again will also clear it out and recreate the directories
+2. Copy (out of band) the `root.json` for the **image** and **director** repo to the clients file system.
+    * `python ops.py cp-root-meta`
 
 The local file tree should now look like this"
 
 ```
-├── db
-│   ├── director
-│   │   ├── metadata
-│   │   │   └── <tuf-role>.json
-│   │   ├── inventory
-│   │   |   └── <VIN>
-│   │   └── targets
-│   │       └── <target-file>.ext
-│   ├── image
-│   │   ├── metadata
-│   │   │   └── <tuf-role>.json
-│   │   └── targets
-│   │       └── <target-file>.ext
-│   └── keys
-|       └── <key-name>.json
+├── .keys
+|    ├── <namespace>-image-<tuf-role>-public.pem
+|    ├── <namespace>-image-<tuf-role>-private.pem
+|    ├── <namespace>-director-<tuf-role>-public.pem
+|    ├── <namespace>-director-<tuf-role>-private.pem
+|    ├── <namespace>-<primary-ecu>-public.pem
+|    ├── <namespace>-<primary-ecu>-private.pem
+|    ├── <namespace>-<secondary-ecu>-public.pem
+|    └── <namespace>-<secondary-ecu>-private.pem
 |
-├── primary-fs
-│   ├── director-repo
-│   │   ├── metadata
-│   │   │   └── root.json
-│   │   └── targets
-│   └── image-repo
-│       ├── metadata
-│       │   └── root.json
-│       └── targets
-|
-└── primary.py
+└── scripts
+    └── mock-uptane
+        ├── primary.py
+        └── primary-fs
+            ├── director
+            │   ├── metadata
+            |   |   └── root.json
+            │   └── targets
+            └── image
+                ├── metadata
+                |   └── root.json
+                └── targets
+ 
+
 ```
 
-## Server Operations
-
-### Add a new image
-`python ops.py add-image <file-name.ext> <file-content>`
-
-For simplicity in testing, the *images* will be simply be plain text files. You can define the name, extension and content of this file.
-* This will write the file to `db/image/targets/<file-name.ext>`
-* And also to `db/director/targets/<file-name.ext>`
-* This will also create and sign new versions of the `targets`, `snapshot` and `timestamp` metadata files in both the **director** and **image** repos
-
-### Resign timestamp metadata
-`python ops.py resign-timestamp`
-
-The `timestamp.json` metadata file will need to be periodically resigned to ensure it has not expired. In production this will be automated but for this mock implementation you will need to do this manually
-* This will incremenet the `version` for the `timestamp.json` by 1 in both the **director** and **image** repos
-
-<br/>
-
-## Vehicle Operations
-
-### Register a vehicle with **director**
-`python ops.py reg-vehicle`
-
-For simplicity in testing, the *images* will be simply be plain text files. You can define the name, extension and content of this file.
-* This will write the file to `db/image/targets/<file-name.ext>`
-* And also to `db/director/targets/<file-name.ext>`
-* This will also create and sign new versions of the `targets`, `snapshot` and `timestamp` metadata files in both the **director** and **image** repos
-
-### Resign timestamp metadata
-`python ops.py add-image <file-name.ext> <file-content>`
-
-The `timestamp.json` metadata file will need to be periodically resigned to ensure it has not expired. In production this will be automated but for this mock implementation you will need to do this manually
-* This will incremenet the `version` for the `timestamp.json` by 1 in both the **director** and **image** repos
-
-
-<br/>
-
-## Running the primary client
+## Running the client
 `python primary.py`
+
+
+| Action                                  | Description                                                              |
+| ----------------------------------------| ------------------------------------------------------------------------ |
+| 1. Inspect generated robot manifest     | Print out the generaged robot manifest without sending it to the backend |
+| 2. Generate and send robot manifest     | Send the generate robot manifest to the backend                          | 
+| 3. Refresh top level metadata           | Refresh the Top level TUF metadata from the image and director repo.     |
+| 4. Run update cycle                     | Run the full Uptane update cycle                                         |
+| 5. "Install" image on primary ECU       | Change what "installed" image the primary ecu sends with its manifest    |
+| 6. "Install" image on secondary ECU     | Change what "installed" image the secondary ecu sends with its manifest  |
+| 7. "Report" detected attack on ECU      | Change what "attack" primary ecu sends with its manifest                 |
+
 
 

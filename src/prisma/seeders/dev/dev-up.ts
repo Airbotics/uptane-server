@@ -125,14 +125,14 @@ const createECUs = async () => {
                 id: SEED_PRIMARY_ECU_ID,
                 namespace_id: SEED_NAMESPACE_ID,
                 robot_id: SEED_ROBOT_ID,
-                provisioned: true,
+                hwid: 'some-hwid',
                 primary: true
             },
             {
                 id: SEED_SECONDARY_ECU_ID,
                 namespace_id: SEED_NAMESPACE_ID,
                 robot_id: SEED_ROBOT_ID,
-                provisioned: true,
+                hwid: 'some-hwid',
                 primary: false
             }
         ]

@@ -263,15 +263,15 @@ router.post('/namespaces/:namespace/provisioning-credentials', async (req, res) 
     // base64 enecode
     var p12b64 = forge.util.encode64(forge.asn1.toDer(p12).getBytes());
 
-    
+
     // create credentials.zip
     // const output = fs.createWriteStream(__dirname + '/example.zip');
     const archive = archiver('zip');
-    
+
     archive.append(`https://${config.HOSTNAME}:${config.PORT}/api/v0/`, { name: 'autoprov.url' });
     archive.append(p12b64, { name: 'autoprov_credentials.p12' });
     archive.finalize();
-    
+
     // TODO catch archive on error event
     // TODO record credentials creation in db to enable revocation, expiry, auditing, etc.
 
@@ -281,6 +281,78 @@ router.post('/namespaces/:namespace/provisioning-credentials', async (req, res) 
     archive.pipe(res);
 
 });
+
+
+/**
+ * Create a rollout.
+ * 
+ * Creates an association betwen an ecu and image.
+ */
+router.post('/:namespace/rollouts', async (req, res) => {
+
+    const {
+        ecu_id,
+        image_id
+    } = req.body;
+
+
+    const namespace_id = req.params.namespace;
+
+    // check namespace exists
+    const namespaceCount = await prisma.namespace.count({
+        where: {
+            id: namespace_id
+        }
+    });
+
+    if (namespaceCount === 0) {
+        logger.warn('could not create a rollout because namespace does not exist');
+        return res.status(400).send('could not create rollout');
+    }
+
+    // check robot exists
+    const ecuCount = await prisma.ecu.count({
+        where: {
+            id: ecu_id
+        }
+    });
+
+    if (ecuCount === 0) {
+        logger.warn('could not create a rollout because ecu does not exist');
+        return res.status(400).send('could not create rollout');
+    }
+
+    // check image exists
+    const imageCount = await prisma.image.count({
+        where: {
+            id: image_id
+        }
+    });
+
+    if (imageCount === 0) {
+        logger.warn('could not create a rollout because image does not exist');
+        return res.status(400).send('could not create rollout');
+    }
+
+    const tmpRollout = await prisma.tmpEcuImages.create({
+        data: {
+            image_id,
+            ecu_id
+        }
+    });
+
+    const response = {
+        image_id: tmpRollout.image_id,
+        ecu_id: tmpRollout.ecu_id,
+        created_at: tmpRollout.created_at,
+        updated_at: tmpRollout.updated_at
+    };
+
+    logger.info('created tmp rollout');
+    return res.status(200).json(response);
+
+});
+
 
 
 export default router;

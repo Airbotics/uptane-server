@@ -320,14 +320,12 @@ router.get('/:namespace/:version.:role.json', async (req, res) => {
     const version = Number(req.params.version);
     const role = req.params.role;
 
-    const metadata = await prisma.metadata.findUnique({
-        where: {
-            namespace_id_repo_role_version: {
-                namespace_id,
-                repo: TUFRepo.image,
-                role: role as TUFRole,
-                version
-            }
+    const metadata = await prisma.metadata.findFirst({
+        where: {     
+            namespace_id,
+            repo: TUFRepo.image,
+            role: role as TUFRole,
+            version
         }
     });
 

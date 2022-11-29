@@ -387,10 +387,11 @@ const generateNewMetadata = async (namespace_id: string, robot_id: string, ecuSe
 /**
  * Process a manifest from a robot
  */
-router.put('/:namespace/robots/:robot_id/manifest', async (req, res) => {
+
+router.post('/:namespace/robots/:robot_id/manifests', async (req, res) => {
 
     const namespace_id: string = req.params.namespace;
-    const robot_id = req.params.robot_id;
+    const robot_id: string = req.params.robot_id;
     const manifest: IRobotManifest = req.body;
 
     let valid = true;
@@ -816,17 +817,17 @@ router.delete('/:namespace/robots/:robot_id', async (req, res) => {
 router.get('/:namespace/robots/:robot_id/:version.:role.json', async (req, res) => {
 
     const namespace_id = req.params.namespace;
+    const robot_id = req.params.robot_id;
     const version = Number(req.params.version);
     const role = req.params.role;
 
-    const metadata = await prisma.metadata.findUnique({
-        where: {
-            namespace_id_repo_role_version: {
-                namespace_id,
-                repo: TUFRepo.director,
-                role: role as TUFRole,
-                version
-            }
+    const metadata = await prisma.metadata.findFirst({
+        where: {     
+            namespace_id: namespace_id,
+            repo: TUFRepo.director,
+            role: role as TUFRole,
+            robot_id: robot_id,
+            version: version
         }
     });
 
@@ -851,13 +852,16 @@ router.get('/:namespace/robots/:robot_id/:version.:role.json', async (req, res) 
 router.get('/:namespace/robots/:robot_id/timestamp.json', async (req, res) => {
 
     const namespace_id = req.params.namespace;
+    const robot_id = req.params.robot_id;
+
 
     // get the most recent timestamp
     const timestamps = await prisma.metadata.findMany({
         where: {
             namespace_id,
             repo: TUFRepo.director,
-            role: TUFRole.timestamp
+            role: TUFRole.timestamp,
+            robot_id: robot_id
         },
         orderBy: {
             created_at: 'desc'

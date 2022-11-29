@@ -72,7 +72,7 @@ model Image {
 
 // tuf metadata
 model Metadata {
-    id                  String          @default(uuid())
+    id                  String          @id @default(uuid()) @unique
     namespace_id        String
     robot_id            String?
     role                TUFRole                                 // director or image repo
@@ -86,9 +86,10 @@ model Metadata {
     namespace           Namespace       @relation(fields: [namespace_id], references: [id], onDelete: Cascade)
     robot               Robot?          @relation(fields: [robot_id], references: [id], onDelete: Cascade)
     
-
-    @@id([namespace_id, id])
-    @@unique([namespace_id, repo, role, version])
+    //TODO: Add the following conditional unique constraint when prisma implement it
+    // @@unique([namespace_id, repo, role, version], where: {repo: TUFRepo.image})
+    // @@unique([namespace_id, repo, role, version, robot_id], where: {repo: TUFRepo.director})
+    //Keep an eye on issue here: https://github.com/prisma/prisma/issues/6974
     @@map("metadata")
 }
 

@@ -50,6 +50,7 @@ export const generateTimestamp = (ttl: (number|string)[], version: number, times
     return {
         signatures: [{
             keyid: timestampKeyId,
+            method: 'rsassa-pss-sha256',
             sig
         }],
         signed

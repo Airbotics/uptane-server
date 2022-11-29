@@ -47,6 +47,7 @@ export const generateSnapshot = (ttl: (number | string)[], version: number, snap
     return {
         signatures: [{
             keyid: snapshotKeyId,
+            method: 'rsassa-pss-sha256',
             sig
         }],
         signed

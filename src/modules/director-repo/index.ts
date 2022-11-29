@@ -1,13 +1,13 @@
 import express from 'express';
+import fs from 'fs';
+import { TUFRepo, TUFRole, Image, Prisma } from '@prisma/client';
 import { keyStorage, loadKeyPair } from '../../core/key-storage';
 import config from '../../config';
 import { logger } from '../../core/logger';
-import { generateKeyPair } from '../../core/crypto';
 import { verifySignature } from '../../core/crypto/signatures';
 import prisma from '../../core/postgres';
-import { TUFRepo, TUFRole, Image, Prisma } from '@prisma/client';
 import { robotManifestSchema } from './schemas';
-import { IKeyPair, IRobotManifest, ITargetsImages } from '../../types';
+import { IRobotManifest, ITargetsImages, IEcuRegistrationPayload } from '../../types';
 import { toCanonical } from '../../core/utils';
 import { generateSnapshot, generateTargets, generateTimestamp, getLatestMetadataVersion } from '../../core/tuf';
 import { ManifestErrors } from '../../core/consts/errors';
@@ -31,14 +31,14 @@ const router = express.Router();
  * - probably a few more in time..
  * 
  */
-export const robotManifestChecks = async (robotManifest: IRobotManifest, namespaceID: string, ecuSerials: string[]) => {
+export const robotManifestChecks = async (robotManifest: IRobotManifest, namespaceID: string, robotId: string, ecuSerials: string[]) => {
 
     //Do the async stuff needed for the checks functions here
     const robot = await prisma.robot.findUnique({
         where: {
             namespace_id_id: {
                 namespace_id: namespaceID,
-                id: robotManifest.signed.vin
+                id: robotId
             }
         },
         include: {
@@ -47,7 +47,7 @@ export const robotManifestChecks = async (robotManifest: IRobotManifest, namespa
         }
     });
 
-    
+
     if (!robot) throw (ManifestErrors.RobotNotFound);
 
     //Load all the pub keys that are included in the ecu version reports. This should include the primary ecu
@@ -60,21 +60,21 @@ export const robotManifestChecks = async (robotManifest: IRobotManifest, namespa
         }
 
     } catch (e) {
-        throw (ManifestErrors.KeyNotLoaded)
+        throw (ManifestErrors.KeyNotLoaded);
     }
 
     const checks = {
 
         validateSchema: () => {
             const { error } = robotManifestSchema.validate(robotManifest);
-            
+
             if (error) throw (ManifestErrors.InvalidSchema);
-            
+
             return checks;
         },
 
         validatePrimaryECUReport: () => {
-            if (robotManifest.signed.ecu_version_reports[robotManifest.signed.primary_ecu_serial] === undefined) {
+            if (robotManifest.signed.ecu_version_manifests[robotManifest.signed.primary_ecu_serial] === undefined) {
                 throw (ManifestErrors.MissingPrimaryReport);
             }
             return checks;
@@ -98,14 +98,14 @@ export const robotManifestChecks = async (robotManifest: IRobotManifest, namespa
         },
 
         validateTopSignature: () => {
-            
+
             const verified: boolean = verifySignature({
                 signature: robotManifest.signatures[0].sig,
                 pubKey: ecuPubKeys[robotManifest.signed.primary_ecu_serial],
                 algorithm: 'RSA-SHA256',
                 data: toCanonical(robotManifest.signed)
             });
-            
+
             if (!verified) throw (ManifestErrors.InvalidSignature)
 
             return checks;
@@ -117,10 +117,10 @@ export const robotManifestChecks = async (robotManifest: IRobotManifest, namespa
             //NOTE: Its assumed each ecu version report is only signed by one key
             for (const ecuSerial of ecuSerials) {
                 const verified = verifySignature({
-                    signature: robotManifest.signed.ecu_version_reports[ecuSerial].signatures[0].sig,
+                    signature: robotManifest.signed.ecu_version_manifests[ecuSerial].signatures[0].sig,
                     pubKey: ecuPubKeys[ecuSerial],
                     algorithm: 'RSA-SHA256',
-                    data: toCanonical(robotManifest.signed.ecu_version_reports[ecuSerial].signed)
+                    data: toCanonical(robotManifest.signed.ecu_version_manifests[ecuSerial].signed)
                 });
 
                 if (!verified) throw (ManifestErrors.InvalidReportSignature);
@@ -130,20 +130,21 @@ export const robotManifestChecks = async (robotManifest: IRobotManifest, namespa
             return checks;
         },
 
+        // TODO rename this to report counter
         validateNonces: () => {
             //For each ecu version report, check if the nonce for that report has ever been 
             //sent to us before in a previous manifest
             for (const ecuSerial of ecuSerials) {
 
-                const previouslySentNonces: string[] = [];
+                const previouslySentNonces: number[] = [];
 
                 for (const manifest of robot.robot_manifests) {
                     //TODO fix typing
                     const fullManifest = manifest.value as any;
-                    previouslySentNonces.push(fullManifest['signed']['ecu_version_reports'][ecuSerial]['signed']['nonce']);
+                    previouslySentNonces.push(fullManifest['signed']['ecu_version_manifests'][ecuSerial]['signed']['report_counter']);
                 }
 
-                if (previouslySentNonces.includes(robotManifest.signed.ecu_version_reports[ecuSerial].signed.nonce)) {
+                if (previouslySentNonces.includes(robotManifest.signed.ecu_version_manifests[ecuSerial].signed.report_counter)) {
                     throw (ManifestErrors.InvalidReportNonce)
                 }
             }
@@ -151,6 +152,7 @@ export const robotManifestChecks = async (robotManifest: IRobotManifest, namespa
             return checks;
         },
 
+        /*
         validateTime: () => {
 
             const now = Math.floor(new Date().getTime() / 1000); //Assume this time is trusted for now
@@ -161,19 +163,20 @@ export const robotManifestChecks = async (robotManifest: IRobotManifest, namespa
                     Number(config.PRIMARY_ECU_VALID_FOR_SECS) : Number(config.SECONDARY_ECU_VALID_FOR_SECS);
 
 
-                if (robotManifest.signed.ecu_version_reports[ecuSerial].signed.time < (now - validForSecs)) {
+                if (robotManifest.signed.ecu_version_manifests[ecuSerial].signed.time < (now - validForSecs)) {
                     throw (ManifestErrors.ExpiredReport)
                 }
             }
 
             return checks;
         },
+        */
 
         validateAttacks: () => {
 
             for (const ecuSerial of ecuSerials) {
 
-                if (robotManifest.signed.ecu_version_reports[ecuSerial].signed.attacks_detected !== '') {
+                if (robotManifest.signed.ecu_version_manifests[ecuSerial].signed.attacks_detected !== '') {
                     throw (ManifestErrors.AttackIdentified)
                 }
             }
@@ -239,14 +242,14 @@ const determineNewMetadaRequired = async (robotManifest: IRobotManifest, ecuSeri
             Lets first check if the rollout has been acknowledged, If it has, we have 
             already generated the corresponding metadata files, so we dont have to do anything
             */
-            if(rolloutsPerEcu[idx].acknowledged) {
+            if (rolloutsPerEcu[idx].acknowledged) {
                 logger.info('Metadata has already been generated for this ECUs image')
             }
 
             else {
                 if (rolloutsPerEcu[idx].image.sha256 !==
-                    robotManifest.signed.ecu_version_reports[ecuSerial].signed.installed_image.hashes.sha256) {
-        
+                    robotManifest.signed.ecu_version_manifests[ecuSerial].signed.installed_image.fileinfo.hashes.sha256) {
+
                     //there is a mismatch between rollout image and reported image, so we must generate new metadata
                     return true;
                 }
@@ -258,13 +261,11 @@ const determineNewMetadaRequired = async (robotManifest: IRobotManifest, ecuSeri
 
 
 /**
- * 
  * This can definitely be optimised but will do while we focus on readability 
  * rather than effiency. This is called after detecting if any of the ecus reported
  * by a robot differ to what is defined in the tmp rollouts table (TmpEcuImages).
  * We will generate the entite targets json from scratch and not try to compute which
  * of the ecus 1 - N ecus are different
- * 
  */
 const generateNewMetadata = async (namespace_id: string, robot_id: string, ecuSerials: string[]) => {
 
@@ -301,7 +302,7 @@ const generateNewMetadata = async (namespace_id: string, robot_id: string, ecuSe
             }
         }
     }
- 
+
 
     //determine new metadata versions
     const newTargetsVersion = await getLatestMetadataVersion(namespace_id, TUFRepo.director, TUFRole.targets, robot_id) + 1;
@@ -378,13 +379,10 @@ const generateNewMetadata = async (namespace_id: string, robot_id: string, ecuSe
 /**
  * Process a manifest from a robot
  */
-router.put('/:namespace/manifests', async (req, res) => {
+router.put('/:namespace/robots/:robot_id/manifest', async (req, res) => {
 
     const namespace_id: string = req.params.namespace;
-
-    // TODO robot id will be provided in mutual tls cert, 
-    // for now we hardcode it 
-    const robot_id: string = ''
+    const robot_id = req.params.robot_id;
     const manifest: IRobotManifest = req.body;
 
     let valid = true;
@@ -402,19 +400,20 @@ router.put('/:namespace/manifests', async (req, res) => {
     }
 
     //We are gonna need these so many times so pull them out once
-    const ecuSerials = Object.keys(manifest.signed.ecu_version_reports);
+    // BUG this assumes the manifest is formatted correctly before we valid its schema
+    const ecuSerials = Object.keys(manifest.signed.ecu_version_manifests);
 
     try {
 
         // Perform all of the checks
-        (await robotManifestChecks(manifest, namespace_id, ecuSerials))
+        (await robotManifestChecks(manifest, namespace_id, robot_id, ecuSerials))
             .validatePrimaryECUReport()
             .validateSchema()
             .validateEcuRegistration()
             .validateTopSignature()
             .validateReportSignatures()
             .validateNonces()
-            .validateTime()
+            // .validateTime()
             .validateAttacks()
 
         /**
@@ -444,9 +443,10 @@ router.put('/:namespace/manifests', async (req, res) => {
     }
     catch (e) {
         valid = false;
-        logger.error('Unable to accept robot manifest');
+        logger.error('unable to accept robot manifest');
+        // console.log(e)
         logger.error(e);
-        return res.status(400).send(e)
+        return res.status(400).send('unable to accept robot manifest');
     }
     finally {
 
@@ -458,7 +458,7 @@ router.put('/:namespace/manifests', async (req, res) => {
                 value: manifest as object,
                 valid: valid
             }
-        })
+        });
 
     }
 
@@ -468,10 +468,13 @@ router.put('/:namespace/manifests', async (req, res) => {
 
 /**
  * Ingest network info reported by a robot
+ * 
+ * BUG
  */
-router.put('/:namespace/system_info/network', async (req,res) => {
+router.put('/:namespace/robots/:robot_id/system_info/network', async (req, res) => {
 
     const namespace_id = req.params.namespace;
+    const robot_id = req.params.robot_id;
 
     const {
         hostname,
@@ -479,9 +482,6 @@ router.put('/:namespace/system_info/network', async (req,res) => {
         mac
     } = req.body;
 
-    // TODO robot id will be provided in mutual tls cert, 
-    // for now we hardcode it 
-    const TMP_ROBOT_ID = ''
 
     // check namespace exists
     const namespaceCount = await prisma.namespace.count({
@@ -491,37 +491,57 @@ router.put('/:namespace/system_info/network', async (req,res) => {
     });
 
     if (namespaceCount === 0) {
-        logger.warn('could not create robot because namespace does not exist');
-        return res.status(400).send('could not create robot');
+        logger.warn('could not create network report because namespace does not exist');
+        return res.status(400).send('could not create network report');
+    }
+
+    // check robot exists
+    const robotCount = await prisma.robot.count({
+        where: {
+            id: robot_id
+        }
+    });
+
+    if (robotCount === 0) {
+        logger.warn('could not create network report because robot does not exist');
+        return res.status(400).send('could not create network report');
     }
 
 
     await prisma.networkReport.create({
         data: {
             namespace_id,
-            robot_id: TMP_ROBOT_ID,
+            robot_id,
             hostname,
             local_ipv4,
             mac
         }
     });
 
-    return res.status(200).end()
-})
+    logger.info('ingested robot network info');
+    return res.status(200).end();
+});
+
 
 
 /**
- * Create a robot in a namespace.
+ * A robot is provisioning itself using the provisioning credentials.
  * 
- * Creates a robot and one primary ecu for it, also creates a key pair for it,
- * we dont store the private key here but we store its public key in the key server
- * the response contains the bootstrapping credentials the primary requires to
- * provision itself with us
+ * Create the robot in the db.
+ * Generate a p12 and send it back.
+ * 
+ * TODO:
+ * - handle ttl
+ * - return error if robot is already registered
  */
-/*
-router.post('/:namespace/robots', async (req, res) => {
+router.post('/:namespace/devices', async (req, res) => {
 
     const namespace_id = req.params.namespace;
+
+    const {
+        deviceId,
+        ttl
+    } = req.body;
 
     // check namespace exists
     const namespaceCount = await prisma.namespace.count({
@@ -531,47 +551,89 @@ router.post('/:namespace/robots', async (req, res) => {
     });
 
     if (namespaceCount === 0) {
-        logger.warn('could not create robot because namespace does not exist');
-        return res.status(400).send('could not create robot');
+        logger.warn('could not provision robot because namespace does not exist');
+        return res.status(400).send('could not provision robot');
     }
 
-    // create the robot in the inventory db
-    const robot = await prisma.robot.create({
+    await prisma.robot.create({
         data: {
             namespace_id,
-            ecus: {
-                create: {
-                    primary: true
-                }
-            }
-        },
-        include: {
-            ecus: true
+            id: deviceId
         }
     });
 
-    // create key pair
-    const primaryEcuKey = generateKeyPair(config.KEY_TYPE);
+    logger.info('provisioned a robot');
 
-    // store the public key in the keyserver
-    await keyStorage.putKey(`${robot.id}-public`, primaryEcuKey.publicKey);
-
-    // return the credentials the primary ecu will use to provision itself
-    // in the format expected by the client
-    // we know the robot only has one ecu now so can safely index its array of ecus
-    const response: any = {
-        vin: robot.id,
-        primary_ecu_serial: robot.ecus[0].id,
-        public_key: primaryEcuKey.publicKey,
-        namespace_id
-    };
-
-    logger.info('created a robot');
-    return res.status(200).json(response);
+    // TODO we'll stream back a temporary p12 file, but we'll want to create one specific to this robot
+    const fileStream = fs.createReadStream('./res/temp.p12');
+    fileStream.pipe(res);
 
 });
-*/
 
+
+
+/**
+ * A robot is registering an ecu
+ * 
+ * TODO
+ * - return error if ecu is already registered
+ */
+router.post('/:namespace/robots/:robot_id/ecus', async (req, res) => {
+
+    const namespace_id = req.params.namespace;
+    const robot_id = req.params.robot_id;
+    const payload: IEcuRegistrationPayload = req.body;
+
+    // check namespace exists
+    const namespaceCount = await prisma.namespace.count({
+        where: {
+            id: namespace_id
+        }
+    });
+
+    if (namespaceCount === 0) {
+        logger.warn('could not register ecu because namespace does not exist');
+        return res.status(400).send('could not register ecu');
+    }
+
+
+    // check robot exists
+    const robotCount = await prisma.robot.count({
+        where: {
+            id: robot_id
+        }
+    });
+
+    if (robotCount === 0) {
+        logger.warn('could not register ecu because robot does not exist');
+        return res.status(400).send('could not register ecu');
+    }
+
+    const createEcusData = payload.ecus.map(ecu => ({
+        id: ecu.ecu_serial,
+        namespace_id,
+        robot_id,
+        hwid: ecu.hardware_identifier,
+        primary: ecu.ecu_serial === payload.primary_ecu_serial
+    }));
+
+
+    await prisma.$transaction(async tx => {
+
+        for (const ecu of payload.ecus) {
+            await keyStorage.putKey(`${namespace_id}-${ecu.ecu_serial}-public`, ecu.clientKey.keyval.public);
+        }
+
+        await tx.ecu.createMany({
+            data: createEcusData
+        });
+
+    });
+
+    logger.info('registered an ecu');
+
+    res.status(200).end();
+});
 
 
 /**
@@ -616,6 +678,9 @@ router.get('/:namespace/robots', async (req, res) => {
 
 /**
  * Get detailed info about a robot in a namespace.
+ * 
+ * TODO
+ * - limit number of manifests returned
  */
 router.get('/:namespace/robots/:robot_id', async (req, res) => {
 
@@ -663,6 +728,9 @@ router.get('/:namespace/robots/:robot_id', async (req, res) => {
 
 /**
  * Delete a robot
+ * 
+ * TODO
+ * - delete all associated ecu keys
  */
 router.delete('/:namespace/robots/:robot_id', async (req, res) => {
 
@@ -776,8 +844,11 @@ router.post('/:namespace/rollouts', async (req, res) => {
  * 
  * Timestamp is not handled with this route because it isn't prepended
  * with a dot, i.e. `/timestamp.json` instead not `/1.timestamp.json`
+ * 
+ * TODO
+ * - fetch only the metadata for this robot
  */
-router.get('/:namespace/:version.:role.json', async (req, res) => {
+router.get('/:namespace/robots/:robot_id/:version.:role.json', async (req, res) => {
 
     const namespace_id = req.params.namespace;
     const version = Number(req.params.version);
@@ -808,8 +879,11 @@ router.get('/:namespace/:version.:role.json', async (req, res) => {
 
 /**
  * Fetch timestamp metadata in a namespace.
+ * 
+ * TODO
+ * - fetch only the metadata for this robot
  */
-router.get('/:namespace/timestamp.json', async (req, res) => {
+router.get('/:namespace/robots/:robot_id/timestamp.json', async (req, res) => {
 
     const namespace_id = req.params.namespace;
 

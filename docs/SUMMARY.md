@@ -15,6 +15,8 @@
 
 - [Overview](architecture/index.md)
 
+- [The agent](architecture/agent.md)
+
 - [Director repository module](architecture/director-repository.md)
 
 - [Image repository module](architecture/image-repository.md)

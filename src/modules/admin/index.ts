@@ -160,6 +160,9 @@ router.get('/namespaces', async (req, res) => {
  * - Deletes namespace in db, this cascades to all resources.
  * - Deletes bucket and all objects in blob storage.
  * - Deletes keys, images and treehub objects associated with this namespace.
+ * 
+ * TODO
+ * - delete all keys associated with ecus in this namespace.
  */
 router.delete('/namespaces/:namespace', async (req, res) => {
 

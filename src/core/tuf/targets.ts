@@ -43,6 +43,7 @@ export const generateTargets = (
     return {
         signatures: [{
             keyid: targetsKeyId,
+            method: 'rsassa-pss-sha256',
             sig
         }],
         signed

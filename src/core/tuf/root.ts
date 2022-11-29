@@ -68,6 +68,7 @@ export const generateRoot = (ttl: (number|string)[], version: number, rootKeyPai
     return {
         signatures: [{
             keyid: rootKeyId,
+            method: 'rsassa-pss-sha256',
             sig
         }],
         signed

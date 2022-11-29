@@ -2,9 +2,9 @@
 
 @BASE_URL=http://localhost:8001
 @API_VERSION=v0
-@NAMESPACE=384ba2c6-5c81-4b62-8e46-dc5f43466d6b
+@NAMESPACE=a667b8e7-a91b-46b7-abf4-f19243dfecf6
 @IMAGE=91497b2c-3554-4adb-b78a-54072faa39b7
-@ROBOT=649de690-6de8-43c0-b662-c32ca597dd8d
+@ROBOT=ac03863f-5e2e-480d-93f7-1bd96a3a348a
 
 
 # -----------------------------------------
@@ -41,11 +41,11 @@ POST {{BASE_URL}}/api/{{API_VERSION}}/admin/namespaces/{{NAMESPACE}}/provisionin
 # -----------------------------------------
 
 ### get metadata
-GET {{BASE_URL}}/api/{{API_VERSION}}/director/{{NAMESPACE}}/1.root.json HTTP/1.1
+GET {{BASE_URL}}/api/{{API_VERSION}}/director/{{NAMESPACE}}/robots/{{ROBOT}}/1.root.json HTTP/1.1
 
 
 ### get timestamp
-GET {{BASE_URL}}/api/{{API_VERSION}}/director/{{NAMESPACE}}/timestamp.json HTTP/1.1
+GET {{BASE_URL}}/api/{{API_VERSION}}/director/{{NAMESPACE}}/robots/{{ROBOT}}/timestamp.json HTTP/1.1
 
 
 ### create a robot

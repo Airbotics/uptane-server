@@ -24,7 +24,7 @@ export interface IKeyPair {
 
 export interface IHashes {
     sha256: string;
-    sha512: string;
+    sha512?: string;
 }
 
 
@@ -163,13 +163,16 @@ export interface ITimestampTUF {
     signatures: ISignatureTUF[],
     signed: {
         ecu_serial: string,
-        time: number,
         attacks_detected: string,
-        nonce: string,
+        previous_timeserver_time: string;
+        report_counter: number;
+        timeserver_time: string;
         installed_image: {
-            filename: string,
-            length: number
-            hashes: IHashes
+            fileinfo: {
+                hashes: IHashes;
+                length: number;
+            }
+            filepath: string;
         }
     }
 }
@@ -177,8 +180,21 @@ export interface ITimestampTUF {
 export interface IRobotManifest {
     signatures: ISignatureTUF[],
     signed: {
-        vin: string,
         primary_ecu_serial: string,
-        ecu_version_reports: { [key: string]: IecuVersionReport}, // Will need to be updated to support multiple version reports
+        ecu_version_manifests: { [key: string]: IecuVersionReport}, // Will need to be updated to support multiple version reports
     }
+}
+
+export interface IEcuRegistrationPayload {
+    primary_ecu_serial: string;
+    ecus: {
+        ecu_serial: string;
+        hardware_identifier: string;
+        clientKey: {
+            keytype: string;
+            keyval: {
+                public: string;
+            }
+        }
+    }[];
 }

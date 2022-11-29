@@ -96,7 +96,7 @@ model Metadata {
 // robots on which Airbotics will update software
 // these are called vehicles in the Update spec
 // TODO
-// - add provisioned field: compound attribute, whether all ecus have provisioned
+// - add provisioned field denoting whether it is provisioned
 model Robot {
     id                  String          @id @default(uuid()) @unique
     namespace_id        String
@@ -117,14 +117,13 @@ model Robot {
 
 
 // ecus on robots
-// NOTE we could potentially remove the namespace id here
 // TODO 
 // - add last_seen field
 model Ecu {
     id                  String          @id @default(uuid()) @unique
     namespace_id        String
     robot_id            String
-    provisioned         Boolean         @default(false)     // whether the ecu has completed provisioning
+    hwid                String                              // hardware id of this ecu
     primary             Boolean                             // whether this ecu is the primary, only one per robot is supported
 
     created_at          DateTime        @default(now())

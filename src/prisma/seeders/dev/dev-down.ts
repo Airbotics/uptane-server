@@ -1,4 +1,4 @@
-import prisma from '../../../core/postgres';
+import prisma from '@airbotics-core/postgres';
 
 
 /**
@@ -20,7 +20,7 @@ import prisma from '../../../core/postgres';
 
 ( async () => {
 
-    console.log('Running down on dev seeder...');
+    console.log('running dev seeder down...');
 
     await prisma.namespace.deleteMany();
     await prisma.image.deleteMany();
@@ -29,6 +29,6 @@ import prisma from '../../../core/postgres';
     await prisma.metadata.deleteMany();
     await prisma.tmpEcuImages.deleteMany();
 
-    console.log('Completed down on dev seeder...')
+    console.log('dev seeder down success');
 
 })()

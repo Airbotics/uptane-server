@@ -7,6 +7,7 @@ from styles import GREEN, RED, YELLOW, ENDCOLORS
 import json 
 import uuid
 import sys
+import random
 from common import (load_pem_key, _get_time, generate_priv_tuf_key,
   NAMESPACE, ROBOT_ID,
   PRIMARY_ECU_SERIAL, SECONDARY_ECU_SERIAL, PRIMARY_FS_ROOT_PATH,
@@ -175,13 +176,13 @@ class Primary():
         metadata_dir=DIRECTOR_REPO_META_DIR,
         target_dir=DIRECTOR_REPO_TARGETS_DIR,
         metadata_base_url=DIRECTOR_REPO_HOST,
-        target_base_url='http://localhost:3001')
+        target_base_url=DIRECTOR_REPO_HOST)
 
     self.image_updater = Updater(
         metadata_dir=IMAGE_REPO_META_DIR,
         target_dir=IMAGE_REPO_TARGETS_DIR,
         metadata_base_url=IMAGE_REPO_HOST,
-        target_base_url='http://localhost:3001')
+        target_base_url=IMAGE_REPO_HOST)
 
   
 
@@ -196,15 +197,18 @@ class Primary():
           'signatures': [],
           'signed': {
             'ecu_serial': ecu_serial,
-            'time': _get_time(),
-            'nonce': str(uuid.uuid4()),
             'attacks_detected': attack,
+            'previous_timeserver_time': _get_time(),
+            'timeserver_time': _get_time(),
+            'report_counter': random.randint(0, 10000000),
             'installed_image': {
-              'filename': file_name,
-              'length': len(file_body.encode('utf-8')),
-              'hashes': {
-                'sha256': hashlib.sha256(file_body.encode('utf-8')).hexdigest(),
-                'sha512': hashlib.sha512(file_body.encode('utf-8')).hexdigest(),
+              'filepath': file_name,
+              'fileinfo': {
+                'length': len(file_body.encode('utf-8')),
+                'hashes': {
+                  'sha256': hashlib.sha256(file_body.encode('utf-8')).hexdigest(),
+                  'sha512': hashlib.sha512(file_body.encode('utf-8')).hexdigest(),
+                }
               }
             } 
           }
@@ -244,9 +248,8 @@ class Primary():
       robot_manifest = {
         'signatures': [],
         'signed': {
-          'vin': ROBOT_ID,
           'primary_ecu_serial': PRIMARY_ECU_SERIAL,
-          'ecu_version_reports': {
+          'ecu_version_manifests': {
             PRIMARY_ECU_SERIAL: primary_ecu_report,
             SECONDARY_ECU_SERIAL: secondary_ecu_report
           }

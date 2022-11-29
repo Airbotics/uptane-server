@@ -10,6 +10,22 @@ import { SEED_EXPIRES_AT, SEED_NAMESPACE_ID,
     SEED_PRIMARY_ECU_ID, SEED_SECONDARY_ECU_ID } from '../consts';
 
 
+
+/**
+ * 
+ * PREREQUISITES: This seeder requires the dev seeder to have run before.
+ * Please run the dev up seeder before you run this. Which in turn
+ * has prerequisites of its own.
+ * 
+ * This seeder creates the following records
+ * 
+ * 1. Two new test images (one for primary and secondary ecus) 
+ * 2. TUF Metadata for the 3 top level roles in the image repo with accurate
+ *    references to the newly created images 
+ * 3. Two tmp rollouts, mapping the two test images to the two test ECUs
+ * 
+ */
+
 //Generate a random but somewhat readable id for each new "image"
 const primaryImageID = generateSlug();
 const secondaryImageID = generateSlug();

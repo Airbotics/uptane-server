@@ -19,9 +19,6 @@ export const generateTimestamp = (ttl: (number|string)[], version: number, times
     // get key id
     const timestampKeyId = genKeyId(timestampTufKey);
 
-    console.log(dayjs().add(ttl[0] as number, ttl[1] as ManipulateType).format(config.TUF_TIME_FORMAT));
-    
-
     // generate the signed portion of the timestamp metadata
     const signed: ITimestampSignedTUF = {
         _type: ETUFRole.Timestamp,

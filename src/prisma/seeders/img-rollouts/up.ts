@@ -22,7 +22,7 @@ const secondaryImageBody = generateSlug();
 
 const createImages = async () => {
 
-    console.log('img-rollout seeder creating image...');
+    console.log('creating image...');
 
     await prisma.image.createMany({
         data: [
@@ -45,7 +45,7 @@ const createImages = async () => {
         ]
     });
 
-    console.log('dev seeder created image');
+    console.log('created image');
 
 }
 
@@ -78,6 +78,7 @@ const createImageRepoMetadata = async () => {
 
     const latestTargets = await getLatestMetadata(SEED_NAMESPACE_ID, TUFRepo.image, TUFRole.targets);
     const targetsImages: ITargetsImages = latestTargets ? latestTargets.signed.targets : {};
+    
 
     //Append the two new images to the targetsImages
     targetsImages[primaryImageID] = {
@@ -98,11 +99,11 @@ const createImageRepoMetadata = async () => {
         }
     }
 
+
     //Generate the new targets metadata with the complete set of images 
     const targetsMetadata: ITargetsTUF = generateTargets(SEED_EXPIRES_AT, newTargetsVersion, targetKeyPair, targetsImages);
     const snapshotMetadata = generateSnapshot(SEED_EXPIRES_AT, newSnapshotVersion, snapshotKeyPair, targetsMetadata.signed.version);
     const timestampMetadata = generateTimestamp(SEED_EXPIRES_AT, newTimestampVersion, timestampKeyPair, snapshotMetadata.signed.version);
-
 
     //Store the metadata in the db
     await prisma.metadata.createMany({
@@ -139,7 +140,7 @@ const createImageRepoMetadata = async () => {
 
 const createTmpRollout = async () => {
 
-    console.log('dev seeder creating tmp rollout...');
+    console.log('creating tmp rollout...');
 
     await prisma.tmpEcuImages.createMany({
         data: [
@@ -154,7 +155,7 @@ const createTmpRollout = async () => {
         ]
     })
 
-    console.log('dev seeder created tmp rollout');
+    console.log('created tmp rollout');
 
 }
 

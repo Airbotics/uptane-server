@@ -21,13 +21,10 @@ const router = express.Router();
  * - Creats bucket in blob storage to hold its blobs.
  * - Generates online TUF keys.
  * - Creates initial image and director root.json metadata files and saves them to the db.
- * - Creates a root CA for this namespace.
  */
 router.post('/namespaces', async (req, res) => {
 
     // generate 8 TUF key pairs, 4 top-level metadata keys for 2 repos
-    // generate a single root ca key pair
-    // NOTE unify how keys are generated
     const imageRootKey = generateKeyPair(config.KEY_TYPE);
     const imageTargetsKey = generateKeyPair(config.KEY_TYPE);
     const imageSnapshotKey = generateKeyPair(config.KEY_TYPE);
@@ -37,12 +34,6 @@ router.post('/namespaces', async (req, res) => {
     const directorTargetsKey = generateKeyPair(config.KEY_TYPE);
     const directorSnapshotKey = generateKeyPair(config.KEY_TYPE);
     const directorTimestampKey = generateKeyPair(config.KEY_TYPE);
-
-    const rootCaKeyPair = forge.pki.rsa.generateKeyPair(2048);
-
-    // generate root ca cert, this is the root cert so we don't pass in any opts
-    const rootCert = generateCertificate(rootCaKeyPair);
-
 
     // create initial root.json for TUF repos, we'll start them off at 1
     const version = 1;
@@ -100,13 +91,6 @@ router.post('/namespaces', async (req, res) => {
 
         // create bucket in blob storage
         await blobStorage.createBucket(namespace.id);
-
-        // store the cert in blob storage, its a public cert so no harm putting it there
-        await blobStorage.putObject(namespace.id, 'rootca-cert', forge.pki.certificateToPem(rootCert));
-
-        // store root ca keys
-        await keyStorage.putKey(`${namespace.id}-rootca-private`, forge.pki.privateKeyToPem(rootCaKeyPair.privateKey));
-        await keyStorage.putKey(`${namespace.id}-rootca-public`, forge.pki.publicKeyToPem(rootCaKeyPair.publicKey));
 
         // store image repo private keys
         await keyStorage.putKey(`${namespace.id}-image-root-private`, imageRootKey.privateKey);
@@ -203,10 +187,6 @@ router.delete('/namespaces/:namespace', async (req, res) => {
 
         // deletes bucket in blob storage
         await blobStorage.deleteBucket(namespace);
-
-        // delete keys associated with this namespace
-        await keyStorage.deleteKey(`${namespace}-rootca-private`);
-        await keyStorage.deleteKey(`${namespace}-rootca-public`);
 
         await keyStorage.deleteKey(`${namespace}-image-root-private`);
         await keyStorage.deleteKey(`${namespace}-image-targets-private`);

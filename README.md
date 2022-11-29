@@ -3,7 +3,7 @@
     <img width="300" src="./docs/imgs/logo-light-theme.png#gh-light-mode-only"/>
 </p>
 
-<h3 align="center">Airbotics is an open-source DevOps platform for robotics.</h3>
+<h3 align="center">Airbotics is an open-source software deployment platform for robotics.</h3>
 
 <br />
 

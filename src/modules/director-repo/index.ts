@@ -1,16 +1,24 @@
 import express from 'express';
-import fs from 'fs';
+import forge from 'node-forge';
 import { TUFRepo, TUFRole, Image, Prisma } from '@prisma/client';
 import { keyStorage, loadKeyPair } from '../../core/key-storage';
+import { blobStorage } from '../../core/blob-storage';
 import config from '../../config';
 import { logger } from '../../core/logger';
-import { verifySignature } from '../../core/crypto/signatures';
+import { verifySignature, generateCertificate } from '../../core/crypto';
 import prisma from '../../core/postgres';
 import { robotManifestSchema } from './schemas';
 import { IRobotManifest, ITargetsImages, IEcuRegistrationPayload } from '../../types';
 import { toCanonical } from '../../core/utils';
 import { generateSnapshot, generateTargets, generateTimestamp, getLatestMetadataVersion } from '../../core/tuf';
 import { ManifestErrors } from '../../core/consts/errors';
+import {
+    RootCABucket,
+    RootCACertObjId,
+    RootCAPrivateKeyId,
+    RootCAPublicKeyId
+} from '../../core/consts';
+
 
 const router = express.Router();
 
@@ -469,7 +477,7 @@ router.put('/:namespace/robots/:robot_id/manifest', async (req, res) => {
 /**
  * Ingest network info reported by a robot
  * 
- * BUG
+ * BUG wrong url
  */
 router.put('/:namespace/robots/:robot_id/system_info/network', async (req, res) => {
 
@@ -532,7 +540,6 @@ router.put('/:namespace/robots/:robot_id/system_info/network', async (req, res) 
  * 
  * TODO:
  * - handle ttl
- * - return error if robot is already registered
  */
 router.post('/:namespace/devices', async (req, res) => {
 
@@ -555,18 +562,47 @@ router.post('/:namespace/devices', async (req, res) => {
         return res.status(400).send('could not provision robot');
     }
 
-    await prisma.robot.create({
-        data: {
-            namespace_id,
-            id: deviceId
+    try {
+        await prisma.robot.create({
+            data: {
+                namespace_id,
+                id: deviceId
+            }
+        });
+
+    } catch (error) {
+        if(error.code === 'P2002') {
+            logger.warn('could not provision robot because it is already provisioned');
+            return res.status(400).json({code: 'device_already_registered'});
         }
-    });
+        throw error;
+    }
+    
 
-    logger.info('provisioned a robot');
+    const robotKeyPair = forge.pki.rsa.generateKeyPair(2048);
 
-    // TODO we'll stream back a temporary p12 file, but we'll want to create one specific to this robot
-    const fileStream = fs.createReadStream('./res/temp.p12');
-    fileStream.pipe(res);
+    // load root ca and key, used to sign provisioning cert
+    const rootCaPrivateKeyStr = await keyStorage.getKey(RootCAPrivateKeyId);
+    const rootCaPublicKeyStr = await keyStorage.getKey(RootCAPublicKeyId);
+    const rootCaCertStr = await blobStorage.getObject(RootCABucket, RootCACertObjId) as string;
+    const rootCaCert = forge.pki.certificateFromPem(rootCaCertStr);
+
+    // generate provisioning cert using root ca as parent
+    const opts = {
+        commonName: deviceId,
+        cert: rootCaCert,
+        keyPair: {
+            privateKey: forge.pki.privateKeyFromPem(rootCaPrivateKeyStr),
+            publicKey: forge.pki.publicKeyFromPem(rootCaPublicKeyStr)
+        }
+    };
+    const provisioningCert = generateCertificate(robotKeyPair, opts);
+
+    // bundle into pcks12, no encryption password set
+    const p12 = forge.pkcs12.toPkcs12Asn1(robotKeyPair.privateKey, [provisioningCert, rootCaCert], null, { algorithm: 'aes256' });
+
+    logger.info('robot has provisioned')
+    return res.status(200).send(Buffer.from(forge.asn1.toDer(p12).getBytes(), 'binary'));
 
 });
 

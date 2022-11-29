@@ -10,6 +10,12 @@ import { keyStorage } from '../../core/key-storage';
 import { blobStorage } from '../../core/blob-storage';
 import { generateRoot } from '../../core/tuf';
 import { logger } from '../../core/logger';
+import {
+    RootCABucket,
+    RootCACertObjId,
+    RootCAPrivateKeyId,
+    RootCAPublicKeyId
+} from '../../core/consts';
 
 const router = express.Router();
 
@@ -222,7 +228,7 @@ router.delete('/namespaces/:namespace', async (req, res) => {
 /**
  * Create a provisioning credentials
  */
-router.post('/namespaces/:namespace/provisioning-credentials', async (req, res) => {
+router.get('/namespaces/:namespace/provisioning-credentials', async (req, res) => {
 
     const namespace = req.params.namespace;
 
@@ -241,9 +247,9 @@ router.post('/namespaces/:namespace/provisioning-credentials', async (req, res) 
     const provisioningKeyPair = forge.pki.rsa.generateKeyPair(2048);
 
     // load root ca and key, used to sign provisioning cert
-    const rootCaPrivateKeyStr = await keyStorage.getKey(`${namespace}-rootca-private`);
-    const rootCaPublicKeyStr = await keyStorage.getKey(`${namespace}-rootca-public`);
-    const rootCaCertStr = await blobStorage.getObject(namespace, 'rootca-cert') as string;
+    const rootCaPrivateKeyStr = await keyStorage.getKey(RootCAPrivateKeyId);
+    const rootCaPublicKeyStr = await keyStorage.getKey(RootCAPublicKeyId);
+    const rootCaCertStr = await blobStorage.getObject(RootCABucket, RootCACertObjId) as string;
     const rootCaCert = forge.pki.certificateFromPem(rootCaCertStr);
 
     // generate provisioning cert using root ca as parent
@@ -257,19 +263,14 @@ router.post('/namespaces/:namespace/provisioning-credentials', async (req, res) 
     };
     const provisioningCert = generateCertificate(provisioningKeyPair, opts);
 
-    // bundle into pcks12, no password set
+    // bundle into pcks12, no encryption password set
     const p12 = forge.pkcs12.toPkcs12Asn1(provisioningKeyPair.privateKey, [provisioningCert, rootCaCert], null, { algorithm: 'aes256' });
 
-    // base64 enecode
-    var p12b64 = forge.util.encode64(forge.asn1.toDer(p12).getBytes());
-
-
     // create credentials.zip
-    // const output = fs.createWriteStream(__dirname + '/example.zip');
     const archive = archiver('zip');
 
-    archive.append(`https://${config.HOSTNAME}:${config.PORT}/api/v0/`, { name: 'autoprov.url' });
-    archive.append(p12b64, { name: 'autoprov_credentials.p12' });
+    archive.append(`http://${config.HOSTNAME}:${config.PORT}/api/v0/director/${namespace}`, { name: 'autoprov.url' });
+    archive.append(Buffer.from(forge.asn1.toDer(p12).getBytes(), 'binary'), { name: 'autoprov_credentials.p12' });
     archive.finalize();
 
     // TODO catch archive on error event

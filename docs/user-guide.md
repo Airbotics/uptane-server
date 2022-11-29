@@ -1,38 +1,51 @@
 # User guide
 
-This guide is for users/practitioners that want to set up and use Airbotics, but not develop it.
+This guide is for users/practitioners that want to set up and use Airbotics, but not develop it. Here are the main steps:
 
-Assuming your infrastructure is up and running (server listening, db in clean state, etc.) these are the main actions you can take:
+## Create a Root CA
+
+This will create a public and private key for the root CA and store them in the key server. It will also create a cert and store it in blob storage under the `root` bucket.
+
+```
+npx ts-node scripts/manage-ca-cert.ts create
+```
+
+When tearing down the infrastructure you can delete them using
+
+```
+npx ts-node scripts/manage-ca-cert.ts delete
+```
+
+## Stand up postgres
+
+```
+docker compose up postgres
+```
+
+You'll have to migrate or `npx prisma db push --schema ./src/prisma/schema.prisma` after this.
 
 ## Initialise a namespace
-
-A namespace is a logical collection of resources related to the same project. A few things happen when you create a namespace:
-
-- It's created in the db.
-- A bucket in blob storage is created to hold its resources.
-- 8 key pairs are created an stored in key storage (4 top-level roles for 2 repositories).
-- An initial root.json is created for both repositories.
-
-You can create a namespace with:
 
 ```
 POST <BASE_URL>/api/v0/admin/namespaces
 ```
 
+This will return a namespace id plus some other basic information.
 
-## Adding a robot
+## Download provisioning credentials
 
-Once you have a namespace you can add a robot to it. This action does the following things:
-
-- Creates a robot in the database under the namespace and creates a single ECU in the robot. This ECU will be the primary.
-- Creates a key pair for the primary ECU. The public portion is stored in the key server and the private portion is returned to the client.
-- Returns bootstrapping credentials the primary requires to provision itself (private key, robot id, etc.)
-
-You can create a robot with:
+This will allow robots to provision themselves
 
 ```
-POST <BASE_URL>/api/v0/director/<namespace>/robots
+wget -O credentials.zip http://localhost:8001/api/v0/admin/namespaces/<namespace-id>/provisioning-credentials
 ```
+
+You can list the contents of the zip with:
+
+```
+unzip -l ../credentials.zip
+```
+
 
 ## Uploading an image
 
@@ -55,13 +68,3 @@ You will need to pass the image in the body of the request.
 ## Create a rollout
 
 To get an image onto a robot you'll need to create a rollout, this associates images to robots.
-
-
-## Provisioning a robot with the agent
-
-You'll then need to ensure the agent has the proper credentials and configuration required for it to run and securely communicate with the backend.
-
-
-## Running the agent
-
-Finally you can run the agent.

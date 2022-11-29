@@ -26,3 +26,8 @@ export const enum SignatureMethods {
     rsa = 'rsassa-pss',
     ed25519 = 'ed25519'
 }
+
+export const RootCABucket = 'root-ca';
+export const RootCACertObjId = 'root-ca-cert';
+export const RootCAPrivateKeyId = 'root-ca-private';
+export const RootCAPublicKeyId = 'root-ca-public';

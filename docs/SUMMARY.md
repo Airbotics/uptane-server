@@ -1,30 +1,22 @@
 ‌# Summary​
 
-## General
+## Overview
 
-- [Welcome to Airbotics](index.md)
+- [Welcome to Airbotics](overview.md)
 
-- [User guide](user-guide.md)
+- [Uptane primer](uptane-primer.md)
 
-- [Key management](key-management.md)
+- [Security](security.md)
 
-- [API](api.md)
+- [Glossary](glossary.md)
 
+## Guides
 
-## Architecture
-
-- [Overview](architecture/index.md)
-
-- [The agent](architecture/agent.md)
-
-- [Director repository module](architecture/director-repository.md)
-
-- [Image repository module](architecture/image-repository.md)
-
+- [Overview](guides/overview.md)
 
 ## Developers
 
-- [Overview](developers/index.md)
+- [Overview](developers/overview.md)
 
 - [Working with Postgres](developers/working-with-postgres.md)
 
@@ -32,11 +24,12 @@
 
 - [Scripts](developers/scripts.md)
 
+- [Key management](key-management.md)
 
-## Resources
+- [Architecture](developers/architecture/overview.md)
 
-- [Landscape of software deployment](resources/deployment-landscape.md)
+    - [The agent](developers/architecture/agent.md)
 
-- [The Update Framework primer](resources/tuf-primer.md)
+    - [Director repository module](developers/architecture/director-repository.md)
 
-- [Glossary](resources/glossary.md)
+    - [Image repository module](developers/architecture/image-repository.md)

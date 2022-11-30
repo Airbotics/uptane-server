@@ -41,8 +41,6 @@
 
 <br />
 
-<p align="center">We're building a product for Software Over The Air (SOTA) deployment designed for robots. You can use our hosted version at <a href="https://airbotics.io" target="_blank">airbotics.io</a> or self-host it on your own infrastructure.</p>
-
 <p align="center">⚠️ We're still in Alpha so this should not be considered stable or secure. ⚠️</p>
 
 <br />
@@ -127,7 +125,7 @@ Along with these, we're building the usual features you would expect from a OTA 
 
 ## Docs
 
-A web version of the documentation is available [here](https://docs.airbotics.io), the source for which is available [here](docs/index.md). We use [GitBook](https://www.gitbook.com/) to host our documentation, it is synced with the `main` branch of this repo and will automatically update itself whenever there is a change here.
+A web version of the documentation is available [here](https://docs.airbotics.io), the source of which is available [here](docs/index.md).
 
 
 

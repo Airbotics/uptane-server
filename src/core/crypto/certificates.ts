@@ -16,7 +16,7 @@ interface ICertOpts {
  * If this is a root CA then `opts` should be `undefined`, otherwise it should be defined.
  */
 export const generateCertificate = (myKeyPair: forge.pki.KeyPair, opts?: ICertOpts): forge.pki.Certificate=> {
-
+  
     const cert = forge.pki.createCertificate();
 
     const attrs: forge.pki.CertificateField[] = [
@@ -66,7 +66,6 @@ export const generateCertificate = (myKeyPair: forge.pki.KeyPair, opts?: ICertOp
     cert.setSubject(attrs);
     cert.setIssuer(opts ? opts.cert.subject.attributes : attrs);
     cert.publicKey = myKeyPair.publicKey;
-
     // sign the cert
     cert.sign(opts ? opts.keyPair.privateKey : myKeyPair.privateKey, forge.md.sha256.create());
 

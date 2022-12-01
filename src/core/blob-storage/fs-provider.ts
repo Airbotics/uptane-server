@@ -14,7 +14,9 @@ export class FsBlobProvider implements IBlobStorageProvider {
 
     async createBucket(bucketId: string): Promise<void> {
         const filePath = path.resolve(path.join(config.BLOB_FS_STORAGE_DIR, bucketId));
-        fs.mkdirSync(filePath, { recursive: true });
+        if (!fs.existsSync(filePath)){
+            fs.mkdirSync(filePath, { recursive: true });
+        }
     }
 
     async deleteBucket(bucketId: string): Promise<void> {

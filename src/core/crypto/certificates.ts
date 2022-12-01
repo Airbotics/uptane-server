@@ -4,8 +4,13 @@ import { dayjs } from '../time';
 import config from '../../config';
 import { ManipulateType } from 'dayjs';
 
+<<<<<<< HEAD
 interface ICertOpts {
     commonName: string; // common name of the cert
+=======
+export interface ICertOpts {
+    commonName: string; // not the common name of the parent
+>>>>>>> 8ec1ebe (extracted robot id from CN during mutual TLS)
     keyPair: forge.pki.KeyPair; // key pair of the parent
     cert: forge.pki.Certificate; // cert of the parent
 }
@@ -39,7 +44,7 @@ export const generateCertificate = (myKeyPair: forge.pki.KeyPair, opts?: ICertOp
         {
             shortName: 'C',
             value: 'US'
-        },
+        }
     ];
 
     const extensions: any[] = [
@@ -60,6 +65,7 @@ export const generateCertificate = (myKeyPair: forge.pki.KeyPair, opts?: ICertOp
 
     // set cert fields
     cert.serialNumber = `00${randomBytes(4).toString('hex')}`;
+    
     cert.validity.notBefore = dayjs().toDate();
     cert.validity.notAfter = dayjs().add(config.ROOT_CA_TTL[0] as number, config.ROOT_CA_TTL[1] as ManipulateType).toDate();
     cert.setExtensions(extensions);
@@ -68,6 +74,5 @@ export const generateCertificate = (myKeyPair: forge.pki.KeyPair, opts?: ICertOp
     cert.publicKey = myKeyPair.publicKey;
     // sign the cert
     cert.sign(opts ? opts.keyPair.privateKey : myKeyPair.privateKey, forge.md.sha256.create());
-
     return cert;
 }

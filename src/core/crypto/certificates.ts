@@ -4,13 +4,8 @@ import { dayjs } from '../time';
 import config from '../../config';
 import { ManipulateType } from 'dayjs';
 
-<<<<<<< HEAD
-interface ICertOpts {
-    commonName: string; // common name of the cert
-=======
 export interface ICertOpts {
     commonName: string; // not the common name of the parent
->>>>>>> 8ec1ebe (extracted robot id from CN during mutual TLS)
     keyPair: forge.pki.KeyPair; // key pair of the parent
     cert: forge.pki.Certificate; // cert of the parent
 }

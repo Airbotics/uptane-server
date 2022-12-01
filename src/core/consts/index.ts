@@ -33,14 +33,11 @@ export const RootCACertObjId = 'root-ca-cert';
 export const RootCAPrivateKeyId = 'root-ca-private';
 export const RootCAPublicKeyId = 'root-ca-public';
 
-<<<<<<< HEAD
 // type of image that can be deployed to a robot
 // NOTE: ostree is not yet supported
 export const enum ETargetFormat {
     Binary = 'BINARY',
     OsTree = 'OSTREE'
 }
-=======
 
 export const CertBucket = 'certs';
->>>>>>> 8ec1ebe (extracted robot id from CN during mutual TLS)

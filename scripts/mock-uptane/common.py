@@ -20,7 +20,7 @@ PRIMARY_FS_ROOT_PATH = os.path.join(os.path.dirname(__file__), 'primary-fs')
 IMAGE_REPO_PORT = 8001
 DIRECTOR_REPO_PORT = 8001
 IMAGE_REPO_HOST = f'http://localhost:{IMAGE_REPO_PORT}/api/v0/image/{NAMESPACE}'
-DIRECTOR_REPO_HOST = f'http://localhost:{DIRECTOR_REPO_PORT}/api/v0/director/{NAMESPACE}'
+DIRECTOR_REPO_HOST = f'http://localhost:{DIRECTOR_REPO_PORT}/api/v0/director/{NAMESPACE}/robots/{ROBOT_ID}'
 
 IMAGE_REPO_NAME = 'image-repo'
 IMAGE_REPO_DIR = os.path.join(os.path.dirname(os.path.realpath(__file__)), 'primary-fs', IMAGE_REPO_NAME)

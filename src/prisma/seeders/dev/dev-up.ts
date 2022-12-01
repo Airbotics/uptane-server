@@ -1,16 +1,17 @@
-import prisma from '../../../core/postgres';
 import fs from 'fs';
-import { keyStorage } from '../../../core/key-storage';
-import { generateRoot, generateSnapshot, generateTargets, generateTimestamp } from '../../../core/tuf';
-import {
-    UploadStatus,
-    TUFRole,
-    TUFRepo
-} from "@prisma/client";
-import { IKeyPair, IRootTUF, ITargetsImages, ITargetsTUF } from '../../../types';
-import { ISnapshotTUF, ITimestampTUF } from '../../../types/index';
 import path from 'path';
-import config from '../../../config';
+import config from '@airbotics-config';
+import prisma from '@airbotics-core/postgres';
+import { keyStorage } from '@airbotics-core/key-storage';
+import { generateHash } from '@airbotics-core/crypto/hashes';
+import { UploadStatus, TUFRole, TUFRepo} from "@prisma/client";
+import { generateRoot, generateSnapshot, 
+    generateTargets, generateTimestamp } from '@airbotics-core/tuf';
+import { IKeyPair, IRootTUF, ITargetsImages, 
+    ITargetsTUF, ISnapshotTUF, ITimestampTUF } from '@airbotics-types';
+import { SEED_EXPIRES_AT, SEED_NAMESPACE_ID, 
+    SEED_PRIMARY_ECU_ID, SEED_PRIMARY_IMAGE_ID,
+    SEED_ROBOT_ID, SEED_SECONDARY_ECU_ID, SEED_SECONDARY_IMAGE_ID } from '../consts';
 
 
 /**
@@ -41,15 +42,6 @@ import config from '../../../config';
  * 
  */
 
-const SEED_NAMESPACE_ID = 'seed';
-const SEED_ROBOT_ID = 'seed-robot';
-const SEED_PRIMARY_IMAGE_ID = 'seed-primary-image';
-const SEED_SECONDARY_IMAGE_ID = 'seed-secondary-image';
-const SEED_PRIMARY_ECU_ID = 'seed-primary-ecu';
-const SEED_SECONDARY_ECU_ID = 'seed-secondary-ecu';
-const SEED_EXPIRES_AT = [10, 'year']; //lets not worry about expiry for seeder
-
-
 
 const createNamespace = async () => {
 
@@ -72,24 +64,28 @@ const createImage = async () => {
 
     //The primary 'image' is simply a text file with 'primary' as the body
     //The secondary 'image' is simply a text file with 'secondary' as the body
+    const primaryImage = 'primary';
+    const secondaryImage = 'secondary';
+
+    
     await prisma.image.createMany({
         data: [
             {
                 id: SEED_PRIMARY_IMAGE_ID,
                 namespace_id: SEED_NAMESPACE_ID,
-                size: 5,
                 hwids: [],
-                sha256: '986a1b7135f4986150aa5fa0028feeaa66cdaf3ed6a00a355dd86e042f7fb494',
-                sha512: 'fa01128f36bcb2fd0ab277bced17de734c0e4a1e022dc26ad9b85d3b64a5c7af499d3af526fa25500bd73f4b2a0886b22a1e1ff68250de496aa4d847ffe9607b',
+                size: Buffer.byteLength(primaryImage, "utf-8"),
+                sha256: generateHash(primaryImage, {algorithm: 'SHA256'}),
+                sha512: generateHash(primaryImage, {algorithm: 'SHA512'}),
                 status: UploadStatus.uploaded
             },
             {
                 id: SEED_SECONDARY_IMAGE_ID,
                 namespace_id: SEED_NAMESPACE_ID,
-                size: 5,
                 hwids: [],
-                sha256: 'c0f69e19ba252767f183158737ab1bc44f42380d2473ece23a4f276ae7c80dff',
-                sha512: '7ec0750d1e26845a313bf932749748516a1ce5d65f66fb50aa051047e3a91172c1e998a756f3981e38061f1a46d02d0e9162049e3bba1cdda176c42b145370b6',
+                size: Buffer.byteLength(secondaryImage, "utf-8"),
+                sha256: generateHash(secondaryImage, {algorithm: 'SHA256'}),
+                sha512: generateHash(secondaryImage, {algorithm: 'SHA512'}),
                 status: UploadStatus.uploaded
             }
         ]
@@ -150,23 +146,23 @@ const createImageRepoMetadata = async () => {
     console.log('dev seeder creating image repo metadata...');
 
     const rootKeyPair: IKeyPair = {
-        publicKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-image-root-public.pem`),
-        privateKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-image-root-private.pem`),
+        publicKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-image-root-public`),
+        privateKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-image-root-private`),
     }
 
     const targetKeyPair: IKeyPair = {
-        publicKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-image-targets-public.pem`),
-        privateKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-image-targets-private.pem`),
+        publicKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-image-targets-public`),
+        privateKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-image-targets-private`),
     }
 
     const snapshotKeyPair: IKeyPair = {
-        publicKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-image-snapshot-public.pem`),
-        privateKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-image-snapshot-private.pem`),
+        publicKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-image-snapshot-public`),
+        privateKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-image-snapshot-private`),
     }
 
     const timestampKeyPair: IKeyPair = {
-        publicKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-image-timestamp-public.pem`),
-        privateKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-image-timestamp-private.pem`),
+        publicKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-image-timestamp-public`),
+        privateKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-image-timestamp-private`),
     }
 
     // generate root metadata
@@ -252,23 +248,23 @@ const createDirectorRepoRootMetadata = async () => {
     console.log('dev seeder creating director repo root metadata...');
 
     const rootKeyPair: IKeyPair = {
-        publicKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-director-root-public.pem`),
-        privateKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-director-root-private.pem`),
+        publicKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-director-root-public`),
+        privateKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-director-root-private`),
     }
 
     const targetKeyPair: IKeyPair = {
-        publicKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-director-targets-public.pem`),
-        privateKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-director-targets-private.pem`),
+        publicKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-director-targets-public`),
+        privateKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-director-targets-private`),
     }
 
     const snapshotKeyPair: IKeyPair = {
-        publicKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-director-snapshot-public.pem`),
-        privateKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-director-snapshot-private.pem`),
+        publicKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-director-snapshot-public`),
+        privateKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-director-snapshot-private`),
     }
 
     const timestampKeyPair: IKeyPair = {
-        publicKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-director-timestamp-public.pem`),
-        privateKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-director-timestamp-private.pem`),
+        publicKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-director-timestamp-public`),
+        privateKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-director-timestamp-private`),
     }
 
     const rootMetadata: IRootTUF = generateRoot(SEED_EXPIRES_AT,
@@ -321,6 +317,8 @@ const createTmpRollout = async () => {
 
 (async () => {
 
+    console.log('running dev seeder up...');
+
     //check if the keys have been generated
     //This should probably check for all keys but just checks image root for now
     const seedRootCertPath = path.join(__filename, '../../../../../',  config.KEYS_FS_STORAGE_DIR, `${SEED_NAMESPACE_ID}-image-root-public.pem`)
@@ -339,6 +337,7 @@ const createTmpRollout = async () => {
     await createDirectorRepoRootMetadata();
     await createTmpRollout();
 
+    console.log('dev seeder up success');
+
+
 })()
-
-

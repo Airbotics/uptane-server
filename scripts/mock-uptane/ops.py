@@ -53,6 +53,7 @@ def cp_root_metadta():
             print(f'Director repo root metadata was written to {director_path}')
 
 
+
 def main():
 
     if len(sys.argv) < 1:

@@ -397,10 +397,11 @@ const generateNewMetadata = async (namespace_id: string, robot_id: string, ecuSe
 /**
  * Process a manifest from a robot
  */
-router.put('/:namespace/robots/:robot_id/manifest', async (req, res) => {
+
+router.post('/:namespace/robots/:robot_id/manifests', async (req, res) => {
 
     const namespace_id: string = req.params.namespace;
-    const robot_id = req.params.robot_id;
+    const robot_id: string = req.params.robot_id;
     const manifest: IRobotManifest = req.body;
 
     let valid = true;
@@ -824,8 +825,8 @@ router.delete('/:namespace/robots/:robot_id', async (req, res) => {
 router.get('/:namespace/robots/:robot_id/:version.:role.json', async (req, res) => {
 
     const namespace_id = req.params.namespace;
-    const version = Number(req.params.version);
     const robot_id = req.params.robot_id;
+    const version = Number(req.params.version);
     const role = req.params.role;
 
     // since this is the director repo metadata is genereated per robot, apart from

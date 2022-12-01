@@ -11,12 +11,11 @@
         "outDir": "dist",
         "baseUrl": ".",
         "paths": {
-            "*": [
-                "./node_modules/*"
-            ],
+            "*": ["./node_modules/*"],
             "@airbotics-core/*": ["src/core/*"],
-            "@airbotics-config": ["src/config/"],
             "@airbotics-modules/*": ["src/modules/*"],
+            "@airbotics-types": ["src/types/"],
+            "@airbotics-config": ["src/config/"],
         },
         "typeRoots": [
             "./src/types",
@@ -26,5 +25,8 @@
     },
     "include": [
         "./src/"
-    ]
+    ],
+    "ts-node": {
+        "require": ["tsconfig-paths/register"]
+    }
 }

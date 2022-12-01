@@ -7,6 +7,7 @@ from styles import GREEN, RED, YELLOW, ENDCOLORS
 import json 
 import uuid
 import sys
+import random
 from common import (load_pem_key, _get_time, generate_priv_tuf_key,
   NAMESPACE, ROBOT_ID,
   PRIMARY_ECU_SERIAL, SECONDARY_ECU_SERIAL, PRIMARY_FS_ROOT_PATH,
@@ -151,20 +152,37 @@ metadata for that image.
 
 class Primary():
 
-  def __init__(self):
+  #These are all mocked to make testing easier and can be 'updated' with one
+  #of the actions to test against the backend
 
+  INSTALLED_PRIMARY_ECU_IMAGE = {
+    'path': f'{PRIMARY_FS_ROOT_PATH}/director-repo/targets/primary.txt',
+    'body': 'primary'
+  }
+
+  INSTALLED_SECONDARY_ECU_IMAGE = {
+    'path': f'{PRIMARY_FS_ROOT_PATH}/director-repo/targets/secondary.txt',
+    'body': 'secondary'
+  }
+
+  IDENTIFIED_ATTACKS = {
+    'primary': '',
+    'secondary': '',
+  }
+
+  def __init__(self):
 
     self.director_updater = Updater(
         metadata_dir=DIRECTOR_REPO_META_DIR,
         target_dir=DIRECTOR_REPO_TARGETS_DIR,
         metadata_base_url=DIRECTOR_REPO_HOST,
-        target_base_url='http://localhost:3001')
+        target_base_url=DIRECTOR_REPO_HOST)
 
     self.image_updater = Updater(
         metadata_dir=IMAGE_REPO_META_DIR,
         target_dir=IMAGE_REPO_TARGETS_DIR,
         metadata_base_url=IMAGE_REPO_HOST,
-        target_base_url='http://localhost:3001')
+        target_base_url=IMAGE_REPO_HOST)
 
   
 
@@ -173,21 +191,24 @@ class Primary():
       Creates ECU manifest that complies with Uptane Spec 5.4.2.1
       """
 
-      def generate_ecu_version_report(ecu_serial, priv_tuf_key, file_name, file_body):
+      def generate_ecu_version_report(ecu_serial, priv_tuf_key, file_name, file_body, attack):
         
         ecu_report = {
           'signatures': [],
           'signed': {
             'ecu_serial': ecu_serial,
-            'time': _get_time(),
-            'nonce': str(uuid.uuid4()),
-            'attacks_detected': '',
+            'attacks_detected': attack,
+            'previous_timeserver_time': _get_time(),
+            'timeserver_time': _get_time(),
+            'report_counter': random.randint(0, 10000000),
             'installed_image': {
-              'filename': file_name,
-              'length': len(file_body.encode('utf-8')),
-              'hashes': {
-                'sha256': hashlib.sha256(file_body.encode('utf-8')).hexdigest(),
-                'sha512': hashlib.sha512(file_body.encode('utf-8')).hexdigest(),
+              'filepath': file_name,
+              'fileinfo': {
+                'length': len(file_body.encode('utf-8')),
+                'hashes': {
+                  'sha256': hashlib.sha256(file_body.encode('utf-8')).hexdigest(),
+                  'sha512': hashlib.sha512(file_body.encode('utf-8')).hexdigest(),
+                }
               }
             } 
           }
@@ -200,7 +221,6 @@ class Primary():
         return ecu_report
 
 
-
       # Load the ECU private keys from pem files
       primary_ecu_key = load_pem_key(f'{NAMESPACE}-{PRIMARY_ECU_SERIAL}-private')
       secondary_ecu_key = load_pem_key(f'{NAMESPACE}-{SECONDARY_ECU_SERIAL}-private')
@@ -208,15 +228,30 @@ class Primary():
       primary_ecu_tuf_key = generate_priv_tuf_key(primary_ecu_key)
       secondary_ecu_tuf_key = generate_priv_tuf_key(secondary_ecu_key)
 
-      # Init the robot manifest and generate the ecu version reports
+      # Generate the ecu version reports for the primary and secondary
+      primary_ecu_report = generate_ecu_version_report(
+        PRIMARY_ECU_SERIAL, 
+        primary_ecu_tuf_key, 
+        self.INSTALLED_PRIMARY_ECU_IMAGE['path'], 
+        self.INSTALLED_PRIMARY_ECU_IMAGE['body'],
+        self.IDENTIFIED_ATTACKS['primary'])
+
+      secondary_ecu_report = generate_ecu_version_report(
+        SECONDARY_ECU_SERIAL, 
+        secondary_ecu_tuf_key, 
+        self.INSTALLED_SECONDARY_ECU_IMAGE['path'], 
+        self.INSTALLED_SECONDARY_ECU_IMAGE['body'],
+        self.IDENTIFIED_ATTACKS['secondary'])
+
+
+      # Init the full robot manifest with the ecu version reports
       robot_manifest = {
         'signatures': [],
         'signed': {
-          'vin': ROBOT_ID,
           'primary_ecu_serial': PRIMARY_ECU_SERIAL,
-          'ecu_version_reports': {
-            PRIMARY_ECU_SERIAL: generate_ecu_version_report(PRIMARY_ECU_SERIAL, primary_ecu_tuf_key, 'primary.txt', 'primary2'),
-            SECONDARY_ECU_SERIAL: generate_ecu_version_report(SECONDARY_ECU_SERIAL, secondary_ecu_tuf_key, 'secondary.txt', 'secondary')
+          'ecu_version_manifests': {
+            PRIMARY_ECU_SERIAL: primary_ecu_report,
+            SECONDARY_ECU_SERIAL: secondary_ecu_report
           }
         }
       }
@@ -237,7 +272,7 @@ class Primary():
     
     #TODO check the signed_vehicle_manifest has valid schema
 
-    url = f'{DIRECTOR_REPO_HOST}/robots/{ROBOT_ID}/manifests'
+    url = f'{DIRECTOR_REPO_HOST}/manifests'
 
     try:
       res = requests.post(url, json = signed_vehicle_manifest)
@@ -272,9 +307,13 @@ class Primary():
     """
     
     #TODO potentially get metadata from other repos
-    
-    self.director_updater.refresh()
-    self.image_updater.refresh()
+    try:
+      self.director_updater.refresh()
+      self.image_updater.refresh()
+    except Exception as e:
+      print(f'{RED}{e}{ENDCOLORS}')
+      print(f'{RED}Unable to update manifest{ENDCOLORS}')
+
 
 
   
@@ -311,6 +350,22 @@ class Primary():
     #TODO check if target from director repo matches target from image repo
     return True
 
+
+  def mock_install_primary_image(self, path, body):
+    self.INSTALLED_PRIMARY_ECU_IMAGE['path'] = path
+    self.INSTALLED_PRIMARY_ECU_IMAGE['body'] = body
+
+
+  def mock_install_secondary_image(self, path, body):
+    self.INSTALLED_SECONDARY_ECU_IMAGE['path'] = path
+    self.INSTALLED_SECONDARY_ECU_IMAGE['body'] = body
+
+
+  def mock_attack(self, attack, is_primary):
+    if is_primary:
+      self.IDENTIFIED_ATTACKS['primary'] = attack
+    else: 
+      self.IDENTIFIED_ATTACKS['secondary'] = attack
 
 
   def update_cycle(self): 
@@ -454,19 +509,26 @@ def main():
 
     #Change the 'installed' image on the primary
     elif action_idx == 5:
-      print(f'{GREEN}Attempting to run update cycle{ENDCOLORS}')
-      print('TODO: NOT IMPLEMENTED')
+      path = input('Path to the "installed image": ')
+      body = input('Body (as a string) to the "installed image": ')
+      primary.mock_install_primary_image(path, body)
+      print(f'{GREEN}"Installed" new image on the primary{ENDCOLORS}')
+
 
     #Change the 'installed' image on the secondary
     elif action_idx == 6:
-      print(f'{GREEN}Attempting to run update cycle{ENDCOLORS}')
-      print('TODO: NOT IMPLEMENTED')
+      path = input('Path to the "installed image": ')
+      body = input('Body (as a string) to the "installed image": ')
+      primary.mock_install_secondary_image(path, body)
+      print(f'{GREEN}"Installed" new image on the secondary{ENDCOLORS}')
 
     #Report an identified attack
     elif action_idx == 7:
-      print(f'{GREEN}Attempting to run update cycle{ENDCOLORS}')
-      print('TODO: NOT IMPLEMENTED')
-      
+      attack = input('Enter the attack string: ')
+      ecu = input('Which ECU, "p" for primary, "s" for secondary: ')
+      primary.mock_attack(attack, ecu)
+      print(f'{GREEN}Changed the "Reported" attack field, will be reported when the next manifest is sent{ENDCOLORS}')
+
 
     else: 
       print('Unknown action')

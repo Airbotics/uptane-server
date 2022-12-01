@@ -397,8 +397,7 @@ const generateNewMetadata = async (namespace_id: string, robot_id: string, ecuSe
 /**
  * Process a manifest from a robot
  */
-
-router.post('/:namespace/robots/:robot_id/manifests', async (req, res) => {
+router.put('/:namespace/robots/:robot_id/manifest', async (req, res) => {
 
     const namespace_id: string = req.params.namespace;
     const robot_id: string = req.params.robot_id;

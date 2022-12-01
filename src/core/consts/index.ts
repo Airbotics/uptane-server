@@ -15,11 +15,12 @@ repo_version=1
 mode=archive-z2`;
 
 // roles in the tuf spec
+// aktualizr requires uppercase for everything but 'root'
 export const enum ETUFRole {
     Root = 'root',
-    Targets = 'targets',
-    Snapshot = 'snapshot',
-    Timestamp = 'timestamp'
+    Targets = 'Targets', 
+    Snapshot = 'Snapshot',
+    Timestamp = 'Timestamp'
 }
 
 export const enum SignatureMethods {
@@ -31,3 +32,10 @@ export const RootCABucket = 'root-ca';
 export const RootCACertObjId = 'root-ca-cert';
 export const RootCAPrivateKeyId = 'root-ca-private';
 export const RootCAPublicKeyId = 'root-ca-public';
+
+// type of image that can be deployed to a robot
+// NOTE: ostree is not yet supported
+export const enum ETargetFormat {
+    Binary = 'BINARY',
+    OsTree = 'OSTREE'
+}

@@ -3,15 +3,15 @@ import config from '../../config';
 import { ETUFRole } from '../consts';
 import { toCanonical } from '../utils';
 import { dayjs } from '../time';
-import { generateSignature } from '../crypto';
+import { generateSignature, generateHash } from '../crypto';
 import { generateTufKey, genKeyId } from './index';
-import { IKeyPair, ISnapshotSignedTUF, ISnapshotTUF } from '../../types';
+import { IKeyPair, ISnapshotSignedTUF, ISnapshotTUF, ITargetsTUF } from '../../types';
 
 
 /**
  * Creates a signed tuf snapshot metadata object
  */
-export const generateSnapshot = (ttl: (number | string)[], version: number, snapshotKeyPair: IKeyPair, targetsVersion: number): ISnapshotTUF => {
+export const generateSnapshot = (ttl: (number | string)[], version: number, snapshotKeyPair: IKeyPair, targetsMetadata: ITargetsTUF): ISnapshotTUF => {
 
     // generate tuf key object
     const snapshotTufKey = generateTufKey(snapshotKeyPair.publicKey);
@@ -27,12 +27,12 @@ export const generateSnapshot = (ttl: (number | string)[], version: number, snap
         version,
         meta: {
             'targets.json': {
-                version: targetsVersion,
-                // length: toCanonical(targetsMetadata).length,
-                // hashes: {
-                //     sha256: generateHash(toCanonical(targetsMetadata), { algorithm: 'SHA256' }),
-                //     sha512: generateHash(toCanonical(targetsMetadata), { algorithm: 'SHA512' })
-                // }
+                version: targetsMetadata.signed.version,
+                length: Buffer.byteLength(toCanonical(targetsMetadata)),
+                hashes: {
+                    sha256: generateHash(toCanonical(targetsMetadata), { algorithm: 'SHA256' }),
+                    sha512: generateHash(toCanonical(targetsMetadata), { algorithm: 'SHA512' })
+                }
             }
         }
     };

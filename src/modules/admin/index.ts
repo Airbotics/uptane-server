@@ -3,8 +3,8 @@ import { TUFRepo, TUFRole } from '@prisma/client';
 import { v4 as uuidv4 } from 'uuid';
 import archiver from 'archiver';
 import forge from 'node-forge';
-import { prisma } from '../../core/postgres';
 import config from '../../config';
+import { prisma } from '../../core/postgres';
 import { generateCertificate, generateKeyPair } from '../../core/crypto';
 import { keyStorage } from '../../core/key-storage';
 import { blobStorage } from '../../core/blob-storage';
@@ -227,6 +227,10 @@ router.delete('/namespaces/:namespace', async (req, res) => {
 
 /**
  * Create a provisioning credentials
+ * 
+ * TODO
+ * - catch archive on error event
+ * - record credentials creation in db to enable revocation, expiry, auditing, etc.
  */
 router.get('/namespaces/:namespace/provisioning-credentials', async (req, res) => {
 
@@ -243,7 +247,7 @@ router.get('/namespaces/:namespace/provisioning-credentials', async (req, res) =
         return res.status(400).send('could not create provisioning key');
     }
 
-    // create provisioning key
+    // create provisioning key, this will not be stored
     const provisioningKeyPair = forge.pki.rsa.generateKeyPair(2048);
 
     // load root ca and key, used to sign provisioning cert
@@ -269,12 +273,9 @@ router.get('/namespaces/:namespace/provisioning-credentials', async (req, res) =
     // create credentials.zip
     const archive = archiver('zip');
 
-    archive.append(`http://${config.HOSTNAME}:${config.PORT}/api/v0/director/${namespace}`, { name: 'autoprov.url' });
+    archive.append(`${config.BASE_API_URL}/director/${namespace}`, { name: 'autoprov.url' });
     archive.append(Buffer.from(forge.asn1.toDer(p12).getBytes(), 'binary'), { name: 'autoprov_credentials.p12' });
     archive.finalize();
-
-    // TODO catch archive on error event
-    // TODO record credentials creation in db to enable revocation, expiry, auditing, etc.
 
     logger.info('provisioning credentials have been created');
 
@@ -289,7 +290,7 @@ router.get('/namespaces/:namespace/provisioning-credentials', async (req, res) =
  * 
  * Creates an association betwen an ecu and image.
  */
-router.post('/:namespace/rollouts', async (req, res) => {
+router.post('/namespaces/:namespace/rollouts', async (req, res) => {
 
     const {
         ecu_id,

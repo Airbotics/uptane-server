@@ -3,24 +3,21 @@ import config from '../../config';
 import { ETUFRole } from '../consts';
 import { toCanonical } from '../utils';
 import { dayjs } from '../time';
-import { generateSignature } from '../crypto';
+import { generateSignature, generateHash } from '../crypto';
 import { generateTufKey, genKeyId } from './index';
-import { IKeyPair, ITimestampSignedTUF, ITimestampTUF } from '../../types';
+import { IKeyPair, ISnapshotTUF, ITimestampSignedTUF, ITimestampTUF } from '../../types';
 
 
 /**
  * Creates a signed tuf timestamp metadata object
  */
-export const generateTimestamp = (ttl: (number|string)[], version: number, timestampKeyPair: IKeyPair, snaphostVersion: number): ITimestampTUF => {
+export const generateTimestamp = (ttl: (number | string)[], version: number, timestampKeyPair: IKeyPair, snapshotMetadata: ISnapshotTUF): ITimestampTUF => {
 
     // generate tuf key object
     const timestampTufKey = generateTufKey(timestampKeyPair.publicKey);
 
     // get key id
     const timestampKeyId = genKeyId(timestampTufKey);
-
-    console.log(dayjs().add(ttl[0] as number, ttl[1] as ManipulateType).format(config.TUF_TIME_FORMAT));
-    
 
     // generate the signed portion of the timestamp metadata
     const signed: ITimestampSignedTUF = {
@@ -30,12 +27,12 @@ export const generateTimestamp = (ttl: (number|string)[], version: number, times
         version,
         meta: {
             'snapshot.json': {
-                version: snaphostVersion,
-                // length: toCanonical(snapshotMetadata).length,
-                // hashes: {
-                //     sha256: generateHash(toCanonical(snapshotMetadata), { algorithm: 'SHA256' }),
-                //     sha512: generateHash(toCanonical(snapshotMetadata), { algorithm: 'SHA512' })
-                // }
+                version: snapshotMetadata.signed.version,
+                length: Buffer.byteLength(toCanonical(snapshotMetadata)),
+                hashes: {
+                    sha256: generateHash(toCanonical(snapshotMetadata), { algorithm: 'SHA256' }),
+                    sha512: generateHash(toCanonical(snapshotMetadata), { algorithm: 'SHA512' })
+                }
             }
         }
     };

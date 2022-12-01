@@ -36,11 +36,12 @@ export const ecuVersionReportSchema = Joi.object({
     })
 });
 
-
+// aktualizr sends an `installation_report` field which we are not concerned with
 export const robotManifestSchema = Joi.object({
     signatures: Joi.array().items(signautreSchema).required().min(1), 
     signed: Joi.object({
         primary_ecu_serial: Joi.string().required(),
-        ecu_version_manifests: Joi.object().pattern(/^/, ecuVersionReportSchema) //Will need to be updated to support multiple version reports
+        ecu_version_manifests: Joi.object().pattern(/^/, ecuVersionReportSchema), //Will need to be updated to support multiple version reports
+        installation_report: Joi.optional()
     })
 });

@@ -139,8 +139,8 @@ const processTargetRoles = async () => {
             const oldTargetsTuf = targets.value as unknown as ITargetsTUF;
 
             const targetsMetadata = generateTargets(targetsTTL, newTargetsVersion, targetsKeyPair, oldTargetsTuf.signed.targets);
-            const snapshotMetadata = generateSnapshot(snapshotTTL, newSnapshotVersion, snapshotKeyPair, targetsMetadata.signed.version);
-            const timestampMetadata = generateTimestamp(timestampTTL, newTimeStampVersion, timestampKeyPair, snapshotMetadata.signed.version);
+            const snapshotMetadata = generateSnapshot(snapshotTTL, newSnapshotVersion, snapshotKeyPair, targetsMetadata);
+            const timestampMetadata = generateTimestamp(timestampTTL, newTimeStampVersion, timestampKeyPair, snapshotMetadata);
 
             // perform db writes in transaction
             await prisma.$transaction(async tx => {
@@ -232,8 +232,8 @@ const processSnapshotRoles = async () => {
             const timestampTTL = snapshot.repo === TUFRepo.director ? config.TUF_TTL.DIRECTOR.TIMESTAMP : config.TUF_TTL.IMAGE.TIMESTAMP;
             const oldSnapshotTuf = snapshot.value as unknown as ISnapshotTUF;
 
-            const snapshotMetadata = generateSnapshot(snapshotTTL, newSnapshotVersion, snapshotKeyPair, oldSnapshotTuf.signed.meta['targets.json'].version);
-            const timestampMetadata = generateTimestamp(timestampTTL, newTimeStampVersion, timestampKeyPair, snapshotMetadata.signed.version);
+            const snapshotMetadata = generateSnapshot(snapshotTTL, newSnapshotVersion, snapshotKeyPair, oldSnapshotTuf);
+            const timestampMetadata = generateTimestamp(timestampTTL, newTimeStampVersion, timestampKeyPair, snapshotMetadata);
 
             // perform db writes in transaction
             await prisma.$transaction(async tx => {
@@ -312,7 +312,7 @@ const processTimestampRoles = async () => {
             const timestampTTL = timestamp.repo === TUFRepo.director ? config.TUF_TTL.DIRECTOR.TIMESTAMP : config.TUF_TTL.IMAGE.TIMESTAMP;
             const oldTimestampMetadata = timestamp.value as unknown as ITimestampTUF;
 
-            const timestampMetadata = generateTimestamp(timestampTTL, newTimestampVersion, timestampKeyPair, oldTimestampMetadata.signed.meta['snapshot.json'].version);
+            const timestampMetadata = generateTimestamp(timestampTTL, newTimestampVersion, timestampKeyPair, oldTimestampMetadata);
 
             await prisma.metadata.create({
                 data: {

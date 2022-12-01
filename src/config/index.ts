@@ -16,7 +16,7 @@ const config = {
     PORT: process.env.PORT || 8001,                                             // port the server listens on
     NODE_ENV: process.env.NODE_ENV || 'development',                            // mode to run the server in, 'production' or 'development'
     MAX_JSON_REQUEST_SIZE: '100mb',                                             // max json size we accept
-    HOSTNAME: 'localhost',                                                      // hostname of the server 
+    BASE_API_URL: 'http://localhost:8001/api/v0',                               // base url of the api server
 
     // blob storage
     BLOB_STORAGE_PROVIDER: EBlobStorageProvider.Fs,                             // blob storage provider to use

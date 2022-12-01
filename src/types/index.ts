@@ -92,7 +92,7 @@ export interface ITargetsImages {
 
 
 export interface ITargetsSignedTUF {
-    _type: 'targets';
+    _type: 'Targets'; // aktualizr requires uppercase
     spec_version: string;
     version: number;
     expires: string;
@@ -109,7 +109,7 @@ export interface ITargetsTUF {
 
 
 export interface ISnapshotSignedTUF {
-    _type: 'snapshot';
+    _type: 'Snapshot'; // aktualizr requires uppercase
     spec_version: string;
     version: number;
     expires: string;
@@ -130,7 +130,7 @@ export interface ISnapshotTUF {
 
 
 export interface ITimestampSignedTUF {
-    _type: 'timestamp';
+    _type: 'Timestamp'; // aktualizr requires uppercase
     spec_version: string;
     version: number;
     expires: string;

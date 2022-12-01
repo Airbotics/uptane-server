@@ -78,6 +78,7 @@ const createImage = async () => {
                 id: SEED_PRIMARY_IMAGE_ID,
                 namespace_id: SEED_NAMESPACE_ID,
                 size: 5,
+                hwids: [],
                 sha256: '986a1b7135f4986150aa5fa0028feeaa66cdaf3ed6a00a355dd86e042f7fb494',
                 sha512: 'fa01128f36bcb2fd0ab277bced17de734c0e4a1e022dc26ad9b85d3b64a5c7af499d3af526fa25500bd73f4b2a0886b22a1e1ff68250de496aa4d847ffe9607b',
                 status: UploadStatus.uploaded
@@ -86,6 +87,7 @@ const createImage = async () => {
                 id: SEED_SECONDARY_IMAGE_ID,
                 namespace_id: SEED_NAMESPACE_ID,
                 size: 5,
+                hwids: [],
                 sha256: 'c0f69e19ba252767f183158737ab1bc44f42380d2473ece23a4f276ae7c80dff',
                 sha512: '7ec0750d1e26845a313bf932749748516a1ce5d65f66fb50aa051047e3a91172c1e998a756f3981e38061f1a46d02d0e9162049e3bba1cdda176c42b145370b6',
                 status: UploadStatus.uploaded
@@ -198,8 +200,8 @@ const createImageRepoMetadata = async () => {
 
     // generate other top level metadata
     const targetsMetadata: ITargetsTUF = generateTargets(SEED_EXPIRES_AT, 1, targetKeyPair, targetsImages);
-    const snapshotMetadata: ISnapshotTUF = generateSnapshot(SEED_EXPIRES_AT, 1, snapshotKeyPair, 1);
-    const timestampMetadata: ITimestampTUF = generateTimestamp(SEED_EXPIRES_AT, 1, timestampKeyPair, 1);
+    const snapshotMetadata: ISnapshotTUF = generateSnapshot(SEED_EXPIRES_AT, 1, snapshotKeyPair, targetsMetadata);
+    const timestampMetadata: ITimestampTUF = generateTimestamp(SEED_EXPIRES_AT, 1, timestampKeyPair, snapshotMetadata);
     
     //Store the metadata in the db
     await prisma.metadata.createMany({

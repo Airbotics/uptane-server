@@ -1,6 +1,6 @@
 import express from 'express';
 import forge from 'node-forge';
-import { TUFRepo, TUFRole, Image, Prisma } from '@prisma/client';
+import { TUFRepo, TUFRole, Prisma } from '@prisma/client';
 import { keyStorage, loadKeyPair } from '../../core/key-storage';
 import { blobStorage } from '../../core/blob-storage';
 import config from '../../config';
@@ -13,6 +13,7 @@ import { toCanonical } from '../../core/utils';
 import { generateSnapshot, generateTargets, generateTimestamp, getLatestMetadataVersion } from '../../core/tuf';
 import { ManifestErrors } from '../../core/consts/errors';
 import {
+    ETargetFormat,
     RootCABucket,
     RootCACertObjId,
     RootCAPrivateKeyId,
@@ -107,8 +108,9 @@ export const robotManifestChecks = async (robotManifest: IRobotManifest, namespa
 
         validateTopSignature: () => {
 
+            const hexsig = Buffer.from(robotManifest.signatures[0].sig, 'base64').toString('hex');
             const verified: boolean = verifySignature({
-                signature: robotManifest.signatures[0].sig,
+                signature: hexsig,
                 pubKey: ecuPubKeys[robotManifest.signed.primary_ecu_serial],
                 algorithm: 'RSA-SHA256',
                 data: toCanonical(robotManifest.signed)
@@ -124,8 +126,9 @@ export const robotManifestChecks = async (robotManifest: IRobotManifest, namespa
 
             //NOTE: Its assumed each ecu version report is only signed by one key
             for (const ecuSerial of ecuSerials) {
+                const hexsig = Buffer.from(robotManifest.signed.ecu_version_manifests[ecuSerial].signatures[0].sig, 'base64').toString('hex');
                 const verified = verifySignature({
-                    signature: robotManifest.signed.ecu_version_manifests[ecuSerial].signatures[0].sig,
+                    signature: hexsig,
                     pubKey: ecuPubKeys[ecuSerial],
                     algorithm: 'RSA-SHA256',
                     data: toCanonical(robotManifest.signed.ecu_version_manifests[ecuSerial].signed)
@@ -210,7 +213,7 @@ export const robotManifestChecks = async (robotManifest: IRobotManifest, namespa
  * 
  * NOTE: THIS WILL BE REPLACED VERY SOON
  */
-const determineNewMetadaRequired = async (robotManifest: IRobotManifest, ecuSerials: string[]): Promise<boolean> => {
+const determineNewMetadataRequired = async (robotManifest: IRobotManifest, ecuSerials: string[]): Promise<boolean> => {
 
 
     //get all the 'rollouts' for each ecu reported
@@ -240,7 +243,7 @@ const determineNewMetadaRequired = async (robotManifest: IRobotManifest, ecuSeri
         installed and has never been instructed to perform an update to any of its ecus
         */
         if (idx == -1) {
-            logger.info('ECU image is not in rollout')
+            logger.warn('ECU image is not in rollout');
         }
 
         else {
@@ -289,19 +292,26 @@ const generateNewMetadata = async (namespace_id: string, robot_id: string, ecuSe
             created_at: 'desc'
         },
         include: {
-            image: true
+            image: true,
+            ecu: true
         }
     });
 
 
     // Lets generate the whole metadata file again
-    const targetsImages: ITargetsImages = {}
+    const targetsImages: ITargetsImages = {};
 
     for (const ecuRollout of rolloutsPerEcu) {
 
-        targetsImages[ecuRollout.ecu_id] = {
+        targetsImages[ecuRollout.image_id] = {
             custom: {
-                ecu_serial: ecuRollout.ecu_id
+                ecuIdentifiers: {
+                    [ecuRollout.ecu_id]: {
+                        hardwareId: ecuRollout.ecu.hwid
+                    }
+                },
+                targetFormat: ETargetFormat.Binary,
+                uri: `${config.BASE_API_URL}/image/${namespace_id}/images/${ecuRollout.image_id}`
             },
             length: ecuRollout.image.size,
             hashes: {
@@ -324,8 +334,8 @@ const generateNewMetadata = async (namespace_id: string, robot_id: string, ecuSe
 
     //Generate the new metadata
     const targetsMetadata = generateTargets(config.TUF_TTL.IMAGE.TARGETS, newTargetsVersion, targetsKeyPair, targetsImages);
-    const snapshotMetadata = generateSnapshot(config.TUF_TTL.IMAGE.SNAPSHOT, newSnapshotVersion, snapshotKeyPair, targetsMetadata.signed.version);
-    const timestampMetadata = generateTimestamp(config.TUF_TTL.IMAGE.TIMESTAMP, newTimestampVersion, timestampKeyPair, snapshotMetadata.signed.version);
+    const snapshotMetadata = generateSnapshot(config.TUF_TTL.IMAGE.SNAPSHOT, newSnapshotVersion, snapshotKeyPair, targetsMetadata);
+    const timestampMetadata = generateTimestamp(config.TUF_TTL.IMAGE.TIMESTAMP, newTimestampVersion, timestampKeyPair, snapshotMetadata);
 
     // perform db writes in transaction
     await prisma.$transaction(async tx => {
@@ -433,7 +443,7 @@ router.put('/:namespace/robots/:robot_id/manifest', async (req, res) => {
          * snapshot and timestamp files for each ecu that needs updated.
          */
 
-        const updateRequired = await determineNewMetadaRequired(manifest, ecuSerials);
+        const updateRequired = await determineNewMetadataRequired(manifest, ecuSerials);
 
         if (!updateRequired) {
             logger.info('processed manifest for robot and determined all ecus have already installed their latest images');
@@ -452,7 +462,6 @@ router.put('/:namespace/robots/:robot_id/manifest', async (req, res) => {
     catch (e) {
         valid = false;
         logger.error('unable to accept robot manifest');
-        // console.log(e)
         logger.error(e);
         return res.status(400).send('unable to accept robot manifest');
     }
@@ -571,13 +580,13 @@ router.post('/:namespace/devices', async (req, res) => {
         });
 
     } catch (error) {
-        if(error.code === 'P2002') {
+        if (error.code === 'P2002') {
             logger.warn('could not provision robot because it is already provisioned');
-            return res.status(400).json({code: 'device_already_registered'});
+            return res.status(400).json({ code: 'device_already_registered' });
         }
         throw error;
     }
-    
+
 
     const robotKeyPair = forge.pki.rsa.generateKeyPair(2048);
 
@@ -596,10 +605,10 @@ router.post('/:namespace/devices', async (req, res) => {
             publicKey: forge.pki.publicKeyFromPem(rootCaPublicKeyStr)
         }
     };
-    const provisioningCert = generateCertificate(robotKeyPair, opts);
+    const robotCert = generateCertificate(robotKeyPair, opts);
 
     // bundle into pcks12, no encryption password set
-    const p12 = forge.pkcs12.toPkcs12Asn1(robotKeyPair.privateKey, [provisioningCert, rootCaCert], null, { algorithm: 'aes256' });
+    const p12 = forge.pkcs12.toPkcs12Asn1(robotKeyPair.privateKey, [robotCert, rootCaCert], null, { algorithm: 'aes256' });
 
     logger.info('robot has provisioned')
     return res.status(200).send(Buffer.from(forge.asn1.toDer(p12).getBytes(), 'binary'));
@@ -714,9 +723,6 @@ router.get('/:namespace/robots', async (req, res) => {
 
 /**
  * Get detailed info about a robot in a namespace.
- * 
- * TODO
- * - limit number of manifests returned
  */
 router.get('/:namespace/robots/:robot_id', async (req, res) => {
 
@@ -732,8 +738,17 @@ router.get('/:namespace/robots/:robot_id', async (req, res) => {
             }
         },
         include: {
-            ecus: true,
-            robot_manifests: true
+            ecus: {
+                orderBy: {
+                    created_at: 'desc'
+                }
+            },
+            robot_manifests: {
+                take: 10,
+                orderBy: {
+                    created_at: 'desc'
+                }
+            }
         }
     });
 
@@ -803,30 +818,26 @@ router.delete('/:namespace/robots/:robot_id', async (req, res) => {
 });
 
 
-
 /**
- * Fetch role metadata (apart from timestamp) in a namespace.
- * 
- * Timestamp is not handled with this route because it isn't prepended
- * with a dot, i.e. `/timestamp.json` instead not `/1.timestamp.json`
- * 
- * TODO
- * - fetch only the metadata for this robot
+ * Fetch versioned role metadata in a namespace.
  */
 router.get('/:namespace/robots/:robot_id/:version.:role.json', async (req, res) => {
 
     const namespace_id = req.params.namespace;
     const version = Number(req.params.version);
+    const robot_id = req.params.robot_id;
     const role = req.params.role;
 
-    const metadata = await prisma.metadata.findUnique({
+    // since this is the director repo metadata is genereated per robot, apart from
+    // the root which is the same for all. therefore if the role is root we don't
+    // include the robot_id as a clause
+    const metadata = await prisma.metadata.findFirst({
         where: {
-            namespace_id_repo_role_version: {
-                namespace_id,
-                repo: TUFRepo.director,
-                role: role as TUFRole,
-                version
-            }
+            namespace_id,
+            repo: TUFRepo.director,
+            role: role as TUFRole,
+            version,
+            ...(role !== TUFRole.root && { robot_id })
         }
     });
 
@@ -837,42 +848,47 @@ router.get('/:namespace/robots/:robot_id/:version.:role.json', async (req, res) 
 
     // check it hasnt expired
     // TODO
+
     return res.status(200).send(metadata.value);
 
 });
 
 
 /**
- * Fetch timestamp metadata in a namespace.
- * 
- * TODO
- * - fetch only the metadata for this robot
+ * Fetch latest metadata in a namespace.
  */
-router.get('/:namespace/robots/:robot_id/timestamp.json', async (req, res) => {
+router.get('/:namespace/robots/:robot_id/:role.json', async (req, res) => {
 
     const namespace_id = req.params.namespace;
+    const robot_id = req.params.robot_id;
+    const role = req.params.role;
 
-    // get the most recent timestamp
-    const timestamps = await prisma.metadata.findMany({
+    // since this is the director repo metadata is genereated per robot, apart from
+    // the root which is the same for all. therefore if the role is root we don't
+    // include the robot_id as a clause
+    const metadata = await prisma.metadata.findMany({
         where: {
             namespace_id,
             repo: TUFRepo.director,
-            role: TUFRole.timestamp
+            role: req.params.role as TUFRole,
+            ...(role !== TUFRole.root && { robot_id })
         },
         orderBy: {
             created_at: 'desc'
         }
     });
 
-    if (timestamps.length === 0) {
-        logger.warn('could not download timestamp metadata because it does not exist');
+    if (metadata.length === 0) {
+        logger.warn(`could not download ${role} metadata because it does not exist`);
         return res.status(404).end();
     }
 
-    const mostRecentTimestamp = timestamps[0].value as Prisma.JsonObject;
+    const mostRecentMetadata = metadata[0].value as Prisma.JsonObject;
+
     // check it hasnt expired
-    // TODO    
-    return res.status(200).send(mostRecentTimestamp);
+    // TODO
+
+    return res.status(200).send(mostRecentMetadata);
 
 });
 

@@ -14,7 +14,7 @@ const generateRsaSignature = (toSign: string, privateKey: string): string => {
         key: privateKey,
         padding: crypto.constants.RSA_PKCS1_PSS_PADDING,
         saltLength: crypto.constants.RSA_PSS_SALTLEN_DIGEST
-    }, 'hex');
+    }, 'base64');
 
 }
 

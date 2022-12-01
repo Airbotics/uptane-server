@@ -56,6 +56,7 @@ model Image {
     size                Int                                     // size of image in bytes
     sha256              String          @unique                 // sha256 hash of image
     sha512              String          @unique                 // sha512 hash of image
+    hwids               String[]                                // types/ids of ecu hardware this image can be deployed to
     status              UploadStatus                            // uploading or uploaded
 
     created_at          DateTime        @default(now())
@@ -123,7 +124,7 @@ model Ecu {
     id                  String          @id @default(uuid()) @unique
     namespace_id        String
     robot_id            String
-    hwid                String                              // hardware id of this ecu
+    hwid                String                              // hardware type/id of this ecu
     primary             Boolean                             // whether this ecu is the primary, only one per robot is supported
 
     created_at          DateTime        @default(now())

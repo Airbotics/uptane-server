@@ -5,7 +5,7 @@ import config from '../../config';
 import { ManipulateType } from 'dayjs';
 
 interface ICertOpts {
-    commonName: string; // not the common name of the parent
+    commonName: string; // common name of the cert
     keyPair: forge.pki.KeyPair; // key pair of the parent
     cert: forge.pki.Certificate; // cert of the parent
 }

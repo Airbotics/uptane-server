@@ -1,14 +1,21 @@
 import express from 'express';
 import { v4 as uuidv4 } from 'uuid';
-import { UploadStatus, TUFRepo, TUFRole } from '@prisma/client';
+import { UploadStatus, TUFRepo, TUFRole, Prisma } from '@prisma/client';
 import { blobStorage } from '../../core/blob-storage';
+import { loadKeyPair } from '../../core/key-storage';
 import config from '../../config';
+import { ETargetFormat } from '../../core/consts';
 import { prisma } from '../../core/postgres';
 import { logger } from '../../core/logger';
 import { generateHash } from '../../core/crypto';
-import { generateSnapshot, generateTargets, generateTimestamp, getLatestMetadata, getLatestMetadataVersion } from '../../core/tuf';
-import { keyStorage, loadKeyPair } from '../../core/key-storage';
-import { IKeyPair, ITargetsImages } from '../../types';
+import {
+    generateSnapshot,
+    generateTargets,
+    generateTimestamp,
+    getLatestMetadata,
+    getLatestMetadataVersion
+} from '../../core/tuf';
+import { ITargetsImages } from '../../types';
 
 
 const router = express.Router();
@@ -39,12 +46,14 @@ const router = express.Router();
  * 
  * TODO:
  * - valide the size/length reported by content-length header matches the length we actually receive
- * - include length and hash in snapshot and timestamp meta
+ * - upload type of image along with the image - ostree, binary, etc
+ * - also included could be the name of the image
  */
 router.post('/:namespace/images', express.raw({ type: '*/*' }), async (req, res) => {
 
     const namespace_id = req.params.namespace;
     const imageContent = req.body;
+    const hwids = (req.query.hwids as string).split(',');
 
     const size = parseInt(req.get('content-length')!);
 
@@ -70,25 +79,30 @@ router.post('/:namespace/images', express.raw({ type: '*/*' }), async (req, res)
     const imageId = uuidv4();
     const sha256 = generateHash(imageContent, { algorithm: 'SHA256' });
     const sha512 = generateHash(imageContent, { algorithm: 'SHA512' });
-    
+
     // get new versions
     const newTargetsVersion = await getLatestMetadataVersion(namespace_id, TUFRepo.image, TUFRole.targets) + 1;
     const newSnapshotVersion = await getLatestMetadataVersion(namespace_id, TUFRepo.image, TUFRole.snapshot) + 1;
     const newTimestampVersion = await getLatestMetadataVersion(namespace_id, TUFRepo.image, TUFRole.timestamp) + 1;
-    
+
     // read in keys from key storage
     const targetsKeyPair = await loadKeyPair(namespace_id, TUFRepo.image, TUFRole.targets);
     const snapshotKeyPair = await loadKeyPair(namespace_id, TUFRepo.image, TUFRole.snapshot);
     const timestampKeyPair = await loadKeyPair(namespace_id, TUFRepo.image, TUFRole.timestamp);
-    
+
     // assemble information about this image to be put in the targets.json metadata
     // we grab the previous targets portion of the targets metadata if it exists and 
     // append this new iamge to it, otherwise we start with an empty object
     const latestTargets = await getLatestMetadata(namespace_id, TUFRepo.image, TUFRole.targets);
 
-    const targetsImages = latestTargets ? latestTargets.signed.targets : {};
+    const targetsImages: ITargetsImages = latestTargets ? latestTargets.signed.targets : {};
+
     targetsImages[imageId] = {
-        custom: {},
+        custom: {
+            hardwareIds: hwids,
+            targetFormat: ETargetFormat.Binary, // ostree is not supported as of now
+            uri: `${config.BASE_API_URL}/image/${namespace_id}/images/${imageId}`
+        },
         length: size,
         hashes: {
             sha256,
@@ -98,79 +112,103 @@ router.post('/:namespace/images', express.raw({ type: '*/*' }), async (req, res)
 
     // generate new set of tuf metadata (apart from root)
     const targetsMetadata = generateTargets(config.TUF_TTL.IMAGE.TARGETS, newTargetsVersion, targetsKeyPair, targetsImages);
-    const snapshotMetadata = generateSnapshot(config.TUF_TTL.IMAGE.SNAPSHOT, newSnapshotVersion, snapshotKeyPair, targetsMetadata.signed.version);
-    const timestampMetadata = generateTimestamp(config.TUF_TTL.IMAGE.TIMESTAMP, newTimestampVersion, timestampKeyPair, snapshotMetadata.signed.version);
+    const snapshotMetadata = generateSnapshot(config.TUF_TTL.IMAGE.SNAPSHOT, newSnapshotVersion, snapshotKeyPair, targetsMetadata);
+    const timestampMetadata = generateTimestamp(config.TUF_TTL.IMAGE.TIMESTAMP, newTimestampVersion, timestampKeyPair, snapshotMetadata);
 
     // perform db writes in transaction
-    await prisma.$transaction(async tx => {
+    try {
+        const image = await prisma.$transaction(async tx => {
 
-        // create tuf metadata
-        // prisma wants to be passed an `object` instead of our custom interface so we cast it
-        await tx.metadata.create({
-            data: {
-                namespace_id,
-                repo: TUFRepo.image,
-                role: TUFRole.targets,
-                version: newTargetsVersion,
-                value: targetsMetadata as object,
-                expires_at: targetsMetadata.signed.expires
-            }
-        });
-
-        await tx.metadata.create({
-            data: {
-                namespace_id,
-                repo: TUFRepo.image,
-                role: TUFRole.snapshot,
-                version: newSnapshotVersion,
-                value: snapshotMetadata as object,
-                expires_at: snapshotMetadata.signed.expires
-            }
-        });
-
-        await tx.metadata.create({
-            data: {
-                namespace_id,
-                repo: TUFRepo.image,
-                role: TUFRole.timestamp,
-                version: newTimestampVersion,
-                value: timestampMetadata as object,
-                expires_at: timestampMetadata.signed.expires
-            }
-        });
-
-        // create reference to image in db
-        await tx.image.create({
-            data: {
-                id: imageId,
-                namespace_id,
-                size,
-                sha256,
-                sha512,
-                status: UploadStatus.uploading
-            }
-        });
-
-        // upload image to blob storage
-        await blobStorage.putObject(namespace_id, `images/${imageId}`, imageContent);
-
-        // update reference to image in db saying that it has completed uploading
-        await tx.image.update({
-            where: {
-                namespace_id_id: {
+            // create tuf metadata
+            // prisma wants to be passed an `object` instead of our custom interface so we cast it
+            await tx.metadata.create({
+                data: {
                     namespace_id,
-                    id: imageId
+                    repo: TUFRepo.image,
+                    role: TUFRole.targets,
+                    version: newTargetsVersion,
+                    value: targetsMetadata as object,
+                    expires_at: targetsMetadata.signed.expires
                 }
-            },
-            data: {
-                status: UploadStatus.uploaded
-            }
+            });
+
+            await tx.metadata.create({
+                data: {
+                    namespace_id,
+                    repo: TUFRepo.image,
+                    role: TUFRole.snapshot,
+                    version: newSnapshotVersion,
+                    value: snapshotMetadata as object,
+                    expires_at: snapshotMetadata.signed.expires
+                }
+            });
+
+            await tx.metadata.create({
+                data: {
+                    namespace_id,
+                    repo: TUFRepo.image,
+                    role: TUFRole.timestamp,
+                    version: newTimestampVersion,
+                    value: timestampMetadata as object,
+                    expires_at: timestampMetadata.signed.expires
+                }
+            });
+
+            // create reference to image in db
+            await tx.image.create({
+                data: {
+                    id: imageId,
+                    namespace_id,
+                    size,
+                    hwids,
+                    sha256,
+                    sha512,
+                    status: UploadStatus.uploading
+                }
+            });
+
+            // upload image to blob storage
+            await blobStorage.putObject(namespace_id, `images/${imageId}`, imageContent);
+
+            // update reference to image in db saying that it has completed uploading
+            const image = await tx.image.update({
+                where: {
+                    namespace_id_id: {
+                        namespace_id,
+                        id: imageId
+                    }
+                },
+                data: {
+                    status: UploadStatus.uploaded
+                }
+            });
+
+            return image;
+
         });
 
-    });
+        const response = {
+            id: image.id,
+            size: image.size,
+            sha256: image.sha256,
+            sha512: image.sha512,
+            hwids: image.hwids,
+            status: image.status,
+            created_at: image.created_at,
+            updated_at: image.updated_at
+        };
 
-    logger.info('created an image');
-    return res.status(200).end();
+        logger.info('uploaded an image');
+        return res.status(200).json(response);
+
+    } catch (error) {
+        if (error.code === 'P2002') {
+            logger.warn('could not upload image because an image with this hash already exists');
+            return res.status(400).send('could not upload image');
+        }
+        throw error;
+
+    }
 
 });
 
@@ -209,6 +247,7 @@ router.get('/:namespace/images', async (req, res) => {
         size: image.size,
         sha256: image.sha256,
         sha512: image.sha512,
+        hwids: image.hwids,
         status: image.status,
         created_at: image.created_at,
         updated_at: image.updated_at
@@ -309,10 +348,7 @@ router.get('/:namespace/images/:id', async (req, res) => {
 
 
 /**
- * Fetch role metadata (apart from timestamp) in a namespace
- * 
- * Timestamp is not handled with this route because it isn't prepended
- * with a dot, i.e. `/timestamp.json` instead not `/1.timestamp.json`
+ * Fetch versioned role metadata in a namespace.
  */
 router.get('/:namespace/:version.:role.json', async (req, res) => {
 
@@ -320,14 +356,12 @@ router.get('/:namespace/:version.:role.json', async (req, res) => {
     const version = Number(req.params.version);
     const role = req.params.role;
 
-    const metadata = await prisma.metadata.findUnique({
+    const metadata = await prisma.metadata.findFirst({
         where: {
-            namespace_id_repo_role_version: {
-                namespace_id,
-                repo: TUFRepo.image,
-                role: role as TUFRole,
-                version
-            }
+            namespace_id,
+            repo: TUFRepo.image,
+            role: role as TUFRole,
+            version
         }
     });
 
@@ -337,7 +371,7 @@ router.get('/:namespace/:version.:role.json', async (req, res) => {
     }
 
     // check it hasnt expired
-    // TODO    
+    // TODO
 
     return res.status(200).send(metadata.value);
 
@@ -345,35 +379,35 @@ router.get('/:namespace/:version.:role.json', async (req, res) => {
 
 
 /**
- * Fetch timestamp metadata in a namespace
+ * Fetch latest metadata in a namespace.
  */
-router.get('/:namespace/timestamp.json', async (req, res) => {
+router.get('/:namespace/:role.json', async (req, res) => {
 
     const namespace_id = req.params.namespace;
+    const role = req.params.role;
 
-    // get the most recent timestamp
-    const timestamps = await prisma.metadata.findMany({
+    const metadata = await prisma.metadata.findMany({
         where: {
             namespace_id,
             repo: TUFRepo.image,
-            role: TUFRole.timestamp
+            role: req.params.role as TUFRole
         },
         orderBy: {
             created_at: 'desc'
         }
     });
 
-    if (timestamps.length === 0) {
-        logger.warn('could not download timestamp metadata because it does not exist');
+    if (metadata.length === 0) {
+        logger.warn(`could not download ${role} metadata because it does not exist`);
         return res.status(404).end();
     }
 
-    const mostRecentTimestamp = timestamps[0];
+    const mostRecentMetadata = metadata[0].value as Prisma.JsonObject;
 
     // check it hasnt expired
-    // TODO    
+    // TODO
 
-    return res.status(200).send(mostRecentTimestamp.value);
+    return res.status(200).send(mostRecentMetadata);
 
 });
 

@@ -1,4 +1,4 @@
-import { generateKeyPairSync } from 'crypto';
+import forge from 'node-forge';
 import { IKeyPair } from '../../types';
 
 
@@ -7,21 +7,11 @@ import { IKeyPair } from '../../types';
  */
 const generateRsaKeyPair = () => {
 
-    const { publicKey, privateKey } = generateKeyPairSync('rsa', {
-        modulusLength: 2048,
-        publicKeyEncoding: {
-            type: 'pkcs1',
-            format: 'pem'
-        },
-        privateKeyEncoding: {
-            type: 'pkcs8',
-            format: 'pem',
-        }
-    });
+    const keyPair = forge.pki.rsa.generateKeyPair(2048);
 
     return {
-        publicKey: publicKey.toString(),
-        privateKey: privateKey.toString()
+        publicKey: forge.pki.publicKeyToPem(keyPair.publicKey),
+        privateKey: forge.pki.privateKeyToPem(keyPair.privateKey)
     };
 
 }

@@ -39,9 +39,9 @@ app.use('/api/v0/treehub', treehub);
 
 
 // optionally mount a background worker in this process, if it has been configured
-if(config.USE_NODE_SCHEDULER) {
-    schedule.scheduleJob(config.WORKER_CRON, backgroundWorker);
-}
+// if(config.USE_NODE_SCHEDULER) {
+//     schedule.scheduleJob(config.WORKER_CRON, backgroundWorker);
+// }
 
 // handle 404
 app.use((req: Request, res: Response, next: NextFunction) => {

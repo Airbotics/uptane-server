@@ -1,8 +1,19 @@
 import express from 'express';
-import { TUFRepo, TUFRole } from '@prisma/client';
-import { v4 as uuidv4 } from 'uuid';
+import { UploadStatus, TUFRepo, TUFRole } from '@prisma/client';
 import archiver from 'archiver';
 import forge from 'node-forge';
+import { v4 as uuidv4 } from 'uuid';
+import { loadKeyPair } from '../../core/key-storage';
+import { ETargetFormat } from '../../core/consts';
+import { generateHash } from '../../core/crypto';
+import {
+    generateSnapshot,
+    generateTargets,
+    generateTimestamp,
+    getLatestMetadata,
+    getLatestMetadataVersion
+} from '../../core/tuf';
+import { ITargetsImages } from '../../types';
 import config from '../../config';
 import { prisma } from '../../core/postgres';
 import { generateCertificate, generateKeyPair } from '../../core/crypto';
@@ -354,6 +365,383 @@ router.post('/namespaces/:namespace/rollouts', async (req, res) => {
     return res.status(200).json(response);
 
 });
+
+
+
+/**
+ * Upload an image in a namespace.
+ * 
+ * This is not an upsert operation, you cannot overwrite an image once it has been uploaded.
+ * You can only upload one image/target at a time.
+ * 
+ * For now this adds the image to blob storage but will later upload to treehub, it also signs 
+ * the appropiate TUF metadata, and updates the inventory db (i.e. postgres)
+ * 
+ * OPERATIONS:
+ * - Checks namespace exists.
+ * - Creates a reference to the image in postgres.
+ * - Uploads image to blob storage.
+ * - Updates the uploadstatus of image in postgres to uploaded.
+ * - Creates a new set of metadata:
+ *      - Gets hashes of image.
+ *      - Determines the version the new targets.json should have.
+ *      - Reads keys.
+ *      - Assembles new signed targets.json.
+ *      - Assembles new signed snapshot.json.
+ *      - Assembles new signed timestamp.json.
+ * - Commits everything to db.
+ * 
+ * TODO:
+ * - valide the size/length reported by content-length header matches the length we actually receive
+ * - upload type of image along with the image - ostree, binary, etc
+ * - also included could be the name of the image
+ */
+router.post('/:namespace/images', express.raw({ type: '*/*' }), async (req, res) => {
+
+    const namespace_id = req.params.namespace;
+    const imageContent = req.body;
+    const hwids = (req.query.hwids as string).split(',');
+
+    const size = parseInt(req.get('content-length')!);
+
+    // if content-length was not sent, or it is zero, or it is not a number return 400
+    if (!size || size === 0 || isNaN(size)) {
+        logger.warn('could not create an image because content-length header was not sent');
+        return res.status(400).end();
+    }
+
+    // check namespace exists
+    const namespaceCount = await prisma.namespace.count({
+        where: {
+            id: namespace_id
+        }
+    });
+
+    if (namespaceCount === 0) {
+        logger.warn('could not create an image because namespace does not exist');
+        return res.status(400).send('could not upload image');
+    }
+
+    // get image id and hashes
+    const imageId = uuidv4();
+    const sha256 = generateHash(imageContent, { algorithm: 'SHA256' });
+    const sha512 = generateHash(imageContent, { algorithm: 'SHA512' });
+
+    // get new versions
+    const newTargetsVersion = await getLatestMetadataVersion(namespace_id, TUFRepo.image, TUFRole.targets) + 1;
+    const newSnapshotVersion = await getLatestMetadataVersion(namespace_id, TUFRepo.image, TUFRole.snapshot) + 1;
+    const newTimestampVersion = await getLatestMetadataVersion(namespace_id, TUFRepo.image, TUFRole.timestamp) + 1;
+
+    // read in keys from key storage
+    const targetsKeyPair = await loadKeyPair(namespace_id, TUFRepo.image, TUFRole.targets);
+    const snapshotKeyPair = await loadKeyPair(namespace_id, TUFRepo.image, TUFRole.snapshot);
+    const timestampKeyPair = await loadKeyPair(namespace_id, TUFRepo.image, TUFRole.timestamp);
+
+    // assemble information about this image to be put in the targets.json metadata
+    // we grab the previous targets portion of the targets metadata if it exists and 
+    // append this new iamge to it, otherwise we start with an empty object
+    const latestTargets = await getLatestMetadata(namespace_id, TUFRepo.image, TUFRole.targets);
+
+    const targetsImages: ITargetsImages = latestTargets ? latestTargets.signed.targets : {};
+
+    targetsImages[imageId] = {
+        custom: {
+            hardwareIds: hwids,
+            targetFormat: ETargetFormat.Binary, // ostree is not supported as of now
+            uri: `${config.BASE_API_URL}/image/${namespace_id}/images/${imageId}`
+        },
+        length: size,
+        hashes: {
+            sha256,
+            sha512
+        }
+    };
+
+    // generate new set of tuf metadata (apart from root)
+    const targetsMetadata = generateTargets(config.TUF_TTL.IMAGE.TARGETS, newTargetsVersion, targetsKeyPair, targetsImages);
+    const snapshotMetadata = generateSnapshot(config.TUF_TTL.IMAGE.SNAPSHOT, newSnapshotVersion, snapshotKeyPair, targetsMetadata);
+    const timestampMetadata = generateTimestamp(config.TUF_TTL.IMAGE.TIMESTAMP, newTimestampVersion, timestampKeyPair, snapshotMetadata);
+
+    // perform db writes in transaction
+    try {
+        const image = await prisma.$transaction(async tx => {
+
+            // create tuf metadata
+            // prisma wants to be passed an `object` instead of our custom interface so we cast it
+            await tx.metadata.create({
+                data: {
+                    namespace_id,
+                    repo: TUFRepo.image,
+                    role: TUFRole.targets,
+                    version: newTargetsVersion,
+                    value: targetsMetadata as object,
+                    expires_at: targetsMetadata.signed.expires
+                }
+            });
+
+            await tx.metadata.create({
+                data: {
+                    namespace_id,
+                    repo: TUFRepo.image,
+                    role: TUFRole.snapshot,
+                    version: newSnapshotVersion,
+                    value: snapshotMetadata as object,
+                    expires_at: snapshotMetadata.signed.expires
+                }
+            });
+
+            await tx.metadata.create({
+                data: {
+                    namespace_id,
+                    repo: TUFRepo.image,
+                    role: TUFRole.timestamp,
+                    version: newTimestampVersion,
+                    value: timestampMetadata as object,
+                    expires_at: timestampMetadata.signed.expires
+                }
+            });
+
+            // create reference to image in db
+            await tx.image.create({
+                data: {
+                    id: imageId,
+                    namespace_id,
+                    size,
+                    hwids,
+                    sha256,
+                    sha512,
+                    status: UploadStatus.uploading
+                }
+            });
+
+            // upload image to blob storage
+            await blobStorage.putObject(namespace_id, `images/${imageId}`, imageContent);
+
+            // update reference to image in db saying that it has completed uploading
+            const image = await tx.image.update({
+                where: {
+                    namespace_id_id: {
+                        namespace_id,
+                        id: imageId
+                    }
+                },
+                data: {
+                    status: UploadStatus.uploaded
+                }
+            });
+
+            return image;
+
+        });
+
+        const response = {
+            id: image.id,
+            size: image.size,
+            sha256: image.sha256,
+            sha512: image.sha512,
+            hwids: image.hwids,
+            status: image.status,
+            created_at: image.created_at,
+            updated_at: image.updated_at
+        };
+
+        logger.info('uploaded an image');
+        return res.status(200).json(response);
+
+    } catch (error) {
+        if (error.code === 'P2002') {
+            logger.warn('could not upload image because an image with this hash already exists');
+            return res.status(400).send('could not upload image');
+        }
+        throw error;
+
+    }
+
+});
+
+
+/**
+ * List images in a namespace.
+ */
+router.get('/:namespace/images', async (req, res) => {
+
+    const namespace = req.params.namespace;
+
+    // check namespace exists
+    const namespaceCount = await prisma.namespace.count({
+        where: {
+            id: namespace
+        }
+    });
+
+    if (namespaceCount === 0) {
+        logger.warn('could not list images because namespace does not exist');
+        return res.status(400).send('could not list images');
+    }
+
+    // get images
+    const images = await prisma.image.findMany({
+        where: {
+            namespace_id: namespace
+        },
+        orderBy: {
+            created_at: 'desc'
+        }
+    });
+
+    const response = images.map(image => ({
+        id: image.id,
+        size: image.size,
+        sha256: image.sha256,
+        sha512: image.sha512,
+        hwids: image.hwids,
+        status: image.status,
+        created_at: image.created_at,
+        updated_at: image.updated_at
+    }));
+
+    return res.status(200).json(response);
+
+});
+
+
+
+/**
+ * List robots in a namespace.
+ */
+router.get('/:namespace/robots', async (req, res) => {
+
+    const namespace_id = req.params.namespace;
+
+    // check namespace exists
+    const namespaceCount = await prisma.namespace.count({
+        where: {
+            id: namespace_id
+        }
+    });
+
+    if (namespaceCount === 0) {
+        logger.warn('could not list robots because namespace does not exist');
+        return res.status(400).send('could not list robots');
+    }
+
+    // get robots
+    const robots = await prisma.robot.findMany({
+        where: {
+            namespace_id
+        },
+        orderBy: {
+            created_at: 'desc'
+        }
+    });
+
+    const response = robots.map(robot => ({
+        id: robot.id,
+        created_at: robot.created_at,
+        updated_at: robot.updated_at
+    }));
+
+    return res.status(200).json(response);
+
+});
+
+
+/**
+ * Get detailed info about a robot in a namespace.
+ */
+router.get('/:namespace/robots/:robot_id', async (req, res) => {
+
+    const namespace_id = req.params.namespace;
+    const robot_id = req.params.robot_id;
+
+    // get robot
+    const robot = await prisma.robot.findUnique({
+        where: {
+            namespace_id_id: {
+                namespace_id,
+                id: robot_id
+            }
+        },
+        include: {
+            ecus: {
+                orderBy: {
+                    created_at: 'desc'
+                }
+            },
+            robot_manifests: {
+                take: 10,
+                orderBy: {
+                    created_at: 'desc'
+                }
+            }
+        }
+    });
+
+    if (!robot) {
+        logger.warn('could not get info about robot because it or the namespace does not exist');
+        return res.status(400).send('could not get robot');
+    }
+
+    const response = {
+        id: robot.id,
+        created_at: robot.created_at,
+        updated_at: robot.updated_at,
+        robot_manifests: robot.robot_manifests.map(manifest => ({
+            id: manifest.id,
+            created_at: manifest.created_at
+        })),
+        ecus: robot.ecus.map(ecu => ({
+            id: ecu.id,
+            created_at: ecu.created_at,
+            updated_at: ecu.updated_at,
+        }))
+    };
+
+    return res.status(200).json(response);
+
+});
+
+
+/**
+ * Delete a robot
+ * 
+ * TODO
+ * - delete all associated ecu keys
+ */
+router.delete('/:namespace/robots/:robot_id', async (req, res) => {
+
+    const namespace_id = req.params.namespace;
+    const robot_id = req.params.robot_id;
+
+    // try delete robot
+    try {
+
+        await prisma.robot.delete({
+            where: {
+                namespace_id_id: {
+                    namespace_id,
+                    id: robot_id
+                }
+            }
+        });
+
+        logger.info('deleted a robot');
+        return res.status(200).send('deleted robot');
+
+    } catch (error) {
+        // catch deletion failure error code
+        // someone has tried to create a robot that does not exist in this namespace, return 400
+        if (error.code === 'P2025') {
+            logger.warn('could not delete a robot because it does not exist');
+            return res.status(400).send('could not delete robot');
+        }
+        // otherwise we dont know what happened so re-throw the errror and let the
+        // general error catcher return it as a 500
+        throw error;
+    }
+
+});
+
 
 
 

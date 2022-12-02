@@ -482,7 +482,6 @@ router.put('/:namespace/manifest', async (req, res) => {
 });
 
 
-
 /**
  * Ingest network info reported by a robot
  */
@@ -536,7 +535,6 @@ router.put('/:namespace/system_info/network', async (req, res) => {
     logger.info('ingested robot network info');
     return res.status(200).end();
 });
-
 
 
 /**
@@ -614,7 +612,6 @@ router.post('/:namespace/devices', async (req, res) => {
 });
 
 
-
 /**
  * A robot is registering an ecu
  * 
@@ -676,143 +673,6 @@ router.post('/:namespace/ecus', async (req, res) => {
     logger.info('registered an ecu');
 
     res.status(200).end();
-});
-
-
-/**
- * List robots in a namespace.
- */
-router.get('/:namespace/robots', async (req, res) => {
-
-    const namespace_id = req.params.namespace;
-
-    // check namespace exists
-    const namespaceCount = await prisma.namespace.count({
-        where: {
-            id: namespace_id
-        }
-    });
-
-    if (namespaceCount === 0) {
-        logger.warn('could not list robots because namespace does not exist');
-        return res.status(400).send('could not list robots');
-    }
-
-    // get robots
-    const robots = await prisma.robot.findMany({
-        where: {
-            namespace_id
-        },
-        orderBy: {
-            created_at: 'desc'
-        }
-    });
-
-    const response = robots.map(robot => ({
-        id: robot.id,
-        created_at: robot.created_at,
-        updated_at: robot.updated_at
-    }));
-
-    return res.status(200).json(response);
-
-});
-
-
-/**
- * Get detailed info about a robot in a namespace.
- */
-router.get('/:namespace/robots/:robot_id', async (req, res) => {
-
-    const namespace_id = req.params.namespace;
-    const robot_id = req.params.robot_id;
-
-    // get robot
-    const robot = await prisma.robot.findUnique({
-        where: {
-            namespace_id_id: {
-                namespace_id,
-                id: robot_id
-            }
-        },
-        include: {
-            ecus: {
-                orderBy: {
-                    created_at: 'desc'
-                }
-            },
-            robot_manifests: {
-                take: 10,
-                orderBy: {
-                    created_at: 'desc'
-                }
-            }
-        }
-    });
-
-    if (!robot) {
-        logger.warn('could not get info about robot because it or the namespace does not exist');
-        return res.status(400).send('could not get robot');
-    }
-
-    const response = {
-        id: robot.id,
-        created_at: robot.created_at,
-        updated_at: robot.updated_at,
-        robot_manifests: robot.robot_manifests.map(manifest => ({
-            id: manifest.id,
-            created_at: manifest.created_at
-        })),
-        ecus: robot.ecus.map(ecu => ({
-            id: ecu.id,
-            created_at: ecu.created_at,
-            updated_at: ecu.updated_at,
-        }))
-    };
-
-    return res.status(200).json(response);
-
-});
-
-
-/**
- * Delete a robot
- * 
- * TODO
- * - delete all associated ecu keys
- */
-router.delete('/:namespace/robots/:robot_id', async (req, res) => {
-
-    const namespace_id = req.params.namespace;
-    const robot_id = req.params.robot_id;
-
-    // try delete robot
-    try {
-
-        await prisma.robot.delete({
-            where: {
-                namespace_id_id: {
-                    namespace_id,
-                    id: robot_id
-                }
-            }
-        });
-
-        logger.info('deleted a robot');
-        return res.status(200).send('deleted robot');
-
-    } catch (error) {
-        // catch deletion failure error code
-        // someone has tried to create a robot that does not exist in this namespace, return 400
-        if (error.code === 'P2025') {
-            logger.warn('could not delete a robot because it does not exist');
-            return res.status(400).send('could not delete robot');
-        }
-        // otherwise we dont know what happened so re-throw the errror and let the
-        // general error catcher return it as a 500
-        throw error;
-    }
-
 });
 
 

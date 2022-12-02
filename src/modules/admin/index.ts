@@ -273,7 +273,7 @@ router.get('/namespaces/:namespace/provisioning-credentials', async (req, res) =
     // create credentials.zip
     const archive = archiver('zip');
 
-    archive.append(`${config.BASE_API_URL}/director/${namespace}`, { name: 'autoprov.url' });
+    archive.append(`${config.ROBOT_GATEWAY_HOSTNAME}/api/v0/director/${namespace}`, { name: 'autoprov.url' });
     archive.append(Buffer.from(forge.asn1.toDer(p12).getBytes(), 'binary'), { name: 'autoprov_credentials.p12' });
     archive.finalize();
 

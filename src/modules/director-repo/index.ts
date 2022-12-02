@@ -397,10 +397,10 @@ const generateNewMetadata = async (namespace_id: string, robot_id: string, ecuSe
 /**
  * Process a manifest from a robot
  */
-router.put('/:namespace/robots/:robot_id/manifest', async (req, res) => {
+router.put('/:namespace/manifest', async (req, res) => {
 
     const namespace_id: string = req.params.namespace;
-    const robot_id: string = req.params.robot_id;
+    const robot_id = req.header('x-robot-id')!;
     const manifest: IRobotManifest = req.body;
 
     let valid = true;
@@ -485,13 +485,11 @@ router.put('/:namespace/robots/:robot_id/manifest', async (req, res) => {
 
 /**
  * Ingest network info reported by a robot
- * 
- * BUG wrong url
  */
-router.put('/:namespace/robots/:robot_id/system_info/network', async (req, res) => {
+router.put('/:namespace/system_info/network', async (req, res) => {
 
     const namespace_id = req.params.namespace;
-    const robot_id = req.params.robot_id;
+    const robot_id = req.header('x-robot-id')!;
 
     const {
         hostname,
@@ -623,10 +621,10 @@ router.post('/:namespace/devices', async (req, res) => {
  * TODO
  * - return error if ecu is already registered
  */
-router.post('/:namespace/robots/:robot_id/ecus', async (req, res) => {
+router.post('/:namespace/ecus', async (req, res) => {
 
     const namespace_id = req.params.namespace;
-    const robot_id = req.params.robot_id;
+    const robot_id = req.header('x-robot-id')!;
     const payload: IEcuRegistrationPayload = req.body;
 
     // check namespace exists
@@ -821,10 +819,10 @@ router.delete('/:namespace/robots/:robot_id', async (req, res) => {
 /**
  * Fetch versioned role metadata in a namespace.
  */
-router.get('/:namespace/robots/:robot_id/:version.:role.json', async (req, res) => {
+router.get('/:namespace/:version.:role.json', async (req, res) => {
 
     const namespace_id = req.params.namespace;
-    const robot_id = req.params.robot_id;
+    const robot_id = req.header('x-robot-id')!;
     const version = Number(req.params.version);
     const role = req.params.role;
 
@@ -857,10 +855,10 @@ router.get('/:namespace/robots/:robot_id/:version.:role.json', async (req, res) 
 /**
  * Fetch latest metadata in a namespace.
  */
-router.get('/:namespace/robots/:robot_id/:role.json', async (req, res) => {
+router.get('/:namespace/:role.json', async (req, res) => {
 
     const namespace_id = req.params.namespace;
-    const robot_id = req.params.robot_id;
+    const robot_id = req.header('x-robot-id')!;
     const role = req.params.role;
 
     // since this is the director repo metadata is genereated per robot, apart from

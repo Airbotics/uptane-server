@@ -1,10 +1,10 @@
 # vs code extension to make http requests easily
 
-@BASE_URL=http://localhost:8001
+@BASE_URL=http://localhost:8002
 @API_VERSION=v0
-@NAMESPACE=18073faf-821d-4d62-81f7-831b0d9435d9
+@NAMESPACE=16b814bf-504f-4fe4-bcd3-6b38065e170c
 @IMAGE=9523db36-30f7-4c66-8236-4d7c3326872c
-@ROBOT=ac03863f-5e2e-480d-93f7-1bd96a3a348a
+@ROBOT=joyous-franzbroetchen-196
 
 
 # -----------------------------------------
@@ -42,8 +42,8 @@ POST {{BASE_URL}}/api/{{API_VERSION}}/admin/namespaces/{{NAMESPACE}}/rollouts HT
 Content-Type: application/json
 
 {
-    "ecu_id": "60eaeb4d-00bc-4daa-ada1-c866739a2ede",
-    "image_id": "c1689d39-c53a-4185-8579-bc00dc83e299"
+    "ecu_id": "2d840e0e6e50af7d0efc710f34275ca22762f75a7bf8ddacd03e79d44e4e6098",
+    "image_id": "5332e8ea-b37a-4866-a8d8-977a3ab470be"
 }
 
 
@@ -96,7 +96,7 @@ GET {{BASE_URL}}/api/{{API_VERSION}}/image/{{NAMESPACE}}/timestamp.json HTTP/1.1
 POST {{BASE_URL}}/api/{{API_VERSION}}/image/{{NAMESPACE}}/images?hwids=some-hw-id,two-hwid HTTP/1.1
 Content-Type: application/octet-stream
 
-this is a sample image 21
+this is a sample image 1
 
 
 ### list images

@@ -1,8 +1,9 @@
-import express from 'express';
+import express, { Request } from 'express';
 import { TUFRepo, TUFRole, Prisma } from '@prisma/client';
 import { blobStorage } from '../../core/blob-storage';
 import { prisma } from '../../core/postgres';
 import { logger } from '../../core/logger';
+import { ensureRobotAndNamespace } from '../../middlewares';
 
 
 const router = express.Router();
@@ -15,11 +16,13 @@ const router = express.Router();
  * - this must be defined before the controller for downloading an image using
  * the image id only. Otherwise express will not match the url pattern.
  */
-router.get('/:namespace/images/:hash.:id', async (req, res) => {
+router.get('/images/:hash.:id', ensureRobotAndNamespace, async (req: Request, res) => {
 
-    const namespace_id = req.params.namespace;
     const hash = req.params.hash;
     const id = req.params.id;
+    const {
+        namespace_id
+    } = req.robotGatewayPayload!;
 
     // FIND image WHERE namespace = namespace AND image_id = image_id AND (sha256 = hash OR sha512 = hash)
     const image = await prisma.image.findFirst({
@@ -62,10 +65,12 @@ router.get('/:namespace/images/:hash.:id', async (req, res) => {
 /**
  * Download image using image id only.
  */
-router.get('/:namespace/images/:id', async (req, res) => {
+router.get('/images/:id', ensureRobotAndNamespace, async (req: Request, res) => {
 
-    const namespace_id = req.params.namespace;
     const id = req.params.id;
+    const {
+        namespace_id
+    } = req.robotGatewayPayload!;
 
     const image = await prisma.image.findUnique({
         where: {
@@ -100,11 +105,13 @@ router.get('/:namespace/images/:id', async (req, res) => {
 /**
  * Fetch versioned role metadata in a namespace.
  */
-router.get('/:namespace/:version.:role.json', async (req, res) => {
+router.get('/:version.:role.json', ensureRobotAndNamespace, async (req: Request, res) => {
 
-    const namespace_id = req.params.namespace;
     const version = Number(req.params.version);
     const role = req.params.role;
+    const {
+        namespace_id
+    } = req.robotGatewayPayload!;
 
     const metadata = await prisma.metadata.findFirst({
         where: {
@@ -131,10 +138,12 @@ router.get('/:namespace/:version.:role.json', async (req, res) => {
 /**
  * Fetch latest metadata in a namespace.
  */
-router.get('/:namespace/:role.json', async (req, res) => {
+router.get('/:role.json', ensureRobotAndNamespace, async (req: Request, res) => {
 
-    const namespace_id = req.params.namespace;
     const role = req.params.role;
+    const {
+        namespace_id
+    } = req.robotGatewayPayload!;
 
     const metadata = await prisma.metadata.findMany({
         where: {

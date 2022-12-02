@@ -1,24 +1,17 @@
-import express from 'express';
-import forge from 'node-forge';
+import express, { Request } from 'express';
 import { TUFRepo, TUFRole, Prisma } from '@prisma/client';
 import { keyStorage, loadKeyPair } from '../../core/key-storage';
-import { blobStorage } from '../../core/blob-storage';
 import config from '../../config';
 import { logger } from '../../core/logger';
-import { verifySignature, generateCertificate } from '../../core/crypto';
+import { verifySignature } from '../../core/crypto';
 import prisma from '../../core/postgres';
 import { robotManifestSchema } from './schemas';
 import { IRobotManifest, ITargetsImages, IEcuRegistrationPayload } from '../../types';
 import { toCanonical } from '../../core/utils';
 import { generateSnapshot, generateTargets, generateTimestamp, getLatestMetadataVersion } from '../../core/tuf';
 import { ManifestErrors } from '../../core/consts/errors';
-import {
-    ETargetFormat,
-    RootCABucket,
-    RootCACertObjId,
-    RootCAPrivateKeyId,
-    RootCAPublicKeyId
-} from '../../core/consts';
+import { ETargetFormat } from '../../core/consts';
+import { ensureRobotAndNamespace } from '../../middlewares';
 
 
 const router = express.Router();
@@ -311,7 +304,7 @@ const generateNewMetadata = async (namespace_id: string, robot_id: string, ecuSe
                     }
                 },
                 targetFormat: ETargetFormat.Binary,
-                uri: `${config.BASE_API_URL}/image/${namespace_id}/images/${ecuRollout.image_id}`
+                uri: `${config.ROBOT_GATEWAY_HOSTNAME}/api/v0/robot/repo/images/${ecuRollout.image_id}`
             },
             length: ecuRollout.image.size,
             hashes: {
@@ -397,25 +390,16 @@ const generateNewMetadata = async (namespace_id: string, robot_id: string, ecuSe
 /**
  * Process a manifest from a robot
  */
-router.put('/:namespace/manifest', async (req, res) => {
+router.put('/manifest', ensureRobotAndNamespace, async (req: Request, res) => {
 
-    const namespace_id: string = req.params.namespace;
-    const robot_id = req.header('x-robot-id')!;
     const manifest: IRobotManifest = req.body;
 
+    const {
+        namespace_id,
+        robot_id
+    } = req.robotGatewayPayload!;
+
     let valid = true;
-
-    // check namespace exists
-    const namespaceCount = await prisma.namespace.count({
-        where: {
-            id: namespace_id
-        }
-    });
-
-    if (namespaceCount === 0) {
-        logger.warn('could not process manifest because namespace does not exist');
-        return res.status(400).send('could not process manifest');
-    }
 
     //We are gonna need these so many times so pull them out once
     // BUG this assumes the manifest is formatted correctly before we valid its schema
@@ -482,134 +466,6 @@ router.put('/:namespace/manifest', async (req, res) => {
 });
 
 
-/**
- * Ingest network info reported by a robot
- */
-router.put('/:namespace/system_info/network', async (req, res) => {
-
-    const namespace_id = req.params.namespace;
-    const robot_id = req.header('x-robot-id')!;
-
-    const {
-        hostname,
-        local_ipv4,
-        mac
-    } = req.body;
-
-
-    // check namespace exists
-    const namespaceCount = await prisma.namespace.count({
-        where: {
-            id: namespace_id
-        }
-    });
-
-    if (namespaceCount === 0) {
-        logger.warn('could not create network report because namespace does not exist');
-        return res.status(400).send('could not create network report');
-    }
-
-    // check robot exists
-    const robotCount = await prisma.robot.count({
-        where: {
-            id: robot_id
-        }
-    });
-
-    if (robotCount === 0) {
-        logger.warn('could not create network report because robot does not exist');
-        return res.status(400).send('could not create network report');
-    }
-
-
-    await prisma.networkReport.create({
-        data: {
-            namespace_id,
-            robot_id,
-            hostname,
-            local_ipv4,
-            mac
-        }
-    });
-
-    logger.info('ingested robot network info');
-    return res.status(200).end();
-});
-
-
-/**
- * A robot is provisioning itself using the provisioning credentials.
- * 
- * Create the robot in the db.
- * Generate a p12 and send it back.
- * 
- * TODO:
- * - handle ttl
- */
-router.post('/:namespace/devices', async (req, res) => {
-
-    const namespace_id = req.params.namespace;
-
-    const {
-        deviceId,
-        ttl
-    } = req.body;
-
-    // check namespace exists
-    const namespaceCount = await prisma.namespace.count({
-        where: {
-            id: namespace_id
-        }
-    });
-
-    if (namespaceCount === 0) {
-        logger.warn('could not provision robot because namespace does not exist');
-        return res.status(400).send('could not provision robot');
-    }
-
-    try {
-        await prisma.robot.create({
-            data: {
-                namespace_id,
-                id: deviceId
-            }
-        });
-
-    } catch (error) {
-        if (error.code === 'P2002') {
-            logger.warn('could not provision robot because it is already provisioned');
-            return res.status(400).json({ code: 'device_already_registered' });
-        }
-        throw error;
-    }
-
-
-    const robotKeyPair = forge.pki.rsa.generateKeyPair(2048);
-
-    // load root ca and key, used to sign provisioning cert
-    const rootCaPrivateKeyStr = await keyStorage.getKey(RootCAPrivateKeyId);
-    const rootCaPublicKeyStr = await keyStorage.getKey(RootCAPublicKeyId);
-    const rootCaCertStr = await blobStorage.getObject(RootCABucket, RootCACertObjId) as string;
-    const rootCaCert = forge.pki.certificateFromPem(rootCaCertStr);
-
-    // generate provisioning cert using root ca as parent
-    const opts = {
-        commonName: deviceId,
-        cert: rootCaCert,
-        keyPair: {
-            privateKey: forge.pki.privateKeyFromPem(rootCaPrivateKeyStr),
-            publicKey: forge.pki.publicKeyFromPem(rootCaPublicKeyStr)
-        }
-    };
-    const robotCert = generateCertificate(robotKeyPair, opts);
-
-    // bundle into pcks12, no encryption password set
-    const p12 = forge.pkcs12.toPkcs12Asn1(robotKeyPair.privateKey, [robotCert, rootCaCert], null, { algorithm: 'aes256' });
-
-    logger.info('robot has provisioned')
-    return res.status(200).send(Buffer.from(forge.asn1.toDer(p12).getBytes(), 'binary'));
-
-});
 
 
 /**
@@ -618,36 +474,14 @@ router.post('/:namespace/devices', async (req, res) => {
  * TODO
  * - return error if ecu is already registered
  */
-router.post('/:namespace/ecus', async (req, res) => {
+router.post('/ecus', ensureRobotAndNamespace, async (req: Request, res) => {
 
-    const namespace_id = req.params.namespace;
-    const robot_id = req.header('x-robot-id')!;
     const payload: IEcuRegistrationPayload = req.body;
 
-    // check namespace exists
-    const namespaceCount = await prisma.namespace.count({
-        where: {
-            id: namespace_id
-        }
-    });
-
-    if (namespaceCount === 0) {
-        logger.warn('could not register ecu because namespace does not exist');
-        return res.status(400).send('could not register ecu');
-    }
-
-
-    // check robot exists
-    const robotCount = await prisma.robot.count({
-        where: {
-            id: robot_id
-        }
-    });
-
-    if (robotCount === 0) {
-        logger.warn('could not register ecu because robot does not exist');
-        return res.status(400).send('could not register ecu');
-    }
+    const {
+        namespace_id,
+        robot_id
+    } = req.robotGatewayPayload!;
 
     const createEcusData = payload.ecus.map(ecu => ({
         id: ecu.ecu_serial,
@@ -673,18 +507,22 @@ router.post('/:namespace/ecus', async (req, res) => {
     logger.info('registered an ecu');
 
     res.status(200).end();
+
 });
 
 
 /**
  * Fetch versioned role metadata in a namespace.
  */
-router.get('/:namespace/:version.:role.json', async (req, res) => {
+router.get('/:version.:role.json', ensureRobotAndNamespace, async (req: Request, res) => {
 
-    const namespace_id = req.params.namespace;
-    const robot_id = req.header('x-robot-id')!;
     const version = Number(req.params.version);
     const role = req.params.role;
+
+    const {
+        namespace_id,
+        robot_id
+    } = req.robotGatewayPayload!;
 
     // since this is the director repo metadata is genereated per robot, apart from
     // the root which is the same for all. therefore if the role is root we don't
@@ -715,11 +553,15 @@ router.get('/:namespace/:version.:role.json', async (req, res) => {
 /**
  * Fetch latest metadata in a namespace.
  */
-router.get('/:namespace/:role.json', async (req, res) => {
+router.get('/:role.json', ensureRobotAndNamespace, async (req: Request, res) => {
 
-    const namespace_id = req.params.namespace;
-    const robot_id = req.header('x-robot-id')!;
     const role = req.params.role;
+
+
+    const {
+        namespace_id,
+        robot_id
+    } = req.robotGatewayPayload!;
 
     // since this is the director repo metadata is genereated per robot, apart from
     // the root which is the same for all. therefore if the role is root we don't

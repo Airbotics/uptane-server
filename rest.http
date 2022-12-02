@@ -42,10 +42,30 @@ POST {{BASE_URL}}/api/{{API_VERSION}}/admin/namespaces/{{NAMESPACE}}/rollouts HT
 Content-Type: application/json
 
 {
-    "ecu_id": "2d840e0e6e50af7d0efc710f34275ca22762f75a7bf8ddacd03e79d44e4e6098",
-    "image_id": "5332e8ea-b37a-4866-a8d8-977a3ab470be"
+    "ecu_id": "f4cd512d6d731356611cfe31699c4a8ef44a4c8cfd627ade57b22ab33ad53aae",
+    "image_id": "80d0bc8c-2ade-4a6f-a2bc-ea8963dc74cf"
 }
 
+### list robots
+GET {{BASE_URL}}/api/{{API_VERSION}}/director/{{NAMESPACE}}/robots HTTP/1.1
+
+### get a single robot
+GET {{BASE_URL}}/api/{{API_VERSION}}/director/{{NAMESPACE}}/robots/{{ROBOT}} HTTP/1.1
+
+
+### delete a robot
+DELETE {{BASE_URL}}/api/{{API_VERSION}}/director/{{NAMESPACE}}/robots/{{ROBOT}} HTTP/1.1
+
+
+### upload an image
+POST {{BASE_URL}}/api/{{API_VERSION}}/admin/{{NAMESPACE}}/images?hwids=some-hw-id,two-hwid HTTP/1.1
+Content-Type: application/octet-stream
+
+this is a sample image 4
+
+
+### list images
+GET {{BASE_URL}}/api/{{API_VERSION}}/image/{{NAMESPACE}}/images HTTP/1.1
 
 
 
@@ -61,24 +81,6 @@ GET {{BASE_URL}}/api/{{API_VERSION}}/director/{{NAMESPACE}}/robots/{{ROBOT}}/1.t
 GET {{BASE_URL}}/api/{{API_VERSION}}/director/{{NAMESPACE}}/robots/{{ROBOT}}/targets.json HTTP/1.1
 
 
-### create a robot
-POST {{BASE_URL}}/api/{{API_VERSION}}/director/{{NAMESPACE}}/robots HTTP/1.1
-
-### list robots
-GET {{BASE_URL}}/api/{{API_VERSION}}/director/{{NAMESPACE}}/robots HTTP/1.1
-
-### get a single robot
-GET {{BASE_URL}}/api/{{API_VERSION}}/director/{{NAMESPACE}}/robots/{{ROBOT}} HTTP/1.1
-
-### delete a robot
-DELETE {{BASE_URL}}/api/{{API_VERSION}}/director/{{NAMESPACE}}/robots/{{ROBOT}} HTTP/1.1
-
-### add ecu to robot
-POST {{BASE_URL}}/api/{{API_VERSION}}/director/{{NAMESPACE}}/robots/{{ROBOT}}/ecus HTTP/1.1
-
-
-
-
 
 # -----------------------------------------
 # Image repo
@@ -90,17 +92,6 @@ GET {{BASE_URL}}/api/{{API_VERSION}}/image/{{NAMESPACE}}/targets.json HTTP/1.1
 
 ### get timestamp
 GET {{BASE_URL}}/api/{{API_VERSION}}/image/{{NAMESPACE}}/timestamp.json HTTP/1.1
-
-
-### upload an image
-POST {{BASE_URL}}/api/{{API_VERSION}}/image/{{NAMESPACE}}/images?hwids=some-hw-id,two-hwid HTTP/1.1
-Content-Type: application/octet-stream
-
-this is a sample image 1
-
-
-### list images
-GET {{BASE_URL}}/api/{{API_VERSION}}/image/{{NAMESPACE}}/images HTTP/1.1
 
 
 ### download image with image id only

@@ -9,7 +9,7 @@ import admin from './modules/admin';
 import treehub from './modules/treehub';
 import imageRepo from './modules/image-repo';
 import directorRepo from './modules/director-repo';
-import backgroundWorker from './modules/background-workers';
+import robot from './modules/robot';
 
 
 const app = express();
@@ -33,8 +33,9 @@ app.get('/', (req, res) => {
 
 // mount modules
 app.use('/api/v0/admin', admin);
-app.use('/api/v0/director', directorRepo);
-app.use('/api/v0/image', imageRepo);
+app.use('/api/v0/robot', robot);
+app.use('/api/v0/robot/director', directorRepo);
+app.use('/api/v0/robot/repo', imageRepo);
 app.use('/api/v0/treehub', treehub);
 
 

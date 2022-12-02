@@ -269,7 +269,7 @@ router.get('/namespaces/:namespace/provisioning-credentials', async (req, res) =
 
     // generate provisioning cert using root ca as parent
     const opts = {
-        commonName: uuidv4(),
+        commonName: namespace,
         cert: rootCaCert,
         keyPair: {
             privateKey: forge.pki.privateKeyFromPem(rootCaPrivateKeyStr),
@@ -284,7 +284,6 @@ router.get('/namespaces/:namespace/provisioning-credentials', async (req, res) =
     // create credentials.zip
     const archive = archiver('zip');
 
-    archive.append(`${config.ROBOT_GATEWAY_HOSTNAME}/api/v0/director/${namespace}`, { name: 'autoprov.url' });
     archive.append(Buffer.from(forge.asn1.toDer(p12).getBytes(), 'binary'), { name: 'autoprov_credentials.p12' });
     archive.finalize();
 
@@ -448,7 +447,7 @@ router.post('/:namespace/images', express.raw({ type: '*/*' }), async (req, res)
         custom: {
             hardwareIds: hwids,
             targetFormat: ETargetFormat.Binary, // ostree is not supported as of now
-            uri: `${config.BASE_API_URL}/image/${namespace_id}/images/${imageId}`
+            uri: `${config.ROBOT_GATEWAY_HOSTNAME}/api/v0/robot/repo/images/${imageId}`
         },
         length: size,
         hashes: {

@@ -14,6 +14,9 @@
     <a target="_blank" href="https://ostreedev.github.io/ostree/">
         <img src="https://img.shields.io/badge/-OSTree-ff8800" alt="OSTree">
     </a>
+    <a target="_blank" href="https://www.yoctoproject.org/">
+        <img src="https://img.shields.io/badge/-Yocto-5A97D5" alt="Yocto">
+    </a>
     <a target="_blank" href="https://nodejs.org">
         <img src="https://img.shields.io/badge/-Nodejs-339933?logo=node.js&logoColor=white" alt="Node.js Logo">
     </a>
@@ -90,7 +93,7 @@ With Airbotics, you can create application-specific business logic on your robot
 
 #### 3. Security
 
-Software supply chains are increasingly being targeted by attackers. We're building on top of the <a href="https://uptane.github.io/" target="_blank">Uptane</a> framework - the *de facto* standard for OTA in automative sector designed to be compromise-resilient. Uptane is an extension of [The Update Framework](https://theupdateframework.com/) - a framework for securing software update systems used by Docker Content Trust, PyPI, Datadog and more.
+Software supply chains are increasingly being targeted by attackers. We're building on top of the [Uptane](https://uptane.github.io/)  framework - the *de facto* standard for OTA in automative sector designed to be compromise-resilient. Uptane is an extension of [The Update Framework](https://theupdateframework.com/) - a framework for securing software update systems used by Docker Content Trust, PyPI, Datadog and more.
 
 With Airbotics you can assign signing authority to multiple members of your team (e.g Head of QA, Head of Ops, Director of Engineering, etc.), a quorom of which are required to sign a release using their private offline keys in order for it to be considered ready to be deployed to your fleet. 
 
@@ -222,7 +225,7 @@ The software in this project is licensed under [Affero GPL v3](LICENSE).
 
 ## Credits
 
-Airbotics was inspired by the following works, we're standing on the shoulders of these giants:
+Airbotics was inspired by the following works:
 
 - [OTA Community Edition](https://github.com/advancedtelematic/ota-community-edition).
 

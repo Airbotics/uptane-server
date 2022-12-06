@@ -1,2 +1,0 @@
-# Uptane primer
-

@@ -8,6 +8,8 @@
 
 - [Overview](introduction/overview.md)
 
+- [Supporting technologies](introduction/supporting-technologies.md)
+
 - [Uptane primer](introduction/uptane-primer.md)
 
 - [Core Concepts](introduction/core-concepts.md)

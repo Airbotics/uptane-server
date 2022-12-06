@@ -14,6 +14,9 @@
     <a target="_blank" href="https://ostreedev.github.io/ostree/">
         <img src="https://img.shields.io/badge/-OSTree-ff8800" alt="OSTree">
     </a>
+    <a target="_blank" href="https://www.yoctoproject.org/">
+        <img src="https://img.shields.io/badge/-Yocto-5A97D5" alt="Yocto">
+    </a>
     <a target="_blank" href="https://nodejs.org">
         <img src="https://img.shields.io/badge/-Nodejs-339933?logo=node.js&logoColor=white" alt="Node.js Logo">
     </a>
@@ -222,7 +225,7 @@ The software in this project is licensed under [Affero GPL v3](LICENSE).
 
 ## Credits
 
-Airbotics was inspired by the following works, we're standing on the shoulders of these giants:
+Airbotics was inspired by the following works:
 
 - [OTA Community Edition](https://github.com/advancedtelematic/ota-community-edition).
 

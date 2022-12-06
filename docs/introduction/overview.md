@@ -13,7 +13,7 @@ The Airbotics agent is the core piece of software that runs on each robot in you
 
 
 ### Dashboard
-The Dashboard is the control plane between your team, your software and your fleet of robots. It is here where you can get full visibility into your fleet, which robots have which version of software, the status of any pending or ongoing updates and ways to roll out new updates to single robots, groups of robots or the entire fleet. You can hook up your code repository with Airbotics and have your build artifacts, whether they be Docker Images or full OS images show up straight away. From here you can group build artifacts into collections called *stacks* ready to be deployed. Your fleet can also be sliced and diced into *groups* of your choosing, robots can belong to as many different groups as you like. To get a stack onto the robot(s), you can create a *rollout* where you map which stack should go onto which robot(s), how the rollout should be done, what to do in the case of an error (rollback or not), who should approve the rollout before it goes live, and much more.
+The Dashboard is the control plane between your team, your software and your fleet of robots. It is here where you can get full visibility into your fleet, which robots have which version of software, the status of any pending or ongoing updates and ways to roll out new updates to single robots, groups of robots or the entire fleet. You can hook up your code repository with Airbotics and have your build artifacts, whether they be Docker Images or full OS images show up straight away. From here you can group build artifacts into collections called *stacks* ready to be deployed. Your fleet can also be sliced and diced into *groups* of your choosing, robots can belong to as many different groups as you like. To get a stack onto the robot(s), you can create a *rollout* where you map which stack should go onto which robot(s), what to do in the case of an error (rollback or not), who should approve the rollout before it goes live, and much more.
 
 
 ### Image Repo
@@ -66,8 +66,6 @@ Below is a high-level block diagram of the major components in Airbotics:
 * [Uptane Primer](uptane-primer.md)
 
 * [Core Concepts](core-concepts.md)
-
-* [Security](security.md)
 
 * [Features](features.md)
 

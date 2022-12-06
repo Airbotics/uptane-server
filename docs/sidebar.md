@@ -14,8 +14,6 @@
 
 - [Core Concepts](introduction/core-concepts.md)
 
-- [Security](introduction/security.md)
-
 - [Features](introduction/features.md)
 
 - [FAQ](introduction/faq.md)

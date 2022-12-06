@@ -11,3 +11,7 @@ Robotics development inevitably requires modifications to the OS (e.g. bare-meta
 - If you're early in the product development lifecycle and have less than 5-10 robots to manage, it may be simpler to use some combination of `ssh`, `rsync`, `git clone`, etc.
 - If you don't update your software semi-regularly.
 - If you don't have a semi-decent network connection.
+
+### How does Airbotics make money?
+
+We'll run a hosted version where we'll charge a fee per robot per month depending on fleet size. We'll always have a free tier and a self-hosted version that don't cost anything.

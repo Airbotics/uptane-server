@@ -21,7 +21,7 @@ With Airbotics, you can create application-specific business logic on your robot
 
 Software supply chains are increasingly being targeted by attackers. We're building on top of the [Uptane](https://uptane.github.io/) framework - the *de facto* standard for OTA in automative sector designed to be compromise-resilient. Uptane is an extension of [The Update Framework](https://theupdateframework.com/) - a framework for securing software update systems used by Docker Content Trust, PyPI, Datadog and more.
 
-With Airbotics you can assign signing authority to multiple members of your team (e.g Head of QA, Head of Ops, Director of Engineering, etc.), a quorom of which are required to sign a release using their private offline keys in order for it to be considered ready to be deployed to your fleet. 
+With Airbotics you can assign signing authority to multiple members of your team (e.g Head of QA, Head of Ops, Director of Engineering, etc.), a quorom of which are required to sign a release using their private offline keys in order for it to be considered ready to be deployed to your fleet. If your security requirments are less strict you can leave it to Airbotics to manage your keys for you.
 
 ### 4. Multi-player
 

@@ -83,17 +83,50 @@ npm run start
 
 
 ## Setup Client 
-let aktualizr blow everything up
+*The airbotics agent is still under development at this time. In the meantime we have provided a mocked primary client in python that you can use to test with the backend. These instructions will be replaced soon*
+
+### Initialise primary client filesystem
+This will set up the local directories required for the mocked primary client.
+```
+cd scripts/mock-uptane
+
+python ops.py init-primary-fs 
+
+python ops.py cp-root-meta
+```
+
+### Running the client
+Everything should now be in place to run the primary client. From here you will be able to perform one of 7 actions.
+```
+python primary.py
+```
+
+| Action                                  | Description                                                              |
+| ----------------------------------------| ------------------------------------------------------------------------ |
+| 1. Inspect generated robot manifest     | Print out the generaged robot manifest without sending it to the backend |
+| 2. Generate and send robot manifest     | Send the generate robot manifest to the backend                          | 
+| 3. Refresh top level metadata           | Refresh the Top level TUF metadata from the image and director repo.     |
+| 4. Run update cycle                     | Run the full Uptane update cycle                                         |
+| 5. "Install" image on primary ECU       | Change what "installed" image the primary ecu sends with its manifest    |
+| 6. "Install" image on secondary ECU     | Change what "installed" image the secondary ecu sends with its manifest  |
+| 7. "Report" detected attack on ECU      | Change what "attack" primary ecu sends with its manifest                 |
 
 
 
 ## Summary
-Congratulations, you've completed the Airbotics Quickstart Guide, by this stage you have a fully functional
-
-## Teardown Backend
+Congratulations, you've completed the Airbotics Quickstart Guide, by this stage you should hopefully have an idea of the main components in Airbotics and the data flow between them.
 
 
+## Teardown 
+Once you are finished the guide you can perform the following:
+
+* Stop the primary client by typing `q` into the primaries prompt
+* Stop the gateway `docker-compose down gateway`
+* Stop postgres `docker-compose down postgres`
+* Kill the server you started with `npm run start `
 
 
-## Next Steps
+## Before you go
 * Join the Airbotics community
+* Any feedback is more than welcome
+* Check out the other guides 

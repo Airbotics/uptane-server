@@ -1,3 +1,5 @@
 root: ./docs/
-readme: ./index.md
-summary: ./sidebar.md​
+
+​structure:  
+    readme: README.md  
+    summary: SUMMARY.md​

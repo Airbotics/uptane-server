@@ -1,9 +1,5 @@
 ‌# Summary​
 
-- [Welcome](index.md)
-
-- [Quickstart](guides/self-hosted-quickstart.md)
-
 ## Introduction
 
 - [Overview](introduction/overview.md)
@@ -21,6 +17,8 @@
 ## Guides
 
 - [Overview](guides/overview.md)
+
+- [Quickstart](guides/self-hosted-quickstart.md)
 
 - [Lightning guides](guides/overview.md)
 

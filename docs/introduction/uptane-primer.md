@@ -16,7 +16,7 @@ TUF was designed to address limitations found in some software update systems wh
 
 ### Key compromise resilience
 
-TUF does not assume that keys will forever remain safe from comprise, instead it provides mechanisms for fast and secure key replacement and revocation.
+TUF does not assume that keys will forever remain safe from compromise, instead it provides mechanisms for fast and secure key replacement and revocation.
 
 ### Integrity
 
@@ -31,7 +31,7 @@ Software updates often fix security vulnerabilities, attackers may want to keep 
 
 Uptane builds on TUF in a few key ways:
 
-- It introduces a director repository to 
+- It introduces a director repository to provide a partial view of the image repository specific to each set of clients.
 
 - It provides mechanisms for updating multiple ECUs together.
 

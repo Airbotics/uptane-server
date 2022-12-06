@@ -24,7 +24,7 @@
 
 - [Overview](guides/overview.md)
 
-- [Lightning](guides/overview.md)
+- [Lightning guides](guides/overview.md)
 
 - [Deep dives](guides/overview.md)
 

@@ -2,7 +2,7 @@
 
 Airbotics is an open-source software deployment platform for robotics.
 
-It is a self-hosted, secure, software deployment platform built on [Uptane](https://uptane.github.io/) designed to work for any fleet size and integrate with the hardware and software used in robotics.
+It is a self-hosted, secure, software deployment platform built on Uptane and OSTree designed to work for any fleet size and integrate with the hardware and software used in robotics.
 
 
 ## Quick links

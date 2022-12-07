@@ -9,7 +9,7 @@ Pull requests are more than welcome from anyone that wants to provide a quality 
 These guides should take less than 10 minutes from start to finish.
 
 ### Hosted
-* Quickstart
+* *Comining soon*
 
 ### Self hosted
 * [Quickstart](self-hosted-quickstart.md)
@@ -18,6 +18,3 @@ These guides should take less than 10 minutes from start to finish.
 
 These are more in depth guides that will take a bit longer to get through.
 
-### Self hosted
-* How to set up and manage offline keys
-* 

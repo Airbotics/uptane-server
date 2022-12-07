@@ -7,7 +7,9 @@ Airbotics is built on several mature, well-tested, open-source technologies enab
 [Uptane](https://uptane.github.io/) is an extension of [The Update Framework](https://theupdateframework.com/) (TUF) designed for securing software update systems in the automotive industry. It was initially developed by a consortium of industry, academic and goverment agencies under a grant from the U.S. Department of Homeland Security. Popular Science named Uptane one of the [Top Security Inventions of 2017](https://www.popsci.com/top-security-innovations-2017/), and since 2019 is has been formally affiliated with the Linux Foundation as a [Joint Development Foundation](https://jointdevelopment.org/) project. 
 
 
-Uptane is integrated into [Automotive Grade Linux](https://www.automotivelinux.org/) is used by about 1/3 of new cars on US roads [[1]]([](https://events19.linuxfoundation.org/wp-content/uploads/2018/07/Uptane-2019-Summer-AGL-event.pdf)). TUF is used to secure millions of systems and has been adopted by Docker Content Trust, PyPI, Datadog, and many others.
+Uptane is integrated into [Automotive Grade Linux](https://www.automotivelinux.org/) is used by about 1/3 of new cars on US roads [[1]](https://events19.linuxfoundation.org/wp-content/uploads/2018/07/Uptane-2019-Summer-AGL-event.pdf). TUF is used to secure millions of system and has been adopted by Docker Content Trust, PyPI, Datadog, and many others.
+
+Building on this framework allows us to ensure your robots are receiving updates securely.
 
 
 ## OSTree

@@ -118,8 +118,8 @@ const createImageRepoMetadata = async () => {
 
     //Generate the new targets metadata with the complete set of images 
     const targetsMetadata: ITargetsTUF = generateTargets(SEED_EXPIRES_AT, newTargetsVersion, targetKeyPair, targetsImages);
-    const snapshotMetadata = generateSnapshot(SEED_EXPIRES_AT, newSnapshotVersion, snapshotKeyPair, targetsMetadata.signed.version);
-    const timestampMetadata = generateTimestamp(SEED_EXPIRES_AT, newTimestampVersion, timestampKeyPair, snapshotMetadata.signed.version);
+    const snapshotMetadata = generateSnapshot(SEED_EXPIRES_AT, newSnapshotVersion, snapshotKeyPair, targetsMetadata);
+    const timestampMetadata = generateTimestamp(SEED_EXPIRES_AT, newTimestampVersion, timestampKeyPair, snapshotMetadata);
 
     //Store the metadata in the db
     await prisma.metadata.createMany({

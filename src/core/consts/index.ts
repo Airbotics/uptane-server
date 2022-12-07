@@ -28,10 +28,13 @@ export const enum SignatureMethods {
     ed25519 = 'ed25519'
 }
 
-export const RootCABucket = 'root-ca';
+export const RootBucket = 'root';                           // for storing various infra objects
 export const RootCACertObjId = 'root-ca-cert';
 export const RootCAPrivateKeyId = 'root-ca-private';
 export const RootCAPublicKeyId = 'root-ca-public';
+export const GatewayCertObjId = 'gateway-cert';
+export const GatewayPrivateKeyId = 'gateway-private';
+export const GatewayPublicKeyId = 'gateway-public';
 
 // type of image that can be deployed to a robot
 // NOTE: ostree is not yet supported
@@ -39,5 +42,3 @@ export const enum ETargetFormat {
     Binary = 'BINARY',
     OsTree = 'OSTREE'
 }
-
-export const CertBucket = 'certs';

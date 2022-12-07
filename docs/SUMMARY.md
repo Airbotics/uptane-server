@@ -15,8 +15,6 @@
 
 * [Overview](guides/overview.md)
 * [Quickstart](guides/self-hosted-quickstart.md)
-*
-*
 
 ## Developers
 

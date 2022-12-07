@@ -22,7 +22,7 @@ import { blobStorage } from '../../core/blob-storage';
 import { generateRoot } from '../../core/tuf';
 import { logger } from '../../core/logger';
 import {
-    RootCABucket,
+    RootBucket,
     RootCACertObjId,
     RootCAPrivateKeyId,
     RootCAPublicKeyId
@@ -264,7 +264,7 @@ router.get('/namespaces/:namespace/provisioning-credentials', async (req, res) =
     // load root ca and key, used to sign provisioning cert
     const rootCaPrivateKeyStr = await keyStorage.getKey(RootCAPrivateKeyId);
     const rootCaPublicKeyStr = await keyStorage.getKey(RootCAPublicKeyId);
-    const rootCaCertStr = await blobStorage.getObject(RootCABucket, RootCACertObjId) as string;
+    const rootCaCertStr = await blobStorage.getObject(RootBucket, RootCACertObjId) as string;
     const rootCaCert = forge.pki.certificateFromPem(rootCaCertStr);
 
     // generate provisioning cert using root ca as parent

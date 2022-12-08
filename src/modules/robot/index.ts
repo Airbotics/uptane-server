@@ -1,17 +1,17 @@
 import express, { Request } from 'express';
 import forge from 'node-forge';
-import { keyStorage } from '../../core/key-storage';
-import { blobStorage } from '../../core/blob-storage';
-import { logger } from '../../core/logger';
-import { generateCertificate } from '../../core/crypto';
-import prisma from '../../core/postgres';
+import { keyStorage } from '@airbotics-core/key-storage';
+import { blobStorage } from '@airbotics-core/blob-storage';
+import { logger } from '@airbotics-core/logger';
+import { generateCertificate } from '@airbotics-core/crypto';
+import prisma from '@airbotics-core/postgres';
 import {
     RootBucket,
     RootCACertObjId,
     RootCAPrivateKeyId,
     RootCAPublicKeyId
-} from '../../core/consts';
-import { ensureRobotAndNamespace } from '../../middlewares';
+} from '@airbotics-core/consts';
+import { ensureRobotAndNamespace } from '@airbotics-middlewares';
 
 const router = express.Router();
 

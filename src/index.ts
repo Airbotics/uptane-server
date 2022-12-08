@@ -1,6 +1,6 @@
 import http from 'http';
-import config from './config';
-import { logger } from './core/logger';
+import config from '@airbotics-config';
+import { logger } from '@airbotics-core/logger';
 import app from './app';
 
 const httpServer = http.createServer(app);

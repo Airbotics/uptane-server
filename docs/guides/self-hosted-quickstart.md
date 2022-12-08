@@ -14,7 +14,7 @@ The following software tools are required to start this quickstart guide:
 * [NodeJS and npm](https://docs.npmjs.com/downloading-and-installing-node-js-and-npm) installed.
 * [Docker](https://docs.docker.com/get-docker/) installed.
 * [Docker Compose](https://docs.docker.com/compose/install/) installed.
-* Run `npm install`
+* Run `npm install`.
 
 
 ## Setup Backend
@@ -25,21 +25,8 @@ The first step is to get the core backend infrastructure up and running. This in
 
 Before we can get this core infrastructure running we need to create a root CA, generate some rsa key pairs and x.509 certificates. You can dive into more detail about why these are need in the developers guide.
 
-### Create a Root CA Cert
-
-This will create a public and private key for the root CA and store them in the key server. It will also create a cert and store it in blob storage under the `root-ca` bucket.
-
-```
-npx ts-node scripts/manage-ca-cert.ts create
-```
-
-### Create a cert for the API Gateway
-
-This will create a public and private key for the API Gateway and store them in the key server. It will also create a cert and store it in blob storage under the `certs` bucket with name `gateway`.
-
-```
-npx ts-node scripts/manage-cert.ts create gateway localhost
-```
+### Create a Root CA and gateway cert
+Execute `npm run helper` and choose `[1] Create root and gateway cert`. This will create a pair of keys for the Root CA and gateway cert and use them to create a certificate for both. Keys will be stored in the keyserver and certs in blob storage.
 
 ### Standup the API Gateway
 This will pass the the Root CA cert and the Gateway cert from the last step as volumes, so ensure you have completed these steps before trying to standup the gateway.
@@ -74,8 +61,8 @@ If this is the first time standing up postgres, seed it with some test data whic
 npx prisma db push --schema ./src/prisma/schema.prisma 
 ```
 
-### Standup the Director and Image repos
-Finally we are ready to start the director and image repos in the development envirnoment:
+### Standup the main server
+Finally we are ready to start the main server in the development envirnoment:
 
 ```
 npm run start 
@@ -123,10 +110,10 @@ Once you are finished the guide you can perform the following:
 * Stop the primary client by typing `q` into the primaries prompt
 * Stop the gateway `docker-compose down gateway`
 * Stop postgres `docker-compose down postgres`
-* Kill the server you started with `npm run start `
+* Kill the server you started with `npm run start`
 
 
 ## Before you go
-* Join the Airbotics community
-* Any feedback is more than welcome
-* Check out the other guides 
+* Join the Airbotics community.
+* Any feedback is very welcome.
+* Check out the other guides.

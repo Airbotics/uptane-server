@@ -1,9 +1,9 @@
 import express, { Request } from 'express';
 import { TUFRepo, TUFRole, Prisma } from '@prisma/client';
-import { blobStorage } from '../../core/blob-storage';
-import { prisma } from '../../core/postgres';
-import { logger } from '../../core/logger';
-import { ensureRobotAndNamespace } from '../../middlewares';
+import { blobStorage } from '@airbotics-core/blob-storage';
+import { prisma } from '@airbotics-core/postgres';
+import { logger } from '@airbotics-core/logger';
+import { ensureRobotAndNamespace } from '@airbotics-middlewares';
 
 
 const router = express.Router();

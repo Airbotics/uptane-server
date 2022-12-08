@@ -1,12 +1,12 @@
-import { generateHash } from '../crypto';
-import { toCanonical } from '../utils';
+import { TUFRepo, TUFRole } from '@prisma/client';
+import { generateHash } from '@airbotics-core/crypto';
+import { toCanonical } from '@airbotics-core/utils';
+import { ITufKey } from '@airbotics-types';
+import { prisma } from '@airbotics-core/postgres';
 import { generateRoot } from './root';
 import { generateTargets } from './targets';
 import { generateSnapshot } from './snapshot';
 import { generateTimestamp } from './timestamp';
-import { IRootTUF, ITufKey } from '../../types';
-import { prisma } from '../postgres';
-import { Metadata, TUFRepo, TUFRole } from '@prisma/client';
 
 /**
  * Generates a TUF key given a public key.

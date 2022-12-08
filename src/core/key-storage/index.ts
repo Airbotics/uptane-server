@@ -1,8 +1,8 @@
 import { TUFRepo, TUFRole } from '@prisma/client';
 import { EKeyStorageProvider } from '../consts';
-import { IKeyPair, IKeyStorageProvider } from '../../types';
+import { IKeyPair, IKeyStorageProvider } from '@airbotics-types';
 import { FilesystemProvider } from './fs-provider';
-import config from '../../config';
+import config from '@airbotics-config';
 
 /**
  * Loads a key pair for a given repo and role in a namespace from storage

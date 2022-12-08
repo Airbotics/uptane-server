@@ -1,12 +1,12 @@
 import { ManipulateType } from 'dayjs';
 import { TUFRepo, TUFRole } from '@prisma/client';
-import { prisma } from '../../core/postgres';
-import config from '../../config';
-import { logger } from '../../core/logger';
-import { dayjs } from '../../core/time';
-import { generateRoot, generateSnapshot, generateTargets, generateTimestamp, getLatestMetadataVersion } from '../../core/tuf';
-import { ISnapshotTUF, ITargetsTUF, ITimestampTUF } from '../../types';
-import { loadKeyPair } from '../../core/key-storage';
+import { prisma } from '@airbotics-core/postgres';
+import config from '@airbotics-config';
+import { logger } from '@airbotics-core/logger';
+import { dayjs } from '@airbotics-core/time';
+import { generateRoot, generateSnapshot, generateTargets, generateTimestamp, getLatestMetadataVersion } from '@airbotics-core/tuf';
+import { ISnapshotTUF, ITargetsTUF, ITimestampTUF } from '@airbotics-types';
+import { loadKeyPair } from '@airbotics-core/key-storage';
 
 
 

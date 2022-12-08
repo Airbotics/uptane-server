@@ -1,6 +1,6 @@
-import config from '../../config';
-import { EBlobStorageProvider } from '../consts';
-import { IBlobStorageProvider } from '../../types';
+import config from '@airbotics-config';
+import { EBlobStorageProvider } from '@airbotics-core/consts';
+import { IBlobStorageProvider } from '@airbotics-types';
 import { FsBlobProvider } from './fs-provider';
 import { s3BlobProvider } from './s3-provider';
 

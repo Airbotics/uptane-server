@@ -3,13 +3,13 @@ import hpp from 'hpp';
 import fs from 'fs'
 import helmet from 'helmet';
 import schedule from 'node-schedule';
-import config from './config'
-import { logger } from './core/logger';
-import admin from './modules/admin';
-import treehub from './modules/treehub';
-import imageRepo from './modules/image-repo';
-import directorRepo from './modules/director-repo';
-import robot from './modules/robot';
+import config from '@airbotics-config'
+import { logger } from '@airbotics-core/logger';
+import admin from '@airbotics-modules/admin';
+import treehub from '@airbotics-modules/treehub';
+import imageRepo from '@airbotics-modules/image-repo';
+import directorRepo from '@airbotics-modules/director-repo';
+import robot from '@airbotics-modules/robot';
 
 
 const app = express();

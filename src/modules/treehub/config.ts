@@ -1,7 +1,7 @@
 import express from 'express';
-import { prisma } from '../../core/postgres';
-import { logger } from '../../core/logger';
-import { OSTREE_CONFIG } from '../../core/consts';
+import { prisma } from '@airbotics-core/postgres';
+import { logger } from '@airbotics-core/logger';
+import { OSTREE_CONFIG } from '@airbotics-core/consts';
 
 const router = express.Router();
 

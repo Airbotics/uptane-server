@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
-import config from '../../config';
-import { IKeyStorageProvider } from '../../types';
+import config from '@airbotics-config';
+import { IKeyStorageProvider } from '@airbotics-types';
 
 
 /**

@@ -1,5 +1,5 @@
 import forge from 'node-forge';
-import { IKeyPair } from '../../types';
+import { IKeyPair } from '@airbotics-types';
 
 
 /**

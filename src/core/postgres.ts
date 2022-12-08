@@ -1,5 +1,5 @@
 import { PrismaClient } from '@prisma/client';
-import config from '../config';
+import config from '@airbotics-config';
 
 export const prisma = new PrismaClient({
     // log: ['query', 'info', 'warn', 'error'],

@@ -1,8 +1,8 @@
 import forge from 'node-forge';
-import { randomBytes } from 'crypto';
-import { dayjs } from '../time';
-import config from '../../config';
 import { ManipulateType } from 'dayjs';
+import { randomBytes } from 'crypto';
+import config from '@airbotics-config';
+import { dayjs } from '@airbotics-core/time';
 
 export interface ICertOpts {
     commonName: string; // not the common name of the parent

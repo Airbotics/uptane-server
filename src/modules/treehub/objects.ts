@@ -1,8 +1,8 @@
 import express from 'express';
 import { UploadStatus } from '@prisma/client';
-import { logger } from '../../core/logger';
-import { prisma } from '../../core/postgres';
-import { blobStorage } from '../../core/blob-storage';
+import { logger } from '@airbotics-core/logger';
+import { prisma } from '@airbotics-core/postgres';
+import { blobStorage } from '@airbotics-core/blob-storage';
 
 const router = express.Router();
 

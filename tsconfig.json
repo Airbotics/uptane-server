@@ -12,6 +12,7 @@
         "baseUrl": ".",
         "paths": {
             "@airbotics-core/*": ["src/core/*"],
+            "@airbotics-middlewares": ["src/middlewares/"],
             "@airbotics-modules/*": ["src/modules/*"],
             "@airbotics-types": ["src/types/"],
             "@airbotics-config": ["src/config/"],

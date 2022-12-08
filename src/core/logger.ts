@@ -1,6 +1,6 @@
 import winston from 'winston';
 import { dayjs } from './time';
-import config from '../config';
+import config from '@airbotics-config';
 
 export const logger = winston.createLogger({
     level: config.NODE_ENV === 'production' ? 'info' : 'debug',

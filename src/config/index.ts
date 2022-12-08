@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-import { EBlobStorageProvider, EKeyStorageProvider } from '../core/consts';
+import { EBlobStorageProvider, EKeyStorageProvider } from '@airbotics-core/consts';
 
 dotenv.config();
 

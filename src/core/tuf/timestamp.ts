@@ -1,11 +1,11 @@
 import { ManipulateType } from 'dayjs';
-import config from '../../config';
-import { ETUFRole } from '../consts';
-import { toCanonical } from '../utils';
-import { dayjs } from '../time';
-import { generateSignature, generateHash } from '../crypto';
+import config from '@airbotics-config';
+import { ETUFRole } from '@airbotics-core/consts';
+import { dayjs } from '@airbotics-core/time';
+import { toCanonical } from '@airbotics-core/utils';
+import { generateSignature, generateHash } from '@airbotics-core/crypto';
+import { IKeyPair, ITimestampTUF, ITimestampSignedTUF, ISnapshotTUF } from '@airbotics-types';
 import { generateTufKey, genKeyId } from './index';
-import { IKeyPair, ISnapshotTUF, ITimestampSignedTUF, ITimestampTUF } from '../../types';
 
 
 /**

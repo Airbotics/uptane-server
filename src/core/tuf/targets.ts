@@ -1,20 +1,19 @@
 import { ManipulateType } from 'dayjs';
-import config from '../../config';
-import { ETUFRole } from '../consts';
-import { toCanonical } from '../utils';
-import { dayjs } from '../time';
-import { generateSignature } from '../crypto';
+import config from '@airbotics-config';
+import { ETUFRole } from '@airbotics-core/consts';
+import { dayjs } from '@airbotics-core/time';
+import { toCanonical } from '@airbotics-core/utils';
+import { generateSignature } from '@airbotics-core/crypto';
+import { IKeyPair, ITargetsSignedTUF, ITargetsTUF, ITargetsImages } from '@airbotics-types';
 import { generateTufKey, genKeyId } from './index';
-import { IKeyPair, ITargetsSignedTUF, ITargetsTUF, ITargetsImages } from '../../types';
-
 
 /**
  * Creates a signed tuf targets metadata object
  */
 export const generateTargets = (
-    ttl: (number | string)[], 
-    version: number, 
-    targetsKeyPair: IKeyPair, 
+    ttl: (number | string)[],
+    version: number,
+    targetsKeyPair: IKeyPair,
     targetsImages: ITargetsImages): ITargetsTUF => {
 
     // generate tuf key object

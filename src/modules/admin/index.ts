@@ -3,30 +3,30 @@ import { UploadStatus, TUFRepo, TUFRole } from '@prisma/client';
 import archiver from 'archiver';
 import forge from 'node-forge';
 import { v4 as uuidv4 } from 'uuid';
-import { loadKeyPair } from '../../core/key-storage';
-import { ETargetFormat } from '../../core/consts';
-import { generateHash } from '../../core/crypto';
+import { loadKeyPair } from '@airbotics-core/key-storage';
+import { ETargetFormat } from '@airbotics-core/consts';
+import { generateHash } from '@airbotics-core/crypto';
 import {
     generateSnapshot,
     generateTargets,
     generateTimestamp,
     getLatestMetadata,
     getLatestMetadataVersion
-} from '../../core/tuf';
-import { ITargetsImages } from '../../types';
-import config from '../../config';
-import { prisma } from '../../core/postgres';
-import { generateCertificate, generateKeyPair } from '../../core/crypto';
-import { keyStorage } from '../../core/key-storage';
-import { blobStorage } from '../../core/blob-storage';
-import { generateRoot } from '../../core/tuf';
-import { logger } from '../../core/logger';
+} from '@airbotics-core/tuf';
+import { ITargetsImages } from '@airbotics-types';
+import config from '@airbotics-config';
+import { prisma } from '@airbotics-core/postgres';
+import { generateCertificate, generateKeyPair } from '@airbotics-core/crypto';
+import { keyStorage } from '@airbotics-core/key-storage';
+import { blobStorage } from '@airbotics-core/blob-storage';
+import { generateRoot } from '@airbotics-core/tuf';
+import { logger } from '@airbotics-core/logger';
 import {
     RootBucket,
     RootCACertObjId,
     RootCAPrivateKeyId,
     RootCAPublicKeyId
-} from '../../core/consts';
+} from '@airbotics-core/consts';
 
 const router = express.Router();
 

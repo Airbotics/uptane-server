@@ -1,7 +1,7 @@
 import path from 'path';
 import fs from 'fs';
-import { IBlobStorageProvider } from '../../types';
-import config from '../../config';
+import { IBlobStorageProvider } from '@airbotics-types';
+import config from '@airbotics-config';
 
 /**
  * Local filesytem blob storage provider.

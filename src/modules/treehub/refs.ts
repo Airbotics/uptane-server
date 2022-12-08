@@ -1,6 +1,6 @@
 import express from 'express';
-import { logger } from '../../core/logger';
-import { prisma } from '../../core/postgres';
+import { logger } from '@airbotics-core/logger';
+import { prisma } from '@airbotics-core/postgres';
 
 const router = express.Router();
 

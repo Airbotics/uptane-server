@@ -9,12 +9,13 @@ Pull requests are more than welcome from anyone that wants to provide a quality 
 These guides should take less than 10 minutes from start to finish.
 
 ### Hosted
-* *Comining soon*
+* *Coming soon*
 
-### Self hosted
+### Self-hosted
 * [Quickstart](self-hosted-quickstart.md)
 
 ## Deep dives
 
 These are more in depth guides that will take a bit longer to get through.
 
+* *Coming soon*

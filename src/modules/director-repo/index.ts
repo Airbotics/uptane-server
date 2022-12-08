@@ -1,17 +1,17 @@
 import express, { Request } from 'express';
 import { TUFRepo, TUFRole, Prisma } from '@prisma/client';
-import { keyStorage, loadKeyPair } from '../../core/key-storage';
-import config from '../../config';
-import { logger } from '../../core/logger';
-import { verifySignature } from '../../core/crypto';
-import prisma from '../../core/postgres';
+import { keyStorage, loadKeyPair } from '@airbotics-core/key-storage';
+import config from '@airbotics-config';
+import { logger } from '@airbotics-core/logger';
+import { verifySignature } from '@airbotics-core/crypto';
+import prisma from '@airbotics-core/postgres';
 import { robotManifestSchema } from './schemas';
-import { IRobotManifest, ITargetsImages, IEcuRegistrationPayload } from '../../types';
-import { toCanonical } from '../../core/utils';
-import { generateSnapshot, generateTargets, generateTimestamp, getLatestMetadataVersion } from '../../core/tuf';
-import { ManifestErrors } from '../../core/consts/errors';
-import { ETargetFormat } from '../../core/consts';
-import { ensureRobotAndNamespace } from '../../middlewares';
+import { IRobotManifest, ITargetsImages, IEcuRegistrationPayload } from '@airbotics-types';
+import { toCanonical } from '@airbotics-core/utils';
+import { generateSnapshot, generateTargets, generateTimestamp, getLatestMetadataVersion } from '@airbotics-core/tuf';
+import { ManifestErrors } from '@airbotics-core/consts/errors';
+import { ETargetFormat } from '@airbotics-core/consts';
+import { ensureRobotAndNamespace } from '@airbotics-middlewares';
 
 
 const router = express.Router();

@@ -1,6 +1,6 @@
 import DateExtension from '@joi/date';
 import * as JoiImport from 'joi';
-import { SignatureMethods } from '../../core/consts';
+import { SignatureMethods } from '@airbotics-core/consts';
 
 const Joi = JoiImport.extend(DateExtension);
 

@@ -128,7 +128,7 @@ Along with these, we're building the usual features you would expect from a OTA 
 
 ## Docs
 
-A web version of the documentation is available [here](https://docs.airbotics.io), the source of which is available [here](docs/index.md).
+A web version of the documentation is available [here](https://docs.airbotics.io), the source of which is available [here](docs/README.md).
 
 
 

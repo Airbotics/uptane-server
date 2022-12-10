@@ -4,7 +4,7 @@ import config from '@airbotics-config';
 import prisma from '@airbotics-core/postgres';
 import { keyStorage } from '@airbotics-core/key-storage';
 import { generateHash } from '@airbotics-core/crypto/hashes';
-import { UploadStatus, TUFRole, TUFRepo} from "@prisma/client";
+import { UploadStatus, TUFRole, TUFRepo, ImageFormat } from "@prisma/client";
 import { generateRoot, generateSnapshot, 
     generateTargets, generateTimestamp } from '@airbotics-core/tuf';
 import { IKeyPair, IRootTUF, ITargetsImages, 
@@ -77,7 +77,8 @@ const createImage = async () => {
                 size: Buffer.byteLength(primaryImage, "utf-8"),
                 sha256: generateHash(primaryImage, {algorithm: 'SHA256'}),
                 sha512: generateHash(primaryImage, {algorithm: 'SHA512'}),
-                status: UploadStatus.uploaded
+                status: UploadStatus.uploaded,
+                format: ImageFormat.binary
             },
             {
                 id: SEED_SECONDARY_IMAGE_ID,
@@ -86,7 +87,8 @@ const createImage = async () => {
                 size: Buffer.byteLength(secondaryImage, "utf-8"),
                 sha256: generateHash(secondaryImage, {algorithm: 'SHA256'}),
                 sha512: generateHash(secondaryImage, {algorithm: 'SHA512'}),
-                status: UploadStatus.uploaded
+                status: UploadStatus.uploaded,
+                format: ImageFormat.binary
             }
         ]
     });

@@ -10,7 +10,6 @@ import { IRobotManifest, ITargetsImages, IEcuRegistrationPayload } from '@airbot
 import { toCanonical } from '@airbotics-core/utils';
 import { generateSnapshot, generateTargets, generateTimestamp, getLatestMetadataVersion } from '@airbotics-core/tuf';
 import { ManifestErrors } from '@airbotics-core/consts/errors';
-import { ETargetFormat } from '@airbotics-core/consts';
 import { ensureRobotAndNamespace } from '@airbotics-middlewares';
 
 
@@ -303,7 +302,7 @@ const generateNewMetadata = async (namespace_id: string, robot_id: string, ecuSe
                         hardwareId: ecuRollout.ecu.hwid
                     }
                 },
-                targetFormat: ETargetFormat.Binary,
+                targetFormat: String(ecuRollout.image.format).toUpperCase(),
                 uri: `${config.ROBOT_GATEWAY_HOSTNAME}/api/v0/robot/repo/images/${ecuRollout.image_id}`
             },
             length: ecuRollout.image.size,

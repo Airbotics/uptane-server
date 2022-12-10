@@ -28,6 +28,11 @@ enum TUFRole {
     timestamp
 }
 
+// type/format of image
+enum ImageFormat {
+    ostree
+    binary
+}
 
 // namespace to contain all resources (metadata, ecus, manifests, images, etc.) related to the same project
 model Namespace {
@@ -58,6 +63,7 @@ model Image {
     sha512              String          @unique                 // sha512 hash of image
     hwids               String[]                                // types/ids of ecu hardware this image can be deployed to
     status              UploadStatus                            // uploading or uploaded
+    format              ImageFormat                             // type of image
 
     created_at          DateTime        @default(now())
     updated_at          DateTime        @updatedAt

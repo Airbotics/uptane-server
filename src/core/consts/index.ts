@@ -35,10 +35,3 @@ export const RootCAPublicKeyId = 'root-ca-public';
 export const GatewayCertObjId = 'gateway-cert';
 export const GatewayPrivateKeyId = 'gateway-private';
 export const GatewayPublicKeyId = 'gateway-public';
-
-// type of image that can be deployed to a robot
-// NOTE: ostree is not yet supported
-export const enum ETargetFormat {
-    Binary = 'BINARY',
-    OsTree = 'OSTREE'
-}

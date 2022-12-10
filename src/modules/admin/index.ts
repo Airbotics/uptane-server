@@ -1,10 +1,9 @@
 import express from 'express';
-import { UploadStatus, TUFRepo, TUFRole } from '@prisma/client';
+import { UploadStatus, TUFRepo, TUFRole, ImageFormat } from '@prisma/client';
 import archiver from 'archiver';
 import forge from 'node-forge';
 import { v4 as uuidv4 } from 'uuid';
 import { loadKeyPair } from '@airbotics-core/key-storage';
-import { ETargetFormat } from '@airbotics-core/consts';
 import { generateHash } from '@airbotics-core/crypto';
 import {
     generateSnapshot,
@@ -400,6 +399,7 @@ router.post('/:namespace/images', express.raw({ type: '*/*' }), async (req, res)
     const namespace_id = req.params.namespace;
     const imageContent = req.body;
     const hwids = (req.query.hwids as string).split(',');
+    const format = req.query.type as ImageFormat;
 
     const size = parseInt(req.get('content-length')!);
 
@@ -443,10 +443,11 @@ router.post('/:namespace/images', express.raw({ type: '*/*' }), async (req, res)
 
     const targetsImages: ITargetsImages = latestTargets ? latestTargets.signed.targets : {};
 
+    // NOTE: image.type is lowercase in db, but aktualizr expects uppercase
     targetsImages[imageId] = {
         custom: {
             hardwareIds: hwids,
-            targetFormat: ETargetFormat.Binary, // ostree is not supported as of now
+            targetFormat: String(imageContent.type).toUpperCase(),
             uri: `${config.ROBOT_GATEWAY_HOSTNAME}/api/v0/robot/repo/images/${imageId}`
         },
         length: size,
@@ -509,7 +510,8 @@ router.post('/:namespace/images', express.raw({ type: '*/*' }), async (req, res)
                     hwids,
                     sha256,
                     sha512,
-                    status: UploadStatus.uploading
+                    status: UploadStatus.uploading,
+                    format
                 }
             });
 
@@ -595,6 +597,7 @@ router.get('/:namespace/images', async (req, res) => {
         sha512: image.sha512,
         hwids: image.hwids,
         status: image.status,
+        format: image.format,
         created_at: image.created_at,
         updated_at: image.updated_at
     }));

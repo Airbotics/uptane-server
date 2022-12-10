@@ -1,13 +1,17 @@
 import prisma from '@airbotics-core/postgres';
 import { keyStorage } from '@airbotics-core/key-storage';
 import { generateHash } from '@airbotics-core/crypto/hashes';
-import { UploadStatus, TUFRole, TUFRepo} from "@prisma/client";
-import { generateSnapshot, generateTargets, generateTimestamp, 
-    getLatestMetadata, getLatestMetadataVersion } from '@airbotics-core/tuf';
+import { UploadStatus, TUFRole, TUFRepo, ImageFormat } from "@prisma/client";
+import {
+    generateSnapshot, generateTargets, generateTimestamp,
+    getLatestMetadata, getLatestMetadataVersion
+} from '@airbotics-core/tuf';
 import { IKeyPair, ITargetsImages, ITargetsTUF } from '@airbotics-types';
 import { generateSlug } from 'random-word-slugs';
-import { SEED_EXPIRES_AT, SEED_NAMESPACE_ID, 
-    SEED_PRIMARY_ECU_ID, SEED_SECONDARY_ECU_ID } from '../consts';
+import {
+    SEED_EXPIRES_AT, SEED_NAMESPACE_ID,
+    SEED_PRIMARY_ECU_ID, SEED_SECONDARY_ECU_ID
+} from '../consts';
 
 
 
@@ -46,17 +50,19 @@ const createImages = async () => {
                 id: primaryImageID,
                 namespace_id: SEED_NAMESPACE_ID,
                 size: Buffer.byteLength(primaryImageBody, "utf-8"),
-                sha256: generateHash(primaryImageBody, {algorithm: 'SHA256'}),
-                sha512: generateHash(primaryImageBody, {algorithm: 'SHA512'}),
-                status: UploadStatus.uploaded
+                sha256: generateHash(primaryImageBody, { algorithm: 'SHA256' }),
+                sha512: generateHash(primaryImageBody, { algorithm: 'SHA512' }),
+                status: UploadStatus.uploaded,
+                format: ImageFormat.binary
             },
             {
                 id: secondaryImageID,
                 namespace_id: SEED_NAMESPACE_ID,
                 size: Buffer.byteLength(secondaryImageBody, "utf-8"),
-                sha256: generateHash(secondaryImageBody, {algorithm: 'SHA256'}),
-                sha512: generateHash(secondaryImageBody, {algorithm: 'SHA512'}),
-                status: UploadStatus.uploaded
+                sha256: generateHash(secondaryImageBody, { algorithm: 'SHA256' }),
+                sha512: generateHash(secondaryImageBody, { algorithm: 'SHA512' }),
+                status: UploadStatus.uploaded,
+                format: ImageFormat.binary
             }
         ]
     });
@@ -94,15 +100,15 @@ const createImageRepoMetadata = async () => {
 
     const latestTargets = await getLatestMetadata(SEED_NAMESPACE_ID, TUFRepo.image, TUFRole.targets);
     const targetsImages: ITargetsImages = latestTargets ? latestTargets.signed.targets : {};
-    
+
 
     //Append the two new images to the targetsImages
     targetsImages[primaryImageID] = {
         custom: {},
         length: Buffer.byteLength(primaryImageBody, "utf-8"),
         hashes: {
-            sha256: generateHash(primaryImageBody, {algorithm: 'SHA256'}),
-            sha512: generateHash(primaryImageBody, {algorithm: 'SHA512'}),
+            sha256: generateHash(primaryImageBody, { algorithm: 'SHA256' }),
+            sha512: generateHash(primaryImageBody, { algorithm: 'SHA512' }),
         }
     };
 
@@ -110,8 +116,8 @@ const createImageRepoMetadata = async () => {
         custom: {},
         length: Buffer.byteLength(secondaryImageBody, "utf-8"),
         hashes: {
-            sha256: generateHash(secondaryImageBody, {algorithm: 'SHA256'}),
-            sha512: generateHash(secondaryImageBody, {algorithm: 'SHA512'}),
+            sha256: generateHash(secondaryImageBody, { algorithm: 'SHA256' }),
+            sha512: generateHash(secondaryImageBody, { algorithm: 'SHA512' }),
         }
     }
 
@@ -188,7 +194,7 @@ const createTmpRollout = async () => {
 
     console.log(`Primary ECU - Image ID: ${primaryImageID} Image Body: ${primaryImageBody}`);
     console.log(`Secondary ECU - Image ID: ${secondaryImageID} Image Body: ${secondaryImageBody}`);
-    
+
     console.log('img-rollouts seeder up success');
 
 

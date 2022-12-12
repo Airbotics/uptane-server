@@ -283,7 +283,7 @@ router.get('/namespaces/:namespace/provisioning-credentials', async (req, res) =
 
     // create credentials.zip
     const archive = archiver('zip');
-
+    // archive.append(Buffer.from('https://192.168.1.144:8003/api/v0/robot/devices', 'utf-8'), { name: 'autoprov.url' })
     archive.append(Buffer.from(forge.asn1.toDer(p12).getBytes(), 'binary'), { name: 'autoprov_credentials.p12' });
     archive.finalize();
 

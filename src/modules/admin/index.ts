@@ -26,6 +26,7 @@ import {
     RootCAPrivateKeyId,
     RootCAPublicKeyId
 } from '@airbotics-core/consts';
+import { auditEventEmitter } from '@airbotics-core/events';
 
 const router = express.Router();
 
@@ -280,11 +281,35 @@ router.get('/namespaces/:namespace/provisioning-credentials', async (req, res) =
     // bundle into pcks12, no encryption password set
     const p12 = forge.pkcs12.toPkcs12Asn1(provisioningKeyPair.privateKey, [provisioningCert, rootCaCert], null, { algorithm: 'aes256' });
 
-    // create credentials.zip
-    const archive = archiver('zip');
+    const rootMetadata = await prisma.metadata.findFirst({
+        where: {
+            namespace_id: namespace,
+            repo: TUFRepo.director,
+            role: TUFRole.root,
+            version: 1
+        }
+    });
+    
+    if(!rootMetadata) {
+        logger.warn('could not create provisioning key because no root metadata for the director exists');
+        return res.status(400).send('could not create provisioning key');
+    }
 
+    // create credentials.zip
+    const treehub = {
+        no_auth: true,
+        ostree: {
+            server: `${config.MAIN_SERVER_ORIGIN}/api/v0/treehub/${namespace}`
+        }
+    };
+    const archive = archiver('zip');
+    archive.append(Buffer.from(JSON.stringify(rootMetadata.value), 'ascii'), { name: 'root.json' });
+    archive.append(Buffer.from(JSON.stringify(treehub), 'ascii'), { name: 'treehub.json' });
+    archive.append(Buffer.from(`${config.ROBOT_GATEWAY_ORIGIN}/api/v0/robot`, 'ascii'), { name: 'autoprov.url' });
     archive.append(Buffer.from(forge.asn1.toDer(p12).getBytes(), 'binary'), { name: 'autoprov_credentials.p12' });
     archive.finalize();
+
+    auditEventEmitter.emit({actor: namespace, action: 'create provisioning creds', producer: 'prov creds endpoint'})
 
     logger.info('provisioning credentials have been created');
 
@@ -448,7 +473,7 @@ router.post('/:namespace/images', express.raw({ type: '*/*' }), async (req, res)
         custom: {
             hardwareIds: hwids,
             targetFormat: String(imageContent.type).toUpperCase(),
-            uri: `${config.ROBOT_GATEWAY_HOSTNAME}/api/v0/robot/repo/images/${imageId}`
+            uri: `${config.ROBOT_GATEWAY_ORIGIN}/api/v0/robot/repo/images/${imageId}`
         },
         length: size,
         hashes: {

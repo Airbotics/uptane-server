@@ -6,13 +6,12 @@ import { blobStorage } from '@airbotics-core/blob-storage';
 
 const router = express.Router();
 
-
 /**
  * Uploads an object to blob storage.
  * 
  * Will store in s3 or local filesystem depending on config.
  */
-router.put('/:namespace/objects/:prefix/:suffix', express.raw({ type: '*/*' }), async (req, res) => {
+router.post('/:namespace/objects/:prefix/:suffix', express.raw({ type: '*/*', limit: '512mb' }), async (req, res) => {
 
     const namespace_id = req.params.namespace;
     const prefix = req.params.prefix;
@@ -74,9 +73,43 @@ router.put('/:namespace/objects/:prefix/:suffix', express.raw({ type: '*/*' }), 
                 status: UploadStatus.uploaded
             }
         });
+
+    });
+    
+    logger.info('uploaded ostree object');
+    
+    return res.status(204).end();
+
+});
+
+
+/**
+ * Checks for the existence of an object in blob storage.
+ * 
+ * Note: this does not directly interface with blob storage, instead it checks
+ * the record of it in Postgres. This assumes they are in sync.
+ */
+router.head('/:namespace/objects/:prefix/:suffix', async (req, res) => {
+
+    const namespace_id = req.params.namespace;
+    const prefix = req.params.prefix;
+    const suffix = req.params.suffix;
+    const object_id = prefix + suffix;
+
+    
+    const object = await prisma.object.findUnique({
+        where: {
+            namespace_id_object_id: {
+                namespace_id,
+                object_id
+            }
+        }
     });
 
-    logger.info('uploaded ostree object');
+    if (!object) {
+        return res.status(404).end();
+    }
+
     return res.status(200).end();
 
 });

@@ -1,6 +1,5 @@
 import express, { Request, Response, NextFunction } from 'express';
 import hpp from 'hpp';
-import fs from 'fs'
 import helmet from 'helmet';
 import schedule from 'node-schedule';
 import config from '@airbotics-config'
@@ -54,6 +53,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 // handle 500
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
     logger.error('500');
+    logger.error(err);
     return res.status(500).end();
 });
 

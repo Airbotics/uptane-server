@@ -16,8 +16,8 @@ const config = {
     PORT: process.env.PORT || 8001,                                             // port the server listens on
     NODE_ENV: process.env.NODE_ENV || 'development',                            // mode to run the server in, 'production' or 'development'
     MAX_JSON_REQUEST_SIZE: '100mb',                                             // max json size we accept
-    BASE_API_URL: 'http://localhost:8001/api/v0',                               // base url of the api server
-    ROBOT_GATEWAY_HOSTNAME: 'https://localhost:8003',                           // hostname of the robot gateway
+    MAIN_SERVER_ORIGIN: 'http://localhost:8002',                                // origin of the main server
+    ROBOT_GATEWAY_ORIGIN: 'https://localhost:8003',                             // origin of the robot gateway
 
     // blob storage
     BLOB_STORAGE_PROVIDER: EBlobStorageProvider.Fs,                             // blob storage provider to use

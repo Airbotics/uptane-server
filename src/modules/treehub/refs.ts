@@ -8,7 +8,7 @@ const router = express.Router();
 /**
  * Creates a ref.
  */
-router.put('/:namespace/refs/:name(*)', express.text(), async (req, res) => {
+router.post('/:namespace/refs/:name(*)', express.text({ type: '*/*' }), async (req, res) => {
 
     const namespace_id = req.params.namespace;
 

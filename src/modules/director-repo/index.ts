@@ -303,7 +303,7 @@ const generateNewMetadata = async (namespace_id: string, robot_id: string, ecuSe
                     }
                 },
                 targetFormat: String(ecuRollout.image.format).toUpperCase(),
-                uri: `${config.ROBOT_GATEWAY_HOSTNAME}/api/v0/robot/repo/images/${ecuRollout.image_id}`
+                uri: `${config.ROBOT_GATEWAY_ORIGIN}/api/v0/robot/repo/images/${ecuRollout.image_id}`
             },
             length: ecuRollout.image.size,
             hashes: {

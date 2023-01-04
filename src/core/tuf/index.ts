@@ -1,31 +1,35 @@
 import { TUFRepo, TUFRole } from '@prisma/client';
 import { generateHash } from '@airbotics-core/crypto';
+import config from '@airbotics-config';
 import { toCanonical } from '@airbotics-core/utils';
 import { ITufKey } from '@airbotics-types';
 import { prisma } from '@airbotics-core/postgres';
+import { EHashDigest } from '@airbotics-core/consts';
 import { generateRoot } from './root';
 import { generateTargets } from './targets';
 import { generateSnapshot } from './snapshot';
 import { generateTimestamp } from './timestamp';
 
+
+interface IGenerateTufKeyOpts {
+    isPublic: boolean;
+}
+
 /**
- * Generates a TUF key given a public key.
- * 
- * NOTE: only RSA is supported now.
+ * Generates a TUF key given a key.
  */
-export const generateTufKey = (publicKey: string): ITufKey => ({
-    keytype: 'rsa',
-    scheme: 'rsassa-pss-sha256',
+export const generateTufKey = (key: string, { isPublic }: IGenerateTufKeyOpts): ITufKey => ({
+    keytype: config.TUF_KEY_TYPE,
     keyval: {
-        public: publicKey
+        ...(isPublic ? { public: key } : { private: key })
     }
 });
 
 
 /**
- * Generates a key id given a TUF key.
+ * Generates a TUF key id given a TUF key.
  */
-export const genKeyId = (roleKey: ITufKey): string => generateHash(toCanonical(roleKey), { algorithm: 'SHA256' });
+export const genKeyId = (roleKey: ITufKey): string => generateHash(toCanonical(roleKey), { hashDigest: EHashDigest.Sha256 });
 
 
 /**
@@ -35,7 +39,7 @@ export const genKeyId = (roleKey: ITufKey): string => generateHash(toCanonical(r
  * 
  * This does not check if the namespace or repo exists.
  */
-export const getLatestMetadata = async (namespace_id: string, repo: TUFRepo, role: TUFRole, robot_id: string | null = null ): Promise<any> => {
+export const getLatestMetadata = async (namespace_id: string, repo: TUFRepo, role: TUFRole, robot_id: string | null = null): Promise<any> => {
 
     const latest = await prisma.metadata.findFirst({
         where: {

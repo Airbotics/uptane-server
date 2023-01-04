@@ -3,9 +3,10 @@ import forge from 'node-forge';
 import { keyStorage } from '@airbotics-core/key-storage';
 import { blobStorage } from '@airbotics-core/blob-storage';
 import { logger } from '@airbotics-core/logger';
-import { generateCertificate } from '@airbotics-core/crypto';
+import { generateCertificate, generateKeyPair } from '@airbotics-core/crypto';
 import prisma from '@airbotics-core/postgres';
 import {
+    EKeyType,
     RootBucket,
     RootCACertObjId,
     RootCAPrivateKeyId,
@@ -55,7 +56,7 @@ router.post('/devices', async (req: Request, res) => {
     }
 
 
-    const robotKeyPair = forge.pki.rsa.generateKeyPair(2048);
+    const robotKeyPair = generateKeyPair({ keyType: EKeyType.Rsa });
 
     // load root ca and key, used to sign provisioning cert
     const rootCaPrivateKeyStr = await keyStorage.getKey(RootCAPrivateKeyId);
@@ -66,22 +67,45 @@ router.post('/devices', async (req: Request, res) => {
     // generate provisioning cert using root ca as parent
     const opts = {
         commonName: deviceId,
-        cert: rootCaCert,
-        keyPair: {
-            privateKey: forge.pki.privateKeyFromPem(rootCaPrivateKeyStr),
-            publicKey: forge.pki.publicKeyFromPem(rootCaPublicKeyStr)
+        parentCert: rootCaCert,
+        parentKeyPair: {
+            privateKey: rootCaPrivateKeyStr,
+            publicKey: rootCaPublicKeyStr
         }
     };
     const robotCert = generateCertificate(robotKeyPair, opts);
 
     // bundle into pcks12, no encryption password set
-    const p12 = forge.pkcs12.toPkcs12Asn1(robotKeyPair.privateKey, [robotCert, rootCaCert], null, { algorithm: 'aes256' });
+    const p12 = forge.pkcs12.toPkcs12Asn1(forge.pki.privateKeyFromPem(robotKeyPair.privateKey), [robotCert, rootCaCert], null, { algorithm: 'aes256' });
 
     logger.info('robot has provisioned')
     return res.status(200).send(Buffer.from(forge.asn1.toDer(p12).getBytes(), 'binary'));
 
 });
 
+router.put('/system_info', ensureRobotAndNamespace, async (req: Request, res) => {
+    console.log(req.headers)
+    console.log(req.body)
+    return res.status(200).end();
+})
+
+router.post('/system_info/config', ensureRobotAndNamespace, async (req: Request, res) => {
+    console.log(req.headers)
+    console.log(req.body)
+    return res.status(200).end();
+})
+
+router.put('/core/installed', ensureRobotAndNamespace, async (req: Request, res) => {
+    console.log(req.headers)
+    console.log(req.body)
+    return res.status(200).end();
+})
+
+router.post('/events', ensureRobotAndNamespace, async (req: Request, res) => {
+    console.log(req.headers)
+    console.log(req.body)
+    return res.status(200).end();
+})
 
 /**
  * Ingest network info reported by a robot

@@ -7,7 +7,7 @@ export const enum ManifestErrors {
     UnknownECUReport = 'could not process manifest, received an ecu report that has been registered in the inventory db',
     InvalidSignature = 'could not process manifest, the signature is invalid',
     InvalidReportSignature = 'could not process manifest, one or more of the ecu report signatures are invalid',
-    InvalidReportNonce = 'could not process manifest, one or more of the ecu report nonces have been sent before',
+    InvalidReportCounter = 'could not process manifest, one or more of the ecu report counter have been sent before',
     ExpiredReport = 'could not process manifest, one or more of the ecu reports have expired',
-    AttackIdentified = 'could not process manifest, one or more of the ecu reports includes an identified attack!',
+    AttackIdentified = 'could not process manifest, one or more of the ecu reports includes an identified attack',
 }

@@ -1,7 +1,6 @@
-import { ManipulateType } from 'dayjs';
 import config from '@airbotics-config';
-import { ETUFRole } from '@airbotics-core/consts';
-import { dayjs } from '@airbotics-core/time';
+import { EHashDigest, ETUFRole } from '@airbotics-core/consts';
+import { getTUFExpiry } from '@airbotics-core/time';
 import { toCanonical } from '@airbotics-core/utils';
 import { generateSignature, generateHash } from '@airbotics-core/crypto';
 import { IKeyPair, ITimestampTUF, ITimestampSignedTUF, ISnapshotTUF } from '@airbotics-types';
@@ -14,7 +13,7 @@ import { generateTufKey, genKeyId } from './index';
 export const generateTimestamp = (ttl: (number | string)[], version: number, timestampKeyPair: IKeyPair, snapshotMetadata: ISnapshotTUF): ITimestampTUF => {
 
     // generate tuf key object
-    const timestampTufKey = generateTufKey(timestampKeyPair.publicKey);
+    const timestampTufKey = generateTufKey(timestampKeyPair.publicKey, {isPublic: true});
 
     // get key id
     const timestampKeyId = genKeyId(timestampTufKey);
@@ -22,7 +21,7 @@ export const generateTimestamp = (ttl: (number | string)[], version: number, tim
     // generate the signed portion of the timestamp metadata
     const signed: ITimestampSignedTUF = {
         _type: ETUFRole.Timestamp,
-        expires: dayjs().add(ttl[0] as number, ttl[1] as ManipulateType).format(config.TUF_TIME_FORMAT),
+        expires: getTUFExpiry(ttl),
         spec_version: config.TUF_SPEC_VERSION,
         version,
         meta: {
@@ -30,8 +29,8 @@ export const generateTimestamp = (ttl: (number | string)[], version: number, tim
                 version: snapshotMetadata.signed.version,
                 length: Buffer.byteLength(toCanonical(snapshotMetadata)),
                 hashes: {
-                    sha256: generateHash(toCanonical(snapshotMetadata), { algorithm: 'SHA256' }),
-                    sha512: generateHash(toCanonical(snapshotMetadata), { algorithm: 'SHA512' })
+                    sha256: generateHash(toCanonical(snapshotMetadata), { hashDigest: EHashDigest.Sha256 }),
+                    sha512: generateHash(toCanonical(snapshotMetadata), { hashDigest: EHashDigest.Sha512 })
                 }
             }
         }
@@ -41,13 +40,13 @@ export const generateTimestamp = (ttl: (number | string)[], version: number, tim
     const canonicalSigned = toCanonical(signed);
 
     // sign it
-    const sig = generateSignature('rsa', canonicalSigned, timestampKeyPair.privateKey);
+    const sig = generateSignature(canonicalSigned, timestampKeyPair.privateKey, { keyType: config.TUF_KEY_TYPE });
 
-    // assemble the full metadata object and return it, phew
+    // assemble the full metadata object and return it
     return {
         signatures: [{
             keyid: timestampKeyId,
-            method: 'rsassa-pss-sha256',
+            method: config.TUF_SIGNATURE_SCHEME,
             sig
         }],
         signed

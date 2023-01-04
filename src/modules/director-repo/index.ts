@@ -26,7 +26,7 @@ const router = express.Router();
  * - no unknown ecu reports are included
  * - top level signature is signed by primary ecu private key
  * - each ecu report signature is signed by corresponding ecu private key
- * - each nonce in the ecu report has never been sent before
+ * - each report counter in the ecu report has never been sent before
  * - no ecu reports have expired
  * - no ecu reports have any reported attacks
  * - probably a few more in time..
@@ -69,7 +69,9 @@ export const robotManifestChecks = async (robotManifest: IRobotManifest, namespa
         validateSchema: () => {
             const { error } = robotManifestSchema.validate(robotManifest);
 
-            if (error) throw (ManifestErrors.InvalidSchema);
+            if (error) {
+                throw (ManifestErrors.InvalidSchema);
+            }
 
             return checks;
         },
@@ -100,13 +102,8 @@ export const robotManifestChecks = async (robotManifest: IRobotManifest, namespa
 
         validateTopSignature: () => {
 
-            const hexsig = Buffer.from(robotManifest.signatures[0].sig, 'base64').toString('hex');
-            const verified: boolean = verifySignature({
-                signature: hexsig,
-                pubKey: ecuPubKeys[robotManifest.signed.primary_ecu_serial],
-                algorithm: 'RSA-SHA256',
-                data: toCanonical(robotManifest.signed)
-            });
+            // Note: should we attempt to verify signature from a manifest if it different to the configured signature scheme
+            const verified = verifySignature(toCanonical(robotManifest.signed), robotManifest.signatures[0].sig, ecuPubKeys[robotManifest.signed.primary_ecu_serial], { signatureScheme: config.TUF_SIGNATURE_SCHEME });
 
             if (!verified) throw (ManifestErrors.InvalidSignature)
 
@@ -116,39 +113,36 @@ export const robotManifestChecks = async (robotManifest: IRobotManifest, namespa
 
         validateReportSignatures: () => {
 
-            //NOTE: Its assumed each ecu version report is only signed by one key
+            // NOTE: Its assumed each ecu version report is only signed by one key
             for (const ecuSerial of ecuSerials) {
-                const hexsig = Buffer.from(robotManifest.signed.ecu_version_manifests[ecuSerial].signatures[0].sig, 'base64').toString('hex');
-                const verified = verifySignature({
-                    signature: hexsig,
-                    pubKey: ecuPubKeys[ecuSerial],
-                    algorithm: 'RSA-SHA256',
-                    data: toCanonical(robotManifest.signed.ecu_version_manifests[ecuSerial].signed)
-                });
 
-                if (!verified) throw (ManifestErrors.InvalidReportSignature);
+                const verified = verifySignature(toCanonical(robotManifest.signed.ecu_version_manifests[ecuSerial].signed), robotManifest.signed.ecu_version_manifests[ecuSerial].signatures[0].sig, ecuPubKeys[robotManifest.signed.primary_ecu_serial], { signatureScheme: config.TUF_SIGNATURE_SCHEME });
+
+                if (!verified) {
+                    console.log('breakding')
+                    throw (ManifestErrors.InvalidReportSignature);
+                }
 
             }
 
             return checks;
         },
 
-        // TODO rename this to report counter
-        validateNonces: () => {
-            //For each ecu version report, check if the nonce for that report has ever been 
-            //sent to us before in a previous manifest
+        validateReportCounter: () => {
+            // For each ecu version report, check if the report counter for that report has ever been 
+            // sent to us before in a previous manifest
             for (const ecuSerial of ecuSerials) {
 
-                const previouslySentNonces: number[] = [];
+                const previouslySentReportCounter: number[] = [];
 
                 for (const manifest of robot.robot_manifests) {
-                    //TODO fix typing
+                    // TODO fix typing
                     const fullManifest = manifest.value as any;
-                    previouslySentNonces.push(fullManifest['signed']['ecu_version_manifests'][ecuSerial]['signed']['report_counter']);
+                    previouslySentReportCounter.push(fullManifest['signed']['ecu_version_manifests'][ecuSerial]['signed']['report_counter']);
                 }
 
-                if (previouslySentNonces.includes(robotManifest.signed.ecu_version_manifests[ecuSerial].signed.report_counter)) {
-                    throw (ManifestErrors.InvalidReportNonce)
+                if (previouslySentReportCounter.includes(robotManifest.signed.ecu_version_manifests[ecuSerial].signed.report_counter)) {
+                    throw (ManifestErrors.InvalidReportCounter)
                 }
             }
 
@@ -236,9 +230,7 @@ const determineNewMetadataRequired = async (robotManifest: IRobotManifest, ecuSe
         */
         if (idx == -1) {
             logger.warn('ECU image is not in rollout');
-        }
-
-        else {
+        } else {
 
             /*
             The robot is reporting an ecu that is associated with a rollout
@@ -247,9 +239,8 @@ const determineNewMetadataRequired = async (robotManifest: IRobotManifest, ecuSe
             */
             if (rolloutsPerEcu[idx].acknowledged) {
                 logger.info('Metadata has already been generated for this ECUs image')
-            }
+            } else {
 
-            else {
                 if (rolloutsPerEcu[idx].image.sha256 !==
                     robotManifest.signed.ecu_version_manifests[ecuSerial].signed.installed_image.fileinfo.hashes.sha256) {
 
@@ -413,7 +404,7 @@ router.put('/manifest', ensureRobotAndNamespace, async (req: Request, res) => {
             .validateEcuRegistration()
             .validateTopSignature()
             .validateReportSignatures()
-            .validateNonces()
+            .validateReportCounter()
             // .validateTime()
             .validateAttacks()
 
@@ -430,9 +421,7 @@ router.put('/manifest', ensureRobotAndNamespace, async (req: Request, res) => {
 
         if (!updateRequired) {
             logger.info('processed manifest for robot and determined all ecus have already installed their latest images');
-        }
-
-        else {
+        } else {
             await generateNewMetadata(namespace_id, robot_id, ecuSerials);
             logger.info('processed manifest for robot and created new tuf metadata');
         }

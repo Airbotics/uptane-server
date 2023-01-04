@@ -1,7 +1,6 @@
-import { ManipulateType } from 'dayjs';
 import config from '@airbotics-config';
 import { ETUFRole } from '@airbotics-core/consts';
-import { dayjs } from '@airbotics-core/time';
+import { getTUFExpiry } from '@airbotics-core/time';
 import { toCanonical } from '@airbotics-core/utils';
 import { generateSignature } from '@airbotics-core/crypto';
 import { IKeyPair, ITargetsSignedTUF, ITargetsTUF, ITargetsImages } from '@airbotics-types';
@@ -17,7 +16,7 @@ export const generateTargets = (
     targetsImages: ITargetsImages): ITargetsTUF => {
 
     // generate tuf key object
-    const targetsTufKey = generateTufKey(targetsKeyPair.publicKey);
+    const targetsTufKey = generateTufKey(targetsKeyPair.publicKey, {isPublic: true});
 
     // get key id
     const targetsKeyId = genKeyId(targetsTufKey);
@@ -25,7 +24,7 @@ export const generateTargets = (
     // generate the signed portion of the targets metadata
     const signed: ITargetsSignedTUF = {
         _type: ETUFRole.Targets,
-        expires: dayjs().add(ttl[0] as number, ttl[1] as ManipulateType).format(config.TUF_TIME_FORMAT),
+        expires: getTUFExpiry(ttl),
         spec_version: config.TUF_SPEC_VERSION,
         version,
         targets: targetsImages,
@@ -36,13 +35,13 @@ export const generateTargets = (
     const canonicalSigned = toCanonical(signed);
 
     // sign it
-    const sig = generateSignature('rsa', canonicalSigned, targetsKeyPair.privateKey);
+    const sig = generateSignature(canonicalSigned, targetsKeyPair.privateKey, { keyType: config.TUF_KEY_TYPE });
 
-    // assemble the full metadata object and return it, phew
+    // assemble the full metadata object and return it
     return {
         signatures: [{
             keyid: targetsKeyId,
-            method: 'rsassa-pss-sha256',
+            method: config.TUF_SIGNATURE_SCHEME,
             sig
         }],
         signed

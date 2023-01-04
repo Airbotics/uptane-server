@@ -1,3 +1,5 @@
+import { EKeyType, ESignatureScheme, ETUFRole } from '@airbotics-core/consts';
+
 export interface IBlobStorageProvider {
     createBucket(bucketId: string): Promise<void>;
     deleteBucket(bucketId: string): Promise<void>;
@@ -21,33 +23,28 @@ export interface IKeyPair {
 /**
  * TUF
  */
-
 export interface IHashes {
     sha256: string;
     sha512?: string;
 }
 
-
 export interface ISignatureTUF {
     keyid: string;
     sig: string;
-    method?: string;
+    method: ESignatureScheme;
 }
 
-
-
-
 export interface ITufKey {
-    keytype: 'rsa' | 'ed25519' | 'ecdsa-sha2-nistp256';
+    keytype: EKeyType;
     keyval: {
-        public: string;
+        public?: string;
+        private?: string;
     };
-    scheme: 'rsassa-pss-sha256' | 'ed25519' | 'ecdsa-sha2-nistp256';
 }
 
 
 export interface IRootSignedTUF {
-    _type: 'root';
+    _type: ETUFRole.Root;
     expires: string;
     spec_version: string;
     consistent_snapshot: boolean;
@@ -92,7 +89,7 @@ export interface ITargetsImages {
 
 
 export interface ITargetsSignedTUF {
-    _type: 'Targets'; // aktualizr requires uppercase
+    _type: ETUFRole.Targets;
     spec_version: string;
     version: number;
     expires: string;
@@ -109,7 +106,7 @@ export interface ITargetsTUF {
 
 
 export interface ISnapshotSignedTUF {
-    _type: 'Snapshot'; // aktualizr requires uppercase
+    _type: ETUFRole.Snapshot;
     spec_version: string;
     version: number;
     expires: string;
@@ -130,7 +127,7 @@ export interface ISnapshotTUF {
 
 
 export interface ITimestampSignedTUF {
-    _type: 'Timestamp'; // aktualizr requires uppercase
+    _type: ETUFRole.Timestamp;
     spec_version: string;
     version: number;
     expires: string;
@@ -159,7 +156,7 @@ export interface ITimestampTUF {
  * Director
  */
 
- export interface IecuVersionReport {
+export interface IecuVersionReport {
     signatures: ISignatureTUF[],
     signed: {
         ecu_serial: string,

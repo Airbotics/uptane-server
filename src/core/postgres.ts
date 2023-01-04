@@ -10,5 +10,5 @@ export const prisma = new PrismaClient({
     }
 });
 
-// Required for jest, to export default
+// required for jest, to export default
 export default prisma;

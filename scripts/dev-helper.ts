@@ -6,7 +6,7 @@ import forge from 'node-forge';
 import readlineSync from 'readline-sync';
 import { keyStorage } from '../src/core/key-storage';
 import { blobStorage } from '../src/core/blob-storage';
-import { generateCertificate, ICertOpts } from '../src/core/crypto';
+import { generateCertificate, generateKeyPair, ICertOpts } from '../src/core/crypto';
 import {
     RootBucket,
     RootCACertObjId,
@@ -14,8 +14,10 @@ import {
     RootCAPublicKeyId,
     GatewayCertObjId,
     GatewayPrivateKeyId,
-    GatewayPublicKeyId
+    GatewayPublicKeyId,
+    EKeyType
 } from '../src/core/consts';
+import config from '../src/config'
 
 
 interface ICmd {
@@ -30,19 +32,19 @@ const createAllCerts: ICmd = {
         console.log('Creating root and gateway cert');
 
         // generate key pair for root cert
-        const rootCaKeyPair = forge.pki.rsa.generateKeyPair(2048);
+        const rootCaKeyPair = generateKeyPair({ keyType: EKeyType.Rsa });
 
         // generate root cert
         const rootCaCert = generateCertificate(rootCaKeyPair);
 
         // generate key pair for gateway cert
-        const gatewayKeyPair = forge.pki.rsa.generateKeyPair(2048);
+        const gatewayKeyPair = generateKeyPair({ keyType: EKeyType.Rsa });
 
         // opts for gateway cert
         const opts: ICertOpts = {
-            commonName: 'localhost',
-            cert: rootCaCert,
-            keyPair: {
+            commonName: '172.20.10.2',
+            parentCert: rootCaCert,
+            parentKeyPair: {
                 privateKey: rootCaKeyPair.privateKey,
                 publicKey: rootCaKeyPair.publicKey
             }
@@ -55,10 +57,10 @@ const createAllCerts: ICmd = {
         await blobStorage.createBucket(RootBucket);
         await blobStorage.putObject(RootBucket, RootCACertObjId, forge.pki.certificateToPem(rootCaCert));
         await blobStorage.putObject(RootBucket, GatewayCertObjId, forge.pki.certificateToPem(gatewayCert));
-        await keyStorage.putKey(RootCAPrivateKeyId, forge.pki.privateKeyToPem(rootCaKeyPair.privateKey));
-        await keyStorage.putKey(RootCAPublicKeyId, forge.pki.publicKeyToPem(rootCaKeyPair.publicKey));
-        await keyStorage.putKey(GatewayPrivateKeyId, forge.pki.privateKeyToPem(gatewayKeyPair.privateKey));
-        await keyStorage.putKey(GatewayPublicKeyId, forge.pki.publicKeyToPem(gatewayKeyPair.publicKey));
+        await keyStorage.putKey(RootCAPrivateKeyId, rootCaKeyPair.privateKey);
+        await keyStorage.putKey(RootCAPublicKeyId, rootCaKeyPair.publicKey);
+        await keyStorage.putKey(GatewayPrivateKeyId, gatewayKeyPair.privateKey);
+        await keyStorage.putKey(GatewayPublicKeyId, gatewayKeyPair.publicKey);
 
 
     }
@@ -99,7 +101,7 @@ const main = async () => {
     // run the command
     await commands[index].run();
 
-    console.log('So long');
+    console.log('Thanks for your time');
 
 }
 

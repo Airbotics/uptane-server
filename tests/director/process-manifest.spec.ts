@@ -1,8 +1,9 @@
-import { prismaMock } from './../singleton';
-import { robotManifestChecks } from '../../src/modules/director-repo/index'
+import { Ecu, Robot, RobotManifest } from '@prisma/client';
+import { prismaMock } from '../singleton';
+import { robotManifestChecks } from '@airbotics-modules/director'
 import { IRobotManifest } from '../../src/types';
 import { ManifestErrors } from '../../src/core/consts/errors';
-import { Ecu, Robot, RobotManifest } from '@prisma/client';
+import {ESignatureScheme} from '../../src/core/consts'
 
 const mockedNamespaceID = 'test';
 const mockedEcuSerials = ['p1', 's1', 's2'];
@@ -26,32 +27,36 @@ beforeEach(() => {
     signatures: [
       {
         sig: "",
+        method: ESignatureScheme.RsassaPssSha256,
         keyid: ""
       }
     ],
     signed: {
-      vin: "",
       primary_ecu_serial: "s1",
-      ecu_version_reports: {
+      ecu_version_manifests: {
         "s1": {
           signatures: [
             {
               sig: "",
+              method: ESignatureScheme.RsassaPssSha256,
               keyid: ""
             }
           ],
           signed: {
             ecu_serial: "s1",
-            time: 0,
+            timeserver_time: '',
+            previous_timeserver_time:'',
             attacks_detected: "",
-            nonce: "",
+            report_counter: 0,
             installed_image: {
-              filename: "test.txt",
-              length: 10,
-              hashes: {
-                sha256: "",
-                sha512: "",
-              }
+              fileinfo: {
+                hashes: {
+                  sha256: "",
+                  sha512: "",
+                },
+                length: 0
+              },
+              filepath: ''
             }
           }
         }
@@ -68,7 +73,7 @@ test('should return robot not found', async () => {
 
   prismaMock.robot.findUnique.mockRejectedValue(ManifestErrors.RobotNotFound);
   
-  await expect(robotManifestChecks(mockedManifest, mockedNamespaceID, mockedEcuSerials))
+  await expect(robotManifestChecks(mockedManifest, '', mockedNamespaceID, mockedEcuSerials))
     .rejects.toEqual(ManifestErrors.RobotNotFound);
 
 });
@@ -78,7 +83,7 @@ test('should return key not found', async () => {
 
   prismaMock.robot.findUnique.mockResolvedValue(mockedRobot);
   
-  await expect(robotManifestChecks(mockedManifest, mockedNamespaceID, mockedEcuSerials))
+  await expect(robotManifestChecks(mockedManifest, '', mockedNamespaceID, mockedEcuSerials))
     .rejects.toEqual(ManifestErrors.KeyNotLoaded);
 
 });

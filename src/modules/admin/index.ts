@@ -9,6 +9,7 @@ import {
     generateSnapshot,
     generateTargets,
     generateTimestamp,
+    generateTufKey,
     getLatestMetadata,
     getLatestMetadataVersion
 } from '@airbotics-core/tuf';
@@ -21,12 +22,15 @@ import { blobStorage } from '@airbotics-core/blob-storage';
 import { generateRoot } from '@airbotics-core/tuf';
 import { logger } from '@airbotics-core/logger';
 import {
+    EHashDigest,
+    EKeyType,
     RootBucket,
     RootCACertObjId,
     RootCAPrivateKeyId,
     RootCAPublicKeyId
 } from '@airbotics-core/consts';
 import { auditEventEmitter } from '@airbotics-core/events';
+import { toCanonical } from '@airbotics-core/utils';
 
 const router = express.Router();
 
@@ -42,47 +46,50 @@ const router = express.Router();
 router.post('/namespaces', async (req, res) => {
 
     // generate 8 TUF key pairs, 4 top-level metadata keys for 2 repos
-    const imageRootKey = generateKeyPair(config.KEY_TYPE);
-    const imageTargetsKey = generateKeyPair(config.KEY_TYPE);
-    const imageSnapshotKey = generateKeyPair(config.KEY_TYPE);
-    const imageTimestampKey = generateKeyPair(config.KEY_TYPE);
+    const imageRootKey = generateKeyPair({ keyType: config.TUF_KEY_TYPE });
+    const imageTargetsKey = generateKeyPair({ keyType: config.TUF_KEY_TYPE });
+    const imageSnapshotKey = generateKeyPair({ keyType: config.TUF_KEY_TYPE });
+    const imageTimestampKey = generateKeyPair({ keyType: config.TUF_KEY_TYPE });
 
-    const directorRootKey = generateKeyPair(config.KEY_TYPE);
-    const directorTargetsKey = generateKeyPair(config.KEY_TYPE);
-    const directorSnapshotKey = generateKeyPair(config.KEY_TYPE);
-    const directorTimestampKey = generateKeyPair(config.KEY_TYPE);
+    const directorRootKey = generateKeyPair({ keyType: config.TUF_KEY_TYPE });
+    const directorTargetsKey = generateKeyPair({ keyType: config.TUF_KEY_TYPE });
+    const directorSnapshotKey = generateKeyPair({ keyType: config.TUF_KEY_TYPE });
+    const directorTimestampKey = generateKeyPair({ keyType: config.TUF_KEY_TYPE });
 
-    // create initial root.json for TUF repos, we'll start them off at 1
+    // create initial tuf metadata for TUF repos, we'll start them off at 1
     const version = 1;
 
-    // generate directory repo root.json
-    const directorRepoRoot = generateRoot(config.TUF_TTL.DIRECTOR.ROOT,
-        version,
+    const directorRepoRoot = generateRoot(config.TUF_TTL.DIRECTOR.ROOT, version,
         directorRootKey,
         directorTargetsKey,
         directorSnapshotKey,
         directorTimestampKey
     );
 
-    // generate image repo root.json
-    const imageRepoRoot = generateRoot(config.TUF_TTL.IMAGE.ROOT,
-        version,
+    const imageRepoRoot = generateRoot(config.TUF_TTL.IMAGE.ROOT, version,
         imageRootKey,
         imageTargetsKey,
         imageSnapshotKey,
         imageTimestampKey
     );
 
+    const imageRepoTargets = generateTargets(config.TUF_TTL.IMAGE.TARGETS, version, imageTargetsKey, {});
+
+    const imageRepoSnapshot = generateSnapshot(config.TUF_TTL.IMAGE.SNAPSHOT, version, imageSnapshotKey, imageRepoTargets);
+    
+    const imageRepoTimestamp = generateTimestamp(config.TUF_TTL.IMAGE.TIMESTAMP, version, imageTimestampKey, imageRepoSnapshot);
 
     // do persistance layer operations in a transaction
     const namespace = await prisma.$transaction(async tx => {
 
         // create namespace in db
         const namespace = await tx.namespace.create({
-            data: {}
+            data: {
+                id: '89472a55-93b2-473b-b7d8-0c7cf93f32fb'
+            }
         });
 
-        // create image repo root.json in db
+        // image repo root.json
         await tx.metadata.create({
             data: {
                 namespace_id: namespace.id,
@@ -94,7 +101,43 @@ router.post('/namespaces', async (req, res) => {
             }
         });
 
-        // create director repo root.json in db
+        // image repo targets.json
+        await tx.metadata.create({
+            data: {
+                namespace_id: namespace.id,
+                repo: TUFRepo.image,
+                role: TUFRole.targets,
+                version,
+                value: imageRepoTargets as object,
+                expires_at: imageRepoTargets.signed.expires
+            }
+        });
+
+        // image repo snapshot.json
+        await tx.metadata.create({
+            data: {
+                namespace_id: namespace.id,
+                repo: TUFRepo.image,
+                role: TUFRole.snapshot,
+                version,
+                value: imageRepoSnapshot as object,
+                expires_at: imageRepoSnapshot.signed.expires
+            }
+        });
+
+        // image repo timestamp.json
+        await tx.metadata.create({
+            data: {
+                namespace_id: namespace.id,
+                repo: TUFRepo.image,
+                role: TUFRole.timestamp,
+                version,
+                value: imageRepoTimestamp as object,
+                expires_at: imageRepoTimestamp.signed.expires
+            }
+        });
+
+        // director repo root.json
         await tx.metadata.create({
             data: {
                 namespace_id: namespace.id,
@@ -243,7 +286,7 @@ router.delete('/namespaces/:namespace', async (req, res) => {
  * - catch archive on error event
  * - record credentials creation in db to enable revocation, expiry, auditing, etc.
  */
-router.get('/namespaces/:namespace/provisioning-credentials', async (req, res) => {
+router.get('/:namespace/provisioning-credentials', async (req, res) => {
 
     const namespace = req.params.namespace;
 
@@ -255,11 +298,11 @@ router.get('/namespaces/:namespace/provisioning-credentials', async (req, res) =
 
     if (namespaceCount === 0) {
         logger.warn('could not create provisioning key because namespace does not exist');
-        return res.status(400).send('could not create provisioning key');
+        return res.status(400).send('could not create provisioning credentials');
     }
 
     // create provisioning key, this will not be stored
-    const provisioningKeyPair = forge.pki.rsa.generateKeyPair(2048);
+    const provisioningKeyPair = generateKeyPair({ keyType: EKeyType.Rsa });
 
     // load root ca and key, used to sign provisioning cert
     const rootCaPrivateKeyStr = await keyStorage.getKey(RootCAPrivateKeyId);
@@ -270,46 +313,48 @@ router.get('/namespaces/:namespace/provisioning-credentials', async (req, res) =
     // generate provisioning cert using root ca as parent
     const opts = {
         commonName: namespace,
-        cert: rootCaCert,
-        keyPair: {
-            privateKey: forge.pki.privateKeyFromPem(rootCaPrivateKeyStr),
-            publicKey: forge.pki.publicKeyFromPem(rootCaPublicKeyStr)
+        parentCert: rootCaCert,
+        parentKeyPair: {
+            privateKey: rootCaPrivateKeyStr,
+            publicKey: rootCaPublicKeyStr
         }
     };
     const provisioningCert = generateCertificate(provisioningKeyPair, opts);
 
     // bundle into pcks12, no encryption password set
-    const p12 = forge.pkcs12.toPkcs12Asn1(provisioningKeyPair.privateKey, [provisioningCert, rootCaCert], null, { algorithm: 'aes256' });
+    const p12 = forge.pkcs12.toPkcs12Asn1(forge.pki.privateKeyFromPem(provisioningKeyPair.privateKey), [provisioningCert, rootCaCert], null, { algorithm: 'aes256' });
 
-    const rootMetadata = await prisma.metadata.findFirst({
-        where: {
-            namespace_id: namespace,
-            repo: TUFRepo.director,
-            role: TUFRole.root,
-            version: 1
-        }
-    });
-    
-    if(!rootMetadata) {
-        logger.warn('could not create provisioning key because no root metadata for the director exists');
-        return res.status(400).send('could not create provisioning key');
+    // get latest root metadata
+    const rootMetadata = await getLatestMetadata(namespace, TUFRepo.image, TUFRole.root);
+
+    if (!rootMetadata) {
+        logger.warn('could not create provisioning credentials because no root metadata for the namespace exists');
+        return res.status(400).send('could not create provisioning credentials');
     }
+
+    const targetsKeyPair = await loadKeyPair(namespace, TUFRepo.image, TUFRole.targets);
+    const targetsTufKeyPublic = generateTufKey(targetsKeyPair.publicKey, {isPublic: true});
+    const targetsTufKeyPrivate = generateTufKey(targetsKeyPair.privateKey, {isPublic: false});
 
     // create credentials.zip
     const treehub = {
         no_auth: true,
         ostree: {
-            server: `${config.MAIN_SERVER_ORIGIN}/api/v0/treehub/${namespace}`
+            server: `${config.MAIN_SERVER_ORIGIN}/api/v0/robot/treehub/${namespace}`
         }
     };
+
     const archive = archiver('zip');
-    archive.append(Buffer.from(JSON.stringify(rootMetadata.value), 'ascii'), { name: 'root.json' });
+    // archive.append(Buffer.from(toCanonical(targetsTufKeyPublic), 'ascii'), { name: 'targets.pub' });
+    // archive.append(Buffer.from(toCanonical(targetsTufKeyPrivate), 'ascii'), { name: 'targets.sec' });
+    // archive.append(Buffer.from(`${config.MAIN_SERVER_ORIGIN}/api/v0`, 'ascii'), { name: 'tufrepo.url' });
+    archive.append(Buffer.from(toCanonical(rootMetadata), 'ascii'), { name: 'root.json' });
     archive.append(Buffer.from(JSON.stringify(treehub), 'ascii'), { name: 'treehub.json' });
     archive.append(Buffer.from(`${config.ROBOT_GATEWAY_ORIGIN}/api/v0/robot`, 'ascii'), { name: 'autoprov.url' });
     archive.append(Buffer.from(forge.asn1.toDer(p12).getBytes(), 'binary'), { name: 'autoprov_credentials.p12' });
     archive.finalize();
 
-    auditEventEmitter.emit({actor: namespace, action: 'create provisioning creds', producer: 'prov creds endpoint'})
+    auditEventEmitter.emit({ actor: namespace, action: 'create provisioning creds', producer: 'prov creds endpoint' });
 
     logger.info('provisioning credentials have been created');
 
@@ -324,7 +369,7 @@ router.get('/namespaces/:namespace/provisioning-credentials', async (req, res) =
  * 
  * Creates an association betwen an ecu and image.
  */
-router.post('/namespaces/:namespace/rollouts', async (req, res) => {
+router.post('/:namespace/rollouts', async (req, res) => {
 
     const {
         ecu_id,
@@ -448,10 +493,10 @@ router.post('/:namespace/images', express.raw({ type: '*/*' }), async (req, res)
 
     // get image id and hashes
     const imageId = uuidv4();
-    const sha256 = generateHash(imageContent, { algorithm: 'SHA256' });
-    const sha512 = generateHash(imageContent, { algorithm: 'SHA512' });
+    const sha256 = generateHash(imageContent, { hashDigest: EHashDigest.Sha256 });
+    const sha512 = generateHash(imageContent, { hashDigest: EHashDigest.Sha512 });
 
-    // get new versions
+    // determine new version numbers
     const newTargetsVersion = await getLatestMetadataVersion(namespace_id, TUFRepo.image, TUFRole.targets) + 1;
     const newSnapshotVersion = await getLatestMetadataVersion(namespace_id, TUFRepo.image, TUFRole.snapshot) + 1;
     const newTimestampVersion = await getLatestMetadataVersion(namespace_id, TUFRepo.image, TUFRole.timestamp) + 1;
@@ -462,11 +507,11 @@ router.post('/:namespace/images', express.raw({ type: '*/*' }), async (req, res)
     const timestampKeyPair = await loadKeyPair(namespace_id, TUFRepo.image, TUFRole.timestamp);
 
     // assemble information about this image to be put in the targets.json metadata
-    // we grab the previous targets portion of the targets metadata if it exists and 
-    // append this new iamge to it, otherwise we start with an empty object
+    // we grab the previous targets portion of the targets metadata and append this new image to it
     const latestTargets = await getLatestMetadata(namespace_id, TUFRepo.image, TUFRole.targets);
 
-    const targetsImages: ITargetsImages = latestTargets ? latestTargets.signed.targets : {};
+    // const targetsImages: ITargetsImages = latestTargets ? latestTargets.signed.targets : {};
+    const targetsImages = latestTargets.signed.targets;
 
     // NOTE: image.type is lowercase in db, but aktualizr expects uppercase
     targetsImages[imageId] = {

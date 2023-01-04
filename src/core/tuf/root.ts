@@ -1,7 +1,6 @@
-import { ManipulateType } from 'dayjs';
 import config from '@airbotics-config';
 import { ETUFRole } from '@airbotics-core/consts';
-import { dayjs } from '@airbotics-core/time';
+import { getTUFExpiry } from '@airbotics-core/time';
 import { toCanonical } from '@airbotics-core/utils';
 import { generateSignature } from '@airbotics-core/crypto';
 import { IKeyPair, IRootSignedTUF, IRootTUF } from '@airbotics-types';
@@ -11,13 +10,13 @@ import { generateTufKey, genKeyId } from './index';
 /**
  * Creates a signed tuf root metadata object
  */
-export const generateRoot = (ttl: (number|string)[], version: number, rootKeyPair: IKeyPair, targetsKeyPair: IKeyPair, snapshotKeyPair: IKeyPair, timestampKeyPair: IKeyPair): IRootTUF => {
+export const generateRoot = (ttl: (number | string)[], version: number, rootKeyPair: IKeyPair, targetsKeyPair: IKeyPair, snapshotKeyPair: IKeyPair, timestampKeyPair: IKeyPair): IRootTUF => {
 
     // generate tuf key objects
-    const rootTufKey = generateTufKey(rootKeyPair.publicKey);
-    const targetsTufKey = generateTufKey(targetsKeyPair.publicKey);
-    const snapshotTufKey = generateTufKey(snapshotKeyPair.publicKey);
-    const timestampTufKey = generateTufKey(timestampKeyPair.publicKey);
+    const rootTufKey = generateTufKey(rootKeyPair.publicKey, {isPublic: true});
+    const targetsTufKey = generateTufKey(targetsKeyPair.publicKey, {isPublic: true});
+    const snapshotTufKey = generateTufKey(snapshotKeyPair.publicKey, {isPublic: true});
+    const timestampTufKey = generateTufKey(timestampKeyPair.publicKey, {isPublic: true});
 
     // get key ids for each role
     const rootKeyId = genKeyId(rootTufKey);
@@ -29,7 +28,7 @@ export const generateRoot = (ttl: (number|string)[], version: number, rootKeyPai
     const signed: IRootSignedTUF = {
         _type: ETUFRole.Root,
         consistent_snapshot: config.TUF_CONSISTENT_SNAPSHOT,
-        expires: dayjs().add(ttl[0] as number, ttl[1] as ManipulateType).format(config.TUF_TIME_FORMAT),
+        expires: getTUFExpiry(ttl),
         spec_version: config.TUF_SPEC_VERSION,
         version,
         keys: {
@@ -62,13 +61,13 @@ export const generateRoot = (ttl: (number|string)[], version: number, rootKeyPai
     const canonicalSigned = toCanonical(signed);
 
     // sign it
-    const sig = generateSignature('rsa', canonicalSigned, rootKeyPair.privateKey);
+    const sig = generateSignature(canonicalSigned, rootKeyPair.privateKey, { keyType: config.TUF_KEY_TYPE });
 
-    // assemble the full metadata object and return it, phew
+    // assemble the full metadata object and return it
     return {
         signatures: [{
             keyid: rootKeyId,
-            method: 'rsassa-pss-sha256',
+            method: config.TUF_SIGNATURE_SCHEME,
             sig
         }],
         signed

@@ -10,6 +10,7 @@ import {
     generateTargets,
     generateTimestamp,
     generateTufKey,
+    getInitialMetadata,
     getLatestMetadata,
     getLatestMetadataVersion
 } from '@airbotics-core/tuf';
@@ -76,7 +77,7 @@ router.post('/namespaces', async (req, res) => {
     const imageRepoTargets = generateTargets(config.TUF_TTL.IMAGE.TARGETS, version, imageTargetsKey, {});
 
     const imageRepoSnapshot = generateSnapshot(config.TUF_TTL.IMAGE.SNAPSHOT, version, imageSnapshotKey, imageRepoTargets);
-    
+
     const imageRepoTimestamp = generateTimestamp(config.TUF_TTL.IMAGE.TIMESTAMP, version, imageTimestampKey, imageRepoSnapshot);
 
     // do persistance layer operations in a transaction
@@ -84,9 +85,7 @@ router.post('/namespaces', async (req, res) => {
 
         // create namespace in db
         const namespace = await tx.namespace.create({
-            data: {
-                id: '89472a55-93b2-473b-b7d8-0c7cf93f32fb'
-            }
+            data: {}
         });
 
         // image repo root.json
@@ -286,7 +285,7 @@ router.delete('/namespaces/:namespace', async (req, res) => {
  * - catch archive on error event
  * - record credentials creation in db to enable revocation, expiry, auditing, etc.
  */
-router.get('/:namespace/provisioning-credentials', async (req, res) => {
+router.post('/:namespace/provisioning-credentials', async (req, res) => {
 
     const namespace = req.params.namespace;
 
@@ -324,17 +323,17 @@ router.get('/:namespace/provisioning-credentials', async (req, res) => {
     // bundle into pcks12, no encryption password set
     const p12 = forge.pkcs12.toPkcs12Asn1(forge.pki.privateKeyFromPem(provisioningKeyPair.privateKey), [provisioningCert, rootCaCert], null, { algorithm: 'aes256' });
 
-    // get latest root metadata
-    const rootMetadata = await getLatestMetadata(namespace, TUFRepo.image, TUFRole.root);
+    // get initial root metadata
+    const rootMetadata = await getInitialMetadata(namespace, TUFRepo.image, TUFRole.root);
 
     if (!rootMetadata) {
         logger.warn('could not create provisioning credentials because no root metadata for the namespace exists');
         return res.status(400).send('could not create provisioning credentials');
     }
 
-    const targetsKeyPair = await loadKeyPair(namespace, TUFRepo.image, TUFRole.targets);
-    const targetsTufKeyPublic = generateTufKey(targetsKeyPair.publicKey, {isPublic: true});
-    const targetsTufKeyPrivate = generateTufKey(targetsKeyPair.privateKey, {isPublic: false});
+    // const targetsKeyPair = await loadKeyPair(namespace, TUFRepo.image, TUFRole.targets);
+    // const targetsTufKeyPublic = generateTufKey(targetsKeyPair.publicKey, {isPublic: true});
+    // const targetsTufKeyPrivate = generateTufKey(targetsKeyPair.privateKey, {isPublic: false});
 
     // create credentials.zip
     const treehub = {
@@ -355,6 +354,13 @@ router.get('/:namespace/provisioning-credentials', async (req, res) => {
     archive.finalize();
 
     auditEventEmitter.emit({ actor: namespace, action: 'create provisioning creds', producer: 'prov creds endpoint' });
+
+    // add record of creation of credentials to db
+    await prisma.provisioningCredentials.create({
+        data: {
+            namespace_id: namespace
+        }
+    });
 
     logger.info('provisioning credentials have been created');
 
@@ -815,6 +821,42 @@ router.delete('/:namespace/robots/:robot_id', async (req, res) => {
 });
 
 
+/**
+ * List provisioning credentials in a namespace.
+ */
+router.get('/:namespace/provisioning-credentials', async (req, res) => {
+
+    const namespace = req.params.namespace;
+
+    // check namespace exists
+    const namespaceCount = await prisma.namespace.count({
+        where: {
+            id: namespace
+        }
+    });
+
+    if (namespaceCount === 0) {
+        logger.warn('could not list images because namespace does not exist');
+        return res.status(400).send('could not list images');
+    }
+
+    const provisioningCredentials = await prisma.provisioningCredentials.findMany({
+        where: {
+            namespace_id: namespace
+        },
+        orderBy: {
+            created_at: 'desc'
+        }
+    });
+
+    const response = provisioningCredentials.map(cred => ({
+        id: cred.id,
+        created_at: cred.created_at
+    }));
+
+    return res.status(200).json(response);
+
+});
 
 
 export default router;

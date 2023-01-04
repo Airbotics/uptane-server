@@ -35,6 +35,10 @@ DELETE {{BASE_URL}}/api/{{API_VERSION}}/admin/namespaces/{{NAMESPACE}} HTTP/1.1
 
 
 ### create provisioning credentials
+POST {{BASE_URL}}/api/{{API_VERSION}}/admin/{{NAMESPACE}}/provisioning-credentials HTTP/1.1
+
+
+### list provisioning credentials
 GET {{BASE_URL}}/api/{{API_VERSION}}/admin/{{NAMESPACE}}/provisioning-credentials HTTP/1.1
 
 

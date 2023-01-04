@@ -58,6 +58,31 @@ export const getLatestMetadata = async (namespace_id: string, repo: TUFRepo, rol
 
 
 /**
+ * Gets the first/initial metadata of a given role in a repo in a namespace.
+ * 
+ * Will return `null` if it does not exist.
+ * 
+ * This does not check if the namespace or repo exists.
+ */
+ export const getInitialMetadata = async (namespace_id: string, repo: TUFRepo, role: TUFRole, robot_id: string | null = null): Promise<any> => {
+
+    const initial = await prisma.metadata.findFirst({
+        where: {
+            namespace_id,
+            repo,
+            role,
+            robot_id
+        },
+        orderBy: {
+            version: 'asc'
+        }
+    });
+
+    return initial ? initial.value : null;
+}
+
+
+/**
  * Gets the lastest version of a given role in a repo in a namespace.
  * 
  * Will return `0` if it does not exist. This gets the most recently created metadata and grabs its version, 

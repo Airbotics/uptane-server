@@ -42,7 +42,7 @@ const createAllCerts: ICmd = {
 
         // opts for gateway cert
         const opts: ICertOpts = {
-            commonName: '172.20.10.2',
+            commonName: 'localhost',
             parentCert: rootCaCert,
             parentKeyPair: {
                 privateKey: rootCaKeyPair.privateKey,

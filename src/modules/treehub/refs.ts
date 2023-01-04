@@ -1,12 +1,13 @@
-import express from 'express';
+import express, { Request } from 'express';
 import { logger } from '@airbotics-core/logger';
 import { prisma } from '@airbotics-core/postgres';
+import { ensureRobotAndNamespace } from 'src/middlewares';
 
 const router = express.Router();
 
 
 /**
- * Creates a ref.
+ * Creates a ref
  */
 router.post('/:namespace/refs/:name(*)', express.text({ type: '*/*' }), async (req, res) => {
 
@@ -68,11 +69,11 @@ router.post('/:namespace/refs/:name(*)', express.text({ type: '*/*' }), async (r
 
 
 /**
- * Gets a ref.
+ * Gets a ref
  */
-router.get('/:namespace/refs/:name(*)', async (req, res) => {
+router.get('/refs/:name(*)', ensureRobotAndNamespace, async (req: Request, res) => {
 
-    const namespace_id = req.params.namespace;
+    const { namespace_id } = req.robotGatewayPayload!;
 
     // this evaluates to something like 'heads/main' so we prepend it with a forward slash
     let name = req.params.name;

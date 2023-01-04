@@ -1,14 +1,15 @@
-import express from 'express';
+import express, { Request } from 'express';
 import { UploadStatus } from '@prisma/client';
 import { logger } from '@airbotics-core/logger';
 import { prisma } from '@airbotics-core/postgres';
 import { blobStorage } from '@airbotics-core/blob-storage';
+import { ensureRobotAndNamespace } from 'src/middlewares';
 
 const router = express.Router();
 
 
 /**
- * Upload summary.
+ * Upload summary
  */
 router.put('/:namespace/summary', express.raw({ type: '*/*' }), async (req, res) => {
 
@@ -70,7 +71,7 @@ router.put('/:namespace/summary', express.raw({ type: '*/*' }), async (req, res)
                 status: UploadStatus.uploaded
             }
         });
-        
+
     });
 
     logger.info('uploaded ostree summary');
@@ -80,11 +81,12 @@ router.put('/:namespace/summary', express.raw({ type: '*/*' }), async (req, res)
 
 
 /**
- * Download summary.
+ * Download summary
  */
-router.get('/:namespace/summary', async (req, res) => {
+router.get('/summary', ensureRobotAndNamespace, async (req: Request, res) => {
 
-    const namespace_id = req.params.namespace;
+    const { namespace_id } = req.robotGatewayPayload!;
+
     const object_id = 'summary';
 
     const summary = await prisma.object.findUnique({
@@ -98,7 +100,45 @@ router.get('/:namespace/summary', async (req, res) => {
 
     if (!summary) {
         logger.warn('could not download ostree summary because it does not exist')
-        return res.status(400).send('could not download ostree summary');
+        return res.status(404).end();
+    }
+
+    try {
+        const content = await blobStorage.getObject(namespace_id, 'treehub/summary');
+
+        res.set('content-type', 'application/octet-stream');
+        return res.status(200).send(content);
+
+    } catch (error) {
+        // db and blob storage should be in sync
+        // if an object exists in db but not blob storage something has gone wrong, bail on this request
+        return res.status(500).end();
+    }
+
+});
+
+
+/**
+ * Download summary
+ */
+router.get('/summary.sig', ensureRobotAndNamespace, async (req: Request, res) => {
+
+    const { namespace_id } = req.robotGatewayPayload!;
+
+    const object_id = 'summary';
+
+    const summary = await prisma.object.findUnique({
+        where: {
+            namespace_id_object_id: {
+                namespace_id,
+                object_id
+            }
+        }
+    });
+
+    if (!summary) {
+        logger.warn('could not download ostree summary because it does not exist')
+        return res.status(404).end();
     }
 
     try {

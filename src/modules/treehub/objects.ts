@@ -1,8 +1,9 @@
-import express from 'express';
+import express, {Request} from 'express';
 import { UploadStatus } from '@prisma/client';
 import { logger } from '@airbotics-core/logger';
 import { prisma } from '@airbotics-core/postgres';
 import { blobStorage } from '@airbotics-core/blob-storage';
+import { ensureRobotAndNamespace } from 'src/middlewares';
 
 const router = express.Router();
 
@@ -120,9 +121,10 @@ router.head('/:namespace/objects/:prefix/:suffix', async (req, res) => {
  * 
  * Will fetch from s3 or local filesystem depending on config.
  */
-router.get('/:namespace/objects/:prefix/:suffix', async (req, res) => {
+router.get('/objects/:prefix/:suffix', ensureRobotAndNamespace, async (req: Request, res) => {
 
-    const namespace_id = req.params.namespace;
+    const { namespace_id } = req.robotGatewayPayload!;
+
     const prefix = req.params.prefix;
     const suffix = req.params.suffix;
     const object_id = prefix + suffix;
@@ -138,7 +140,7 @@ router.get('/:namespace/objects/:prefix/:suffix', async (req, res) => {
 
     if (!object) {
         logger.warn('could not get ostree object because it does not exist');
-        return res.status(400).send('could not download ostree object');
+        return res.status(404).end();
     }
 
     try {

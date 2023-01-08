@@ -4,8 +4,8 @@ import { prisma } from '@airbotics-core/postgres';
 import config from '@airbotics-config';
 import { logger } from '@airbotics-core/logger';
 import { dayjs } from '@airbotics-core/time';
-import { generateRoot, generateSnapshot, generateTargets, generateTimestamp, getLatestMetadataVersion } from '@airbotics-core/tuf';
-import { ISnapshotTUF, ITargetsTUF, ITimestampTUF } from '@airbotics-types';
+import { generateSignedRoot, generateSignedSnapshot, generateSignedTargets, generateSignedTimestamp, getLatestMetadataVersion } from '@airbotics-core/tuf';
+import { ISignedSnapshotTUF, ISignedTargetsTUF, ITimestampTUF } from '@airbotics-types';
 import { loadKeyPair } from '@airbotics-core/key-storage';
 
 
@@ -60,7 +60,7 @@ const processRootRoles = async () => {
             // get expiry depending on repo
             const ttl = root.repo === TUFRepo.director ? config.TUF_TTL.DIRECTOR.ROOT : config.TUF_TTL.IMAGE.ROOT;
 
-            const newRoot = generateRoot(ttl,
+            const newRoot = generateSignedRoot(ttl,
                 newVeresion,
                 rootKeyPair,
                 targetsKeyPair,
@@ -136,11 +136,11 @@ const processTargetRoles = async () => {
             const targetsTTL = targets.repo === TUFRepo.director ? config.TUF_TTL.DIRECTOR.TARGETS : config.TUF_TTL.IMAGE.TARGETS;
             const snapshotTTL = targets.repo === TUFRepo.director ? config.TUF_TTL.DIRECTOR.SNAPSHOT : config.TUF_TTL.IMAGE.SNAPSHOT;
             const timestampTTL = targets.repo === TUFRepo.director ? config.TUF_TTL.DIRECTOR.TIMESTAMP : config.TUF_TTL.IMAGE.TIMESTAMP;
-            const oldTargetsTuf = targets.value as unknown as ITargetsTUF;
+            const oldTargetsTuf = targets.value as unknown as ISignedTargetsTUF;
 
-            const targetsMetadata = generateTargets(targetsTTL, newTargetsVersion, targetsKeyPair, oldTargetsTuf.signed.targets);
-            const snapshotMetadata = generateSnapshot(snapshotTTL, newSnapshotVersion, snapshotKeyPair, targetsMetadata);
-            const timestampMetadata = generateTimestamp(timestampTTL, newTimeStampVersion, timestampKeyPair, snapshotMetadata);
+            const targetsMetadata = generateSignedTargets(targetsTTL, newTargetsVersion, targetsKeyPair, oldTargetsTuf.signed.targets);
+            const snapshotMetadata = generateSignedSnapshot(snapshotTTL, newSnapshotVersion, snapshotKeyPair, targetsMetadata);
+            const timestampMetadata = generateSignedTimestamp(timestampTTL, newTimeStampVersion, timestampKeyPair, snapshotMetadata);
 
             // perform db writes in transaction
             await prisma.$transaction(async tx => {
@@ -230,11 +230,11 @@ const processSnapshotRoles = async () => {
             // get expiry depending on repo
             const snapshotTTL = snapshot.repo === TUFRepo.director ? config.TUF_TTL.DIRECTOR.SNAPSHOT : config.TUF_TTL.IMAGE.SNAPSHOT;
             const timestampTTL = snapshot.repo === TUFRepo.director ? config.TUF_TTL.DIRECTOR.TIMESTAMP : config.TUF_TTL.IMAGE.TIMESTAMP;
-            const oldSnapshotTuf = snapshot.value as unknown as ISnapshotTUF;
+            const oldSnapshotTuf = snapshot.value as unknown as ISignedSnapshotTUF;
 
             /*
-            const snapshotMetadata = generateSnapshot(snapshotTTL, newSnapshotVersion, snapshotKeyPair, oldSnapshotTuf);
-            const timestampMetadata = generateTimestamp(timestampTTL, newTimeStampVersion, timestampKeyPair, snapshotMetadata);
+            const snapshotMetadata = generateSignedSnapshot(snapshotTTL, newSnapshotVersion, snapshotKeyPair, oldSnapshotTuf);
+            const timestampMetadata = generateSignedTimestamp(timestampTTL, newTimeStampVersion, timestampKeyPair, snapshotMetadata);
 
             // perform db writes in transaction
             await prisma.$transaction(async tx => {
@@ -315,7 +315,7 @@ const processTimestampRoles = async () => {
             const oldTimestampMetadata = timestamp.value as unknown as ITimestampTUF;
 
             /*
-            const timestampMetadata = generateTimestamp(timestampTTL, newTimestampVersion, timestampKeyPair, oldTimestampMetadata);
+            const timestampMetadata = generateSignedTimestamp(timestampTTL, newTimestampVersion, timestampKeyPair, oldTimestampMetadata);
 
             await prisma.metadata.create({
                 data: {

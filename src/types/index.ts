@@ -14,6 +14,10 @@ export interface IKeyStorageProvider {
     deleteKey(id: string): Promise<void>;
 }
 
+
+/**
+ * Crypto
+ */
 export interface IKeyPair {
     publicKey: string;
     privateKey: string;
@@ -23,9 +27,10 @@ export interface IKeyPair {
 /**
  * TUF
  */
+
 export interface IHashes {
     sha256: string;
-    sha512?: string;
+    // sha512?: string;
 }
 
 export interface ISignatureTUF {
@@ -46,7 +51,6 @@ export interface ITufKey {
 export interface IRootSignedTUF {
     _type: ETUFRole.Root;
     expires: string;
-    spec_version: string;
     consistent_snapshot: boolean;
     version: number;
     keys: {
@@ -72,7 +76,7 @@ export interface IRootSignedTUF {
     }
 }
 
-export interface IRootTUF {
+export interface ISignedRootTUF {
     signatures: ISignatureTUF[];
     signed: IRootSignedTUF;
 }
@@ -90,14 +94,13 @@ export interface ITargetsImages {
 
 export interface ITargetsSignedTUF {
     _type: ETUFRole.Targets;
-    spec_version: string;
     version: number;
     expires: string;
     delegations?: any;
     targets: ITargetsImages;
 }
 
-export interface ITargetsTUF {
+export interface ISignedTargetsTUF {
     signatures: ISignatureTUF[];
     signed: ITargetsSignedTUF;
 }
@@ -107,7 +110,6 @@ export interface ITargetsTUF {
 
 export interface ISnapshotSignedTUF {
     _type: ETUFRole.Snapshot;
-    spec_version: string;
     version: number;
     expires: string;
     meta: {
@@ -119,7 +121,7 @@ export interface ISnapshotSignedTUF {
     };
 }
 
-export interface ISnapshotTUF {
+export interface ISignedSnapshotTUF {
     signatures: ISignatureTUF[];
     signed: ISnapshotSignedTUF;
 }
@@ -128,7 +130,6 @@ export interface ISnapshotTUF {
 
 export interface ITimestampSignedTUF {
     _type: ETUFRole.Timestamp;
-    spec_version: string;
     version: number;
     expires: string;
     meta: {
@@ -146,7 +147,7 @@ export interface ITimestampTUF {
 }
 
 
-export interface ITimestampTUF {
+export interface ISignedTimestampTUF {
     signatures: ISignatureTUF[];
     signed: ITimestampSignedTUF;
 }

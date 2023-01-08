@@ -8,7 +8,7 @@ import prisma from '@airbotics-core/postgres';
 import { robotManifestSchema } from './schemas';
 import { IRobotManifest, ITargetsImages, IEcuRegistrationPayload } from '@airbotics-types';
 import { toCanonical } from '@airbotics-core/utils';
-import { generateSnapshot, generateTargets, generateTimestamp, getLatestMetadataVersion } from '@airbotics-core/tuf';
+import { generateSignedSnapshot, generateSignedTargets, generateSignedTimestamp, getLatestMetadataVersion } from '@airbotics-core/tuf';
 import { ManifestErrors } from '@airbotics-core/consts/errors';
 import { ensureRobotAndNamespace } from '@airbotics-middlewares';
 
@@ -299,7 +299,7 @@ const generateNewMetadata = async (namespace_id: string, robot_id: string, ecuSe
             length: ecuRollout.image.size,
             hashes: {
                 sha256: ecuRollout.image.sha256,
-                sha512: ecuRollout.image.sha512,
+                // sha512: ecuRollout.image.sha512,
             }
         }
     }
@@ -316,9 +316,9 @@ const generateNewMetadata = async (namespace_id: string, robot_id: string, ecuSe
     const timestampKeyPair = await loadKeyPair(namespace_id, TUFRepo.director, TUFRole.timestamp);
 
     //Generate the new metadata
-    const targetsMetadata = generateTargets(config.TUF_TTL.IMAGE.TARGETS, newTargetsVersion, targetsKeyPair, targetsImages);
-    const snapshotMetadata = generateSnapshot(config.TUF_TTL.IMAGE.SNAPSHOT, newSnapshotVersion, snapshotKeyPair, targetsMetadata);
-    const timestampMetadata = generateTimestamp(config.TUF_TTL.IMAGE.TIMESTAMP, newTimestampVersion, timestampKeyPair, snapshotMetadata);
+    const targetsMetadata = generateSignedTargets(config.TUF_TTL.IMAGE.TARGETS, newTargetsVersion, targetsKeyPair, targetsImages);
+    const snapshotMetadata = generateSignedSnapshot(config.TUF_TTL.IMAGE.SNAPSHOT, newSnapshotVersion, snapshotKeyPair, targetsMetadata);
+    const timestampMetadata = generateSignedTimestamp(config.TUF_TTL.IMAGE.TIMESTAMP, newTimestampVersion, timestampKeyPair, snapshotMetadata);
 
     // perform db writes in transaction
     await prisma.$transaction(async tx => {

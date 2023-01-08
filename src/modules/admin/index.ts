@@ -6,21 +6,19 @@ import { v4 as uuidv4 } from 'uuid';
 import { loadKeyPair } from '@airbotics-core/key-storage';
 import { generateHash } from '@airbotics-core/crypto';
 import {
-    generateSnapshot,
-    generateTargets,
-    generateTimestamp,
-    generateTufKey,
+    generateSignedRoot,
+    generateSignedSnapshot,
+    generateSignedTargets,
+    generateSignedTimestamp,
     getInitialMetadata,
     getLatestMetadata,
     getLatestMetadataVersion
 } from '@airbotics-core/tuf';
-import { ITargetsImages } from '@airbotics-types';
 import config from '@airbotics-config';
 import { prisma } from '@airbotics-core/postgres';
 import { generateCertificate, generateKeyPair } from '@airbotics-core/crypto';
 import { keyStorage } from '@airbotics-core/key-storage';
 import { blobStorage } from '@airbotics-core/blob-storage';
-import { generateRoot } from '@airbotics-core/tuf';
 import { logger } from '@airbotics-core/logger';
 import {
     EHashDigest,
@@ -60,25 +58,25 @@ router.post('/namespaces', async (req, res) => {
     // create initial tuf metadata for TUF repos, we'll start them off at 1
     const version = 1;
 
-    const directorRepoRoot = generateRoot(config.TUF_TTL.DIRECTOR.ROOT, version,
+    const directorRepoRoot = generateSignedRoot(config.TUF_TTL.DIRECTOR.ROOT, version,
         directorRootKey,
         directorTargetsKey,
         directorSnapshotKey,
         directorTimestampKey
     );
 
-    const imageRepoRoot = generateRoot(config.TUF_TTL.IMAGE.ROOT, version,
+    const imageRepoRoot = generateSignedRoot(config.TUF_TTL.IMAGE.ROOT, version,
         imageRootKey,
         imageTargetsKey,
         imageSnapshotKey,
         imageTimestampKey
     );
 
-    const imageRepoTargets = generateTargets(config.TUF_TTL.IMAGE.TARGETS, version, imageTargetsKey, {});
+    const imageRepoTargets = generateSignedTargets(config.TUF_TTL.IMAGE.TARGETS, version, imageTargetsKey, {});
 
-    const imageRepoSnapshot = generateSnapshot(config.TUF_TTL.IMAGE.SNAPSHOT, version, imageSnapshotKey, imageRepoTargets);
+    const imageRepoSnapshot = generateSignedSnapshot(config.TUF_TTL.IMAGE.SNAPSHOT, version, imageSnapshotKey, imageRepoTargets);
 
-    const imageRepoTimestamp = generateTimestamp(config.TUF_TTL.IMAGE.TIMESTAMP, version, imageTimestampKey, imageRepoSnapshot);
+    const imageRepoTimestamp = generateSignedTimestamp(config.TUF_TTL.IMAGE.TIMESTAMP, version, imageTimestampKey, imageRepoSnapshot);
 
     // do persistance layer operations in a transaction
     const namespace = await prisma.$transaction(async tx => {
@@ -534,9 +532,9 @@ router.post('/:namespace/images', express.raw({ type: '*/*' }), async (req, res)
     };
 
     // generate new set of tuf metadata (apart from root)
-    const targetsMetadata = generateTargets(config.TUF_TTL.IMAGE.TARGETS, newTargetsVersion, targetsKeyPair, targetsImages);
-    const snapshotMetadata = generateSnapshot(config.TUF_TTL.IMAGE.SNAPSHOT, newSnapshotVersion, snapshotKeyPair, targetsMetadata);
-    const timestampMetadata = generateTimestamp(config.TUF_TTL.IMAGE.TIMESTAMP, newTimestampVersion, timestampKeyPair, snapshotMetadata);
+    const targetsMetadata = generateSignedTargets(config.TUF_TTL.IMAGE.TARGETS, newTargetsVersion, targetsKeyPair, targetsImages);
+    const snapshotMetadata = generateSignedSnapshot(config.TUF_TTL.IMAGE.SNAPSHOT, newSnapshotVersion, snapshotKeyPair, targetsMetadata);
+    const timestampMetadata = generateSignedTimestamp(config.TUF_TTL.IMAGE.TIMESTAMP, newTimestampVersion, timestampKeyPair, snapshotMetadata);
 
     // perform db writes in transaction
     try {

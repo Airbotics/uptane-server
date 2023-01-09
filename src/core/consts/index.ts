@@ -42,3 +42,7 @@ export const enum OryTeamRelations {
     member = 'member',
     admin = 'admin'
 }
+
+export const enum OryNamespaces {
+    teams = 'teams'
+}

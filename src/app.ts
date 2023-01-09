@@ -9,6 +9,7 @@ import treehub from '@airbotics-modules/treehub';
 import imageRepo from '@airbotics-modules/image-repo';
 import directorRepo from '@airbotics-modules/director-repo';
 import robot from '@airbotics-modules/robot';
+import team from '@airbotics-modules/team';
 
 
 const app = express();
@@ -36,6 +37,7 @@ app.use('/api/v0/robot', robot);
 app.use('/api/v0/robot/director', directorRepo);
 app.use('/api/v0/robot/repo', imageRepo);
 app.use('/api/v0/treehub', treehub);
+app.use('/api/v0/team', team);
 
 
 // optionally mount a background worker in this process, if it has been configured

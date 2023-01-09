@@ -35,7 +35,7 @@ app.use('/api/v0/admin', admin);
 app.use('/api/v0/robot', robot);
 app.use('/api/v0/robot/director', directorRepo);
 app.use('/api/v0/robot/repo', imageRepo);
-app.use('/api/v0/treehub', treehub);
+app.use('/api/v0/robot/treehub', treehub);
 
 
 // optionally mount a background worker in this process, if it has been configured

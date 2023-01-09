@@ -7,10 +7,10 @@ import { generateCertificate, generateKeyPair } from '@airbotics-core/crypto';
 import prisma from '@airbotics-core/postgres';
 import {
     EKeyType,
-    RootBucket,
-    RootCACertObjId,
-    RootCAPrivateKeyId,
-    RootCAPublicKeyId
+    ROOT_BUCKET,
+    ROOT_CA_CERT_OBJ_ID,
+    Root_CA_PRIVATE_KEY_ID,
+    Root_CA_PUBLIC_KEY_ID
 } from '@airbotics-core/consts';
 import { ensureRobotAndNamespace } from '@airbotics-middlewares';
 
@@ -59,9 +59,9 @@ router.post('/devices', async (req: Request, res) => {
     const robotKeyPair = generateKeyPair({ keyType: EKeyType.Rsa });
 
     // load root ca and key, used to sign provisioning cert
-    const rootCaPrivateKeyStr = await keyStorage.getKey(RootCAPrivateKeyId);
-    const rootCaPublicKeyStr = await keyStorage.getKey(RootCAPublicKeyId);
-    const rootCaCertStr = await blobStorage.getObject(RootBucket, RootCACertObjId) as string;
+    const rootCaPrivateKeyStr = await keyStorage.getKey(Root_CA_PRIVATE_KEY_ID);
+    const rootCaPublicKeyStr = await keyStorage.getKey(Root_CA_PUBLIC_KEY_ID);
+    const rootCaCertStr = await blobStorage.getObject(ROOT_BUCKET, ROOT_CA_CERT_OBJ_ID) as string;
     const rootCaCert = forge.pki.certificateFromPem(rootCaCertStr);
 
     // generate provisioning cert using root ca as parent

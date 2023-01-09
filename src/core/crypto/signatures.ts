@@ -1,5 +1,4 @@
 import forge from 'node-forge';
-import crypto from 'crypto';
 import { EKeyType, ESignatureScheme } from '@airbotics-core/consts';
 
 
@@ -26,11 +25,6 @@ export const generateSignature = (toSign: string, privateKey: string, { keyType 
             });
 
             return forge.util.encode64(forge.pki.privateKeyFromPem(privateKey).sign(digest, pss));
-
-        case EKeyType.Ed25519:
-
-            // note: cannot use node-forge
-            return crypto.sign(null, Buffer.from(toSign, 'utf-8'), privateKey).toString('base64');
 
         default: throw new Error('unsupported key type');
     }
@@ -61,16 +55,6 @@ export const verifySignature = (payload: string, signature: string, publicKey: s
             });
 
             return forge.pki.publicKeyFromPem(publicKey).verify(digest.digest().getBytes(), forge.util.decode64(signature), pss);
-
-
-
-
-        case ESignatureScheme.Ed25519:
-
-            // note: cannot use node-forge
-            return crypto.verify(null, Buffer.from(payload, 'utf-8'), publicKey, Buffer.from(signature, 'base64'));
-            // const signature = crypto.sign(null, Buffer.from(message), privateKey)
-            // console.log(signature.toString('hex'))
 
         default: throw new Error('unsupported key type');
     }

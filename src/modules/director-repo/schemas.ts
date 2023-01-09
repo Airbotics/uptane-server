@@ -13,8 +13,7 @@ export const hashschema = Joi.object({
 export const signatureSchema = Joi.object({
     keyid: Joi.string().required(),
     sig: Joi.string().required(),
-    method: Joi.string().valid(ESignatureScheme.RsassaPssSha256).optional()
-    // method: Joi.string().valid('rsassa-pss').required()
+    method: Joi.string().valid(ESignatureScheme.RsassaPss).required() 
 });
 
 

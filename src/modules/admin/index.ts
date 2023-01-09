@@ -10,6 +10,7 @@ import {
     generateSignedSnapshot,
     generateSignedTargets,
     generateSignedTimestamp,
+    generateTufKey,
     getInitialMetadata,
     getLatestMetadata,
     getLatestMetadataVersion
@@ -23,10 +24,10 @@ import { logger } from '@airbotics-core/logger';
 import {
     EHashDigest,
     EKeyType,
-    RootBucket,
-    RootCACertObjId,
-    RootCAPrivateKeyId,
-    RootCAPublicKeyId
+    ROOT_BUCKET,
+    ROOT_CA_CERT_OBJ_ID,
+    Root_CA_PRIVATE_KEY_ID,
+    Root_CA_PUBLIC_KEY_ID
 } from '@airbotics-core/consts';
 import { auditEventEmitter } from '@airbotics-core/events';
 import { toCanonical } from '@airbotics-core/utils';
@@ -83,7 +84,9 @@ router.post('/namespaces', async (req, res) => {
 
         // create namespace in db
         const namespace = await tx.namespace.create({
-            data: {}
+            data: {
+                id: 'edc85266-8530-45e0-9493-4a75bf22e220'
+            }
         });
 
         // image repo root.json
@@ -299,12 +302,12 @@ router.post('/:namespace/provisioning-credentials', async (req, res) => {
     }
 
     // create provisioning key, this will not be stored
-    const provisioningKeyPair = generateKeyPair({ keyType: EKeyType.Rsa });
+    const provisioningKeyPair = generateKeyPair({ keyType: EKeyType.Rsa }); 
 
     // load root ca and key, used to sign provisioning cert
-    const rootCaPrivateKeyStr = await keyStorage.getKey(RootCAPrivateKeyId);
-    const rootCaPublicKeyStr = await keyStorage.getKey(RootCAPublicKeyId);
-    const rootCaCertStr = await blobStorage.getObject(RootBucket, RootCACertObjId) as string;
+    const rootCaPrivateKeyStr = await keyStorage.getKey(Root_CA_PRIVATE_KEY_ID);
+    const rootCaPublicKeyStr = await keyStorage.getKey(Root_CA_PUBLIC_KEY_ID);
+    const rootCaCertStr = await blobStorage.getObject(ROOT_BUCKET, ROOT_CA_CERT_OBJ_ID) as string;
     const rootCaCert = forge.pki.certificateFromPem(rootCaCertStr);
 
     // generate provisioning cert using root ca as parent
@@ -329,9 +332,9 @@ router.post('/:namespace/provisioning-credentials', async (req, res) => {
         return res.status(400).send('could not create provisioning credentials');
     }
 
-    // const targetsKeyPair = await loadKeyPair(namespace, TUFRepo.image, TUFRole.targets);
-    // const targetsTufKeyPublic = generateTufKey(targetsKeyPair.publicKey, {isPublic: true});
-    // const targetsTufKeyPrivate = generateTufKey(targetsKeyPair.privateKey, {isPublic: false});
+    const targetsKeyPair = await loadKeyPair(namespace, TUFRepo.image, TUFRole.targets);
+    const targetsTufKeyPublic = generateTufKey(targetsKeyPair.publicKey, { isPublic: true });
+    const targetsTufKeyPrivate = generateTufKey(targetsKeyPair.privateKey, { isPublic: false });
 
     // create credentials.zip
     const treehub = {
@@ -342,9 +345,9 @@ router.post('/:namespace/provisioning-credentials', async (req, res) => {
     };
 
     const archive = archiver('zip');
-    // archive.append(Buffer.from(toCanonical(targetsTufKeyPublic), 'ascii'), { name: 'targets.pub' });
-    // archive.append(Buffer.from(toCanonical(targetsTufKeyPrivate), 'ascii'), { name: 'targets.sec' });
-    // archive.append(Buffer.from(`${config.MAIN_SERVER_ORIGIN}/api/v0`, 'ascii'), { name: 'tufrepo.url' });
+    archive.append(Buffer.from(toCanonical(targetsTufKeyPublic), 'ascii'), { name: 'targets.pub' });
+    archive.append(Buffer.from(toCanonical(targetsTufKeyPrivate), 'ascii'), { name: 'targets.sec' });
+    archive.append(Buffer.from(`${config.MAIN_SERVER_ORIGIN}/api/v0/robot/repo/${namespace}`, 'ascii'), { name: 'tufrepo.url' });
     archive.append(Buffer.from(toCanonical(rootMetadata), 'ascii'), { name: 'root.json' });
     archive.append(Buffer.from(JSON.stringify(treehub), 'ascii'), { name: 'treehub.json' });
     archive.append(Buffer.from(`${config.ROBOT_GATEWAY_ORIGIN}/api/v0/robot`, 'ascii'), { name: 'autoprov.url' });
@@ -362,6 +365,7 @@ router.post('/:namespace/provisioning-credentials', async (req, res) => {
 
     logger.info('provisioning credentials have been created');
 
+    res.set('content-type', 'application/zip');
     res.status(200);
     archive.pipe(res);
 
@@ -474,6 +478,7 @@ router.post('/:namespace/images', express.raw({ type: '*/*' }), async (req, res)
     const imageContent = req.body;
     const hwids = (req.query.hwids as string).split(',');
     const format = req.query.type as ImageFormat;
+    const name = req.query.name as string;
 
     const size = parseInt(req.get('content-length')!);
 
@@ -498,7 +503,6 @@ router.post('/:namespace/images', express.raw({ type: '*/*' }), async (req, res)
     // get image id and hashes
     const imageId = uuidv4();
     const sha256 = generateHash(imageContent, { hashDigest: EHashDigest.Sha256 });
-    const sha512 = generateHash(imageContent, { hashDigest: EHashDigest.Sha512 });
 
     // determine new version numbers
     const newTargetsVersion = await getLatestMetadataVersion(namespace_id, TUFRepo.image, TUFRole.targets) + 1;
@@ -527,7 +531,7 @@ router.post('/:namespace/images', express.raw({ type: '*/*' }), async (req, res)
         length: size,
         hashes: {
             sha256,
-            sha512
+            // sha512
         }
     };
 
@@ -579,11 +583,11 @@ router.post('/:namespace/images', express.raw({ type: '*/*' }), async (req, res)
             await tx.image.create({
                 data: {
                     id: imageId,
+                    name,
                     namespace_id,
                     size,
                     hwids,
                     sha256,
-                    sha512,
                     status: UploadStatus.uploading,
                     format
                 }
@@ -613,7 +617,6 @@ router.post('/:namespace/images', express.raw({ type: '*/*' }), async (req, res)
             id: image.id,
             size: image.size,
             sha256: image.sha256,
-            sha512: image.sha512,
             hwids: image.hwids,
             status: image.status,
             created_at: image.created_at,
@@ -668,7 +671,6 @@ router.get('/:namespace/images', async (req, res) => {
         id: image.id,
         size: image.size,
         sha256: image.sha256,
-        sha512: image.sha512,
         hwids: image.hwids,
         status: image.status,
         format: image.format,

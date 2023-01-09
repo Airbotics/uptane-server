@@ -2,7 +2,7 @@
 
 @BASE_URL=http://localhost:8001
 @API_VERSION=v0
-@NAMESPACE=89472a55-93b2-473b-b7d8-0c7cf93f32fb
+@NAMESPACE=edc85266-8530-45e0-9493-4a75bf22e220
 @IMAGE=9523db36-30f7-4c66-8236-4d7c3326872c
 @ROBOT=heavy-eintopf-54
 
@@ -47,8 +47,8 @@ POST {{BASE_URL}}/api/{{API_VERSION}}/admin/{{NAMESPACE}}/rollouts HTTP/1.1
 Content-Type: application/json
 
 {
-    "ecu_id": "1f380916ff3e8c7bdb8e3bd922f1d691c5b26e796b5296eba6dc8dee2b4c39ec",
-    "image_id": "qemux86-64"
+    "ecu_id": "8b8a77337315378fbe40381b2c2658daec780e1a78b7d7b6feea8e2788098e7e",
+    "image_id": "9b46eec9-6482-44d2-8b6c-41297bf454bd"
 }
 
 ### list robots

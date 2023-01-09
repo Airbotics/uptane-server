@@ -1,4 +1,5 @@
 import { TUFRepo, TUFRole } from '@prisma/client';
+import forge from 'node-forge';
 import { generateHash, generateSignature } from '@airbotics-core/crypto';
 import config from '@airbotics-config';
 import { toCanonical } from '@airbotics-core/utils';
@@ -13,9 +14,9 @@ import { getTUFExpiry } from '@airbotics-core/time';
 
 
 /**
- * Generates a TUF key id given a TUF key.
+ * Generates a TUF key id given a public or private key as a PEM string.
  */
-const genKeyId = (roleKey: ITufKey): string => generateHash(toCanonical(roleKey), { hashDigest: EHashDigest.Sha256 });
+const genKeyId = (key: string): string => generateHash(forge.pki.pemToDer(key).getBytes(), { hashDigest: EHashDigest.Sha256 });
 
 
 /**
@@ -23,7 +24,7 @@ const genKeyId = (roleKey: ITufKey): string => generateHash(toCanonical(roleKey)
  */
 const signRole = (signed: IRootSignedTUF | ITargetsSignedTUF | ISnapshotSignedTUF | ITimestampSignedTUF, keyPair: IKeyPair): ISignedRootTUF | ISignedTargetsTUF | ISignedSnapshotTUF | ISignedTimestampTUF => {
 
-    const keyId = genKeyId(generateTufKey(keyPair.publicKey, { isPublic: true }));
+    const keyId = genKeyId(keyPair.publicKey);
 
     const canonicalSigned = toCanonical(signed);
 
@@ -40,6 +41,8 @@ const signRole = (signed: IRootSignedTUF | ITargetsSignedTUF | ISnapshotSignedTU
 
 }
 
+
+
 interface IGenerateTufKeyOpts {
     isPublic: boolean;
 }
@@ -52,6 +55,7 @@ export const generateTufKey = (key: string, { isPublic }: IGenerateTufKeyOpts): 
         ...(isPublic ? { public: key } : { private: key })
     }
 });
+
 
 
 /**
@@ -79,6 +83,7 @@ export const getLatestMetadata = async (namespace_id: string, repo: TUFRepo, rol
 }
 
 
+
 /**
  * Gets the first/initial metadata of a given role in a repo in a namespace.
  * 
@@ -104,6 +109,7 @@ export const getInitialMetadata = async (namespace_id: string, repo: TUFRepo, ro
 }
 
 
+
 /**
  * Gets the lastest version number of a given role in a repo in a namespace.
  * 
@@ -119,8 +125,6 @@ export const getLatestMetadataVersion = async (namespace_id: string, repo: TUFRe
 
 
 
-
-
 /**
  * Generate signed root metadata.
  */
@@ -133,10 +137,10 @@ export const generateSignedRoot = (ttl: (number | string)[], version: number, ro
     const timestampTufKey = generateTufKey(timestampKeyPair.publicKey, { isPublic: true });
 
     // get key ids for each role
-    const rootKeyId = genKeyId(rootTufKey);
-    const targetsKeyId = genKeyId(targetsTufKey);
-    const snapshotKeyId = genKeyId(snapshotTufKey);
-    const timestampKeyId = genKeyId(timestampTufKey);
+    const rootKeyId = genKeyId(rootKeyPair.publicKey);
+    const targetsKeyId = genKeyId(targetsKeyPair.publicKey);
+    const snapshotKeyId = genKeyId(snapshotKeyPair.publicKey);
+    const timestampKeyId = genKeyId(timestampKeyPair.publicKey);
 
     // generate the signed portion of the root metadata
     const signed: IRootSignedTUF = {
@@ -187,9 +191,7 @@ export const generateSignedTargets = (ttl: (number | string)[], version: number,
         targets: targetsImages,
     };
 
-
     return signRole(signed, targetsKeyPair) as ISignedTargetsTUF;
-
 
 }
 
@@ -209,8 +211,7 @@ export const generateSignedSnapshot = (ttl: (number | string)[], version: number
                 version: targetsMetadata.signed.version,
                 length: Buffer.byteLength(toCanonical(targetsMetadata)),
                 hashes: {
-                    sha256: generateHash(toCanonical(targetsMetadata), { hashDigest: EHashDigest.Sha256 }),
-                    // sha512: generateHash(toCanonical(targetsMetadata), { hashDigest: EHashDigest.Sha512 })
+                    sha256: generateHash(toCanonical(targetsMetadata), { hashDigest: EHashDigest.Sha256 })
                 }
             }
         }
@@ -236,8 +237,7 @@ export const generateSignedTimestamp = (ttl: (number | string)[], version: numbe
                 version: snapshotMetadata.signed.version,
                 length: Buffer.byteLength(toCanonical(snapshotMetadata)),
                 hashes: {
-                    sha256: generateHash(toCanonical(snapshotMetadata), { hashDigest: EHashDigest.Sha256 }),
-                    // sha512: generateHash(toCanonical(snapshotMetadata), { hashDigest: EHashDigest.Sha512 })
+                    sha256: generateHash(toCanonical(snapshotMetadata), { hashDigest: EHashDigest.Sha256 })
                 }
             }
         }

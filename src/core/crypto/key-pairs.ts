@@ -23,19 +23,6 @@ export const generateKeyPair = ({ keyType }: IGenerateKeyPairOpts): IKeyPair => 
                 privateKey: forge.pki.privateKeyToPem(rsakeyPair.privateKey)
             };
 
-        case EKeyType.Ed25519:
-
-            // note: cannot use node-forge
-            const { publicKey, privateKey } = generateKeyPairSync('ed25519');
-
-            return {
-                publicKey: publicKey.export({ format: 'pem', type: 'spki' }).toString('utf-8'),
-                privateKey: privateKey.export({ format: 'pem', type: 'pkcs8' }).toString('utf-8')
-            };
-
-
-
-
         default: throw new Error('unsupported key type');
     }
 

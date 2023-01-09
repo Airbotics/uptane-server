@@ -2,7 +2,6 @@ import EventEmitter from 'events';
 
 interface AirAuditEvent {
     actor: string;
-    producer: string;
     action: string;
 }
 

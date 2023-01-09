@@ -213,3 +213,9 @@ export interface OryIdentity {
         }
     }
 }
+
+export interface ITeamDetail {
+    id: string;
+    name: string;
+    created_at: Date;
+}

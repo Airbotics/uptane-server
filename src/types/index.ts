@@ -198,3 +198,18 @@ export interface IEcuRegistrationPayload {
         }
     }[];
 }
+
+
+export interface OryIdentity {
+    session_id: string;
+    traits: {
+        id: string;
+        created_at: string;
+        state: string;  //active or inactive
+        email: string;
+        name: {
+            first: string;
+            last: string;
+        }
+    }
+}

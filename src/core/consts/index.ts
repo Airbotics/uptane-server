@@ -35,3 +35,10 @@ export const RootCAPublicKeyId = 'root-ca-public';
 export const GatewayCertObjId = 'gateway-cert';
 export const GatewayPrivateKeyId = 'gateway-private';
 export const GatewayPublicKeyId = 'gateway-public';
+
+
+
+export const enum OryTeamRelations {
+    member = 'member',
+    admin = 'admin'
+}

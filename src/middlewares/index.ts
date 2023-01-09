@@ -2,7 +2,9 @@ import { Request, Response, NextFunction } from 'express';
 import { logger } from '@airbotics-core/logger';
 import prisma from '@airbotics-core/postgres';
 import { ory } from '@airbotics-core/drivers/ory';
-import { UnauthorizedResponse } from '@airbotics-core/network/responses';
+import { BadResponse, ForbiddenResponse, UnauthorizedResponse } from '@airbotics-core/network/responses';
+import { PermissionApiCheckPermissionRequest } from '@ory/client';
+import { OryTeamRelations } from '@airbotics-core/consts';
 
 /**
  * Middleware used on the director and image repo to populate the request with robot details.
@@ -60,7 +62,7 @@ export const mustBeAuthenticated = async (req: Request, res: Response, next: Nex
                 email: orySession.identity.traits.email,
                 name: {
                     first: orySession.identity.traits.name.first,
-                    last: orySession.identity.traits.name.last,
+                    last: orySession.identity.traits.name.last
                 }
             }
         }
@@ -73,3 +75,42 @@ export const mustBeAuthenticated = async (req: Request, res: Response, next: Nex
     }
 
 };
+
+
+export const mustBeInTeam = (relation: OryTeamRelations) => {
+
+    return async (req: Request, res: Response, next: NextFunction) => {
+
+        const oryID = req.oryIdentity!.traits.id;
+        const teamID = req.headers['air-team-id'];
+  
+        if (oryID === undefined || teamID === undefined) {
+            logger.warn('A user is trying to access a team protected endpoint without an oryID or teamID in the request');
+            return new BadResponse(res, 'Unable to check if you have permission to do that!');
+        }
+
+        try {
+
+            const permCheckParams: PermissionApiCheckPermissionRequest = {
+                namespace: 'teams',
+                object: teamID,
+                relation: relation,
+                subjectId: oryID
+            }
+
+            const permCheckRes = (await ory.permission.checkPermission(permCheckParams)).data;
+
+            if (permCheckRes.allowed) {
+                next();
+            }
+            
+            else {
+                return new ForbiddenResponse(res, "You do not have permission to do that!")
+            }
+
+        } catch (error) {           
+            return new BadResponse(res, 'Unable to check if you have permission to do that!');
+        }
+
+    }
+}

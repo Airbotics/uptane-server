@@ -34,10 +34,10 @@ enum ImageFormat {
     binary
 }
 
-// namespace to contain all resources (metadata, ecus, manifests, images, etc.) related to the same project
-model Namespace {
+// team to contain all resources (metadata, ecus, manifests, images, etc.) related to the same project
+model Team {
     id                  String          @id @default(uuid()) @unique
-
+    name                String
     created_at          DateTime        @default(now())
     updated_at          DateTime        @updatedAt
 
@@ -50,14 +50,14 @@ model Namespace {
     robot_manifests     RobotManifest[]
     network_reports     NetworkReport[]
 
-    @@map("namespaces")
+    @@map("teams")
 }
 
 
 // images stored in image repo
 model Image {
     id                  String          @id @default(uuid()) @unique
-    namespace_id        String
+    team_id             String
     size                Int                                     // size of image in bytes
     sha256              String          @unique                 // sha256 hash of image
     sha512              String          @unique                 // sha512 hash of image
@@ -68,11 +68,11 @@ model Image {
     created_at          DateTime        @default(now())
     updated_at          DateTime        @updatedAt
 
-    namespace           Namespace       @relation(fields: [namespace_id], references: [id], onDelete: Cascade)
+    team                Team            @relation(fields: [team_id], references: [id], onDelete: Cascade)
 
     tmp_ecu_images      TmpEcuImages[]
 
-    @@unique([namespace_id, id])
+    @@unique([team_id, id])
     @@map("images")
 }
 
@@ -80,7 +80,7 @@ model Image {
 // tuf metadata
 model Metadata {
     id                  String          @id @default(uuid()) @unique
-    namespace_id        String
+    team_id             String
     robot_id            String?
     role                TUFRole                                 // director or image repo
     repo                TUFRepo                                 // root, targets, snapshot or timestamp
@@ -90,12 +90,12 @@ model Metadata {
     created_at          DateTime        @default(now())
     expires_at          DateTime                                // this should always match the 'expires' field in the signed portion
 
-    namespace           Namespace       @relation(fields: [namespace_id], references: [id], onDelete: Cascade)
+    team                Team            @relation(fields: [team_id], references: [id], onDelete: Cascade)
     robot               Robot?          @relation(fields: [robot_id], references: [id], onDelete: Cascade)
     
     //TODO: Add the following conditional unique constraint when prisma implement it
-    // @@unique([namespace_id, repo, role, version], where: {repo: TUFRepo.image})
-    // @@unique([namespace_id, repo, role, version, robot_id], where: {repo: TUFRepo.director})
+    // @@unique([team_id, repo, role, version], where: {repo: TUFRepo.image})
+    // @@unique([team_id, repo, role, version, robot_id], where: {repo: TUFRepo.director})
     //Keep an eye on issue here: https://github.com/prisma/prisma/issues/6974
     @@map("metadata")
 }
@@ -107,19 +107,19 @@ model Metadata {
 // - add provisioned field denoting whether it is provisioned
 model Robot {
     id                  String          @id @default(uuid()) @unique
-    namespace_id        String
+    team_id             String
 
     created_at          DateTime        @default(now())
     updated_at          DateTime        @updatedAt
 
-    namespace           Namespace       @relation(fields: [namespace_id], references: [id], onDelete: Cascade)
+    team                Team            @relation(fields: [team_id], references: [id], onDelete: Cascade)
 
     ecus                Ecu[]
     robot_manifests     RobotManifest[]
     metadata            Metadata[]
     network_reports     NetworkReport[]
 
-    @@unique([namespace_id, id])
+    @@unique([team_id, id])
     @@map("robots")
 }
 
@@ -129,7 +129,7 @@ model Robot {
 // - add last_seen field
 model Ecu {
     id                  String          @id @default(uuid()) @unique
-    namespace_id        String
+    team_id             String
     robot_id            String
     hwid                String                              // hardware type/id of this ecu
     primary             Boolean                             // whether this ecu is the primary, only one per robot is supported
@@ -137,13 +137,13 @@ model Ecu {
     created_at          DateTime        @default(now())
     updated_at          DateTime        @updatedAt
 
-    namespace           Namespace       @relation(fields: [namespace_id], references: [id], onDelete: Cascade)
-    robot               Robot           @relation(fields: [namespace_id, robot_id], references: [namespace_id, id], onDelete: Cascade)
+    team                Team            @relation(fields: [team_id], references: [id], onDelete: Cascade)
+    robot               Robot           @relation(fields: [team_id, robot_id], references: [team_id, id], onDelete: Cascade)
 
     tmp_ecu_images      TmpEcuImages[]
 
 
-    @@unique([namespace_id, id])
+    @@unique([team_id, id])
     @@map("ecus")
 }
 
@@ -152,7 +152,7 @@ model Ecu {
 // always be the primary, and the primary will never change
 model NetworkReport {
     id                  String          @id @default(uuid()) @unique
-    namespace_id        String
+    team_id             String
     robot_id            String
 
     hostname            String?
@@ -162,11 +162,11 @@ model NetworkReport {
     created_at          DateTime        @default(now())
     updated_at          DateTime        @updatedAt
 
-    namespace           Namespace       @relation(fields: [namespace_id], references: [id], onDelete: Cascade)
-    robot               Robot           @relation(fields: [namespace_id, robot_id], references: [namespace_id, id], onDelete: Cascade)
+    team                Team            @relation(fields: [team_id], references: [id], onDelete: Cascade)
+    robot               Robot           @relation(fields: [team_id, robot_id], references: [team_id, id], onDelete: Cascade)
 
 
-    @@unique([namespace_id, id])
+    @@unique([team_id, id])
     @@map("network_reports")
 }
 
@@ -174,17 +174,17 @@ model NetworkReport {
 // robot manifests sent by primaries
 model RobotManifest {
     id                  String          @default(uuid())
-    namespace_id        String
+    team_id             String
     robot_id            String
     value               Json            // holds entire signed manifest
     valid               Boolean
 
     created_at          DateTime        @default(now())
 
-    namespace           Namespace       @relation(fields: [namespace_id], references: [id], onDelete: Cascade)
-    robot               Robot           @relation(fields: [namespace_id, robot_id], references: [namespace_id, id], onDelete: Cascade)
+    team                Team            @relation(fields: [team_id], references: [id], onDelete: Cascade)
+    robot               Robot           @relation(fields: [team_id, robot_id], references: [team_id, id], onDelete: Cascade)
 
-    @@id([namespace_id, id])
+    @@id([team_id, id])
     @@map("robot_manifests")
 }
 
@@ -195,15 +195,15 @@ model Ref {
     name                String                                  // `/heads/main` or similar
     commit              String                                  // commit hash
     object_id           String                                  // object it points to
-    namespace_id        String
+    team_id             String
 
     created_at          DateTime        @default(now())
     updated_at          DateTime        @updatedAt
 
-    object              Object          @relation(fields: [namespace_id, object_id], references: [namespace_id, object_id], onDelete: Cascade)
-    namespace           Namespace       @relation(fields: [namespace_id], references: [id], onDelete: Cascade)
+    object              Object          @relation(fields: [team_id, object_id], references: [team_id, object_id], onDelete: Cascade)
+    team                Team            @relation(fields: [team_id], references: [id], onDelete: Cascade)
 
-    @@id([namespace_id, name])
+    @@id([team_id, name])
     @@map("refs")
 }
 
@@ -211,7 +211,7 @@ model Ref {
 // ostree object
 model Object {
     object_id           String
-    namespace_id        String
+    team_id             String
     size                Int                                     // size of object in bytes
     status              UploadStatus
 
@@ -219,9 +219,9 @@ model Object {
     updated_at          DateTime        @updatedAt
 
     refs                Ref[]
-    namespace           Namespace       @relation(fields: [namespace_id], references: [id], onDelete: Cascade)
+    team                Team            @relation(fields: [team_id], references: [id], onDelete: Cascade)
 
-    @@id([namespace_id, object_id])
+    @@id([team_id, object_id])
     @@map("objects")
 }
 

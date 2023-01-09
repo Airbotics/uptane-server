@@ -1,6 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import { logger } from '@airbotics-core/logger';
 import prisma from '@airbotics-core/postgres';
+import { ory } from '@airbotics-core/drivers/ory';
+import { UnauthorizedResponse } from '@airbotics-core/network/responses';
 
 /**
  * Middleware used on the director and image repo to populate the request with robot details.
@@ -39,5 +41,35 @@ export const ensureRobotAndNamespace = async (req: Request, res: Response, next:
     };
 
     next();
+
+};
+
+
+export const mustBeAuthenticated = async (req: Request, res: Response, next: NextFunction) => {
+
+    try {
+   
+        const orySession = (await ory.frontend.toSession({ cookie: req.header("cookie") })).data;
+
+        req.oryIdentity = {
+            session_id: orySession.id,
+            traits: {
+                id: orySession.identity.id,
+                created_at: orySession.identity.created_at!,
+                state: orySession.identity.state!,
+                email: orySession.identity.traits.email,
+                name: {
+                    first: orySession.identity.traits.name.first,
+                    last: orySession.identity.traits.name.last,
+                }
+            }
+        }
+
+        next();
+
+    } catch (error) {
+        logger.warn('An unauthenticated user is trying to access a protected endpoint');
+        return new UnauthorizedResponse(res);
+    }
 
 };

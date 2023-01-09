@@ -1,77 +1,77 @@
+import { OryTeamRelations } from '@airbotics-core/consts';
 import express, { Request } from 'express';
-import { logger } from '@airbotics-core/logger';
-import prisma from '@airbotics-core/postgres';
-import { mustBeAuthenticated } from 'src/middlewares';
-import { ory } from '@airbotics-core/drivers/ory';
-import { RelationshipApiPatchRelationshipsRequest } from '@ory/client';
-import { OryNamespaces, OryTeamRelations } from '@airbotics-core/consts';
-import { SuccessMessageResponse } from '../../core/network/responses';
+
+import { mustBeAuthenticated, mustBeInTeam } from 'src/middlewares';
+
+import * as controller from './controller';
 
 const router = express.Router();
 
-/**
- * Creates a new team
- * 
- * @description Performs the following:
- * 1. Create the team in our db
- * 2 Create two new relation tuples in ory
- *  a) one to say that ory_id (requester) is the admin of the new team
- *  b) one to say any admins of the new team are also members
- */
-router.post('/', mustBeAuthenticated, async (req: Request, res) => {
+//create team
+router.post('/',
+    mustBeAuthenticated,
+    controller.createTeam);
 
-    const {
-        name
-    } = req.body;
+//list teams
+router.get('/',
+    mustBeAuthenticated,
+    mustBeInTeam(OryTeamRelations.member),
+    controller.listTeams);
 
-    const oryID = req.oryIdentity!.traits.id;
+//update team
+router.patch('/',
+    mustBeAuthenticated,
+    mustBeInTeam(OryTeamRelations.admin),
+    controller.updateTeam);
 
-    await prisma.$transaction(async tx => {
 
-        //Create the team in our db
-        const team = await tx.team.create({
-            data: {
-                name: name
-            }
-        });
+//list team members
+router.get('/members',
+    mustBeAuthenticated,
+    mustBeInTeam(OryTeamRelations.member),
+    controller.listTeamMembers);
 
-        //Create the ory relationships
-        const relationsParams: RelationshipApiPatchRelationshipsRequest = {
-            relationshipPatch: [
-                {
-                    action: 'insert',
-                    relation_tuple: {
-                        namespace: OryNamespaces.teams,
-                        relation: OryTeamRelations.admin,
-                        object: team.id,
-                        subject_id: oryID
-                    }
-                },
-                {
-                    action: 'insert',
-                    relation_tuple: {
-                        namespace: OryNamespaces.teams,
-                        relation: OryTeamRelations.member,
-                        object: team.id,
-                        subject_set: {
-                            namespace: OryNamespaces.teams,
-                            relation: OryTeamRelations.admin,
-                            object: team.id
-                        }
-                    }
-                }
-            ]
-        }
 
-        //returns a 201 on success
-        await ory.relations.patchRelationships(relationsParams);
-        
-    });
+//list a team invites
+router.get('/invites',
+    mustBeAuthenticated,
+    mustBeInTeam(OryTeamRelations.admin),
+    controller.createTeam);
 
-    logger.info('created a team');
-    return new SuccessMessageResponse(res, 'A new team has been created');
 
-});
+//create a team invite
+router.post('/invites',
+    mustBeAuthenticated,
+    mustBeInTeam(OryTeamRelations.admin),
+    controller.createTeam);
+
+//create a team invite
+router.post('/invites/:invite_id',
+    mustBeAuthenticated,
+    mustBeInTeam(OryTeamRelations.admin),
+    controller.createTeam);
+
+//revoke a team invite
+router.delete('/invites/:invite_id',
+    mustBeAuthenticated,
+    mustBeInTeam(OryTeamRelations.admin),
+    controller.createTeam);
+
+//accept/reject a team invite
+router.post('/invites/confirm/:invite_id',
+    mustBeAuthenticated,
+    controller.createTeam);
+
+//leave a team
+router.put('/leave',
+    mustBeAuthenticated,
+    mustBeInTeam(OryTeamRelations.member),
+    controller.createTeam);
+
+
+
 
 
 export default router;
+
+

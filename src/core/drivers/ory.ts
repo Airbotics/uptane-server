@@ -9,12 +9,13 @@ import {
 
 
 const oryConfig = new Configuration({
-    basePath: "https://dazzling-raman-bd5bt188g5.projects.oryapis.com",
+    basePath: config.ORY_PROJECT_URL,
     accessToken: config.ORY_ACCESS_TOKEN,
     baseOptions: {
       timeout: 4000
     }
 });
+
 
 export const ory = {
     identities: new IdentityApi(oryConfig),

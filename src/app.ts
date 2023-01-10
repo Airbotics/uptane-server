@@ -6,6 +6,7 @@ import config from '@airbotics-config'
 import { logger } from '@airbotics-core/logger';
 import admin from '@airbotics-modules/admin';
 import adminTeam from '@airbotics-modules/admin/teams';
+import adminAccount from '@airbotics-modules/admin/accounts';
 import treehub from '@airbotics-modules/treehub';
 import imageRepo from '@airbotics-modules/image-repo';
 import directorRepo from '@airbotics-modules/director-repo';
@@ -35,7 +36,7 @@ app.get('/', (req, res) => {
 // mount modules
 app.use('/api/v0/admin', admin);
 app.use('/api/v0/admin/team', adminTeam);
-
+app.use('/api/v0/admin/account', adminAccount);
 app.use('/api/v0/robot', robot);
 app.use('/api/v0/robot/director', directorRepo);
 app.use('/api/v0/robot/repo', imageRepo);

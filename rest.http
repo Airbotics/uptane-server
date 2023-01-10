@@ -2,21 +2,41 @@
 
 
 
-
 @BASE_URL=http://localhost:8001
 @API_VERSION=v0
 @TEAM_ID=dev
 @IMAGE=9523db36-30f7-4c66-8236-4d7c3326872c
 @ROBOT=heavy-eintopf-54
+@ORY_PROJECT_URL=https://happy-panini-fxyyyptasv.projects.oryapis.com
 
 
 # -----------------------------------------
 # Auth
-# Update this to work with REST client, bash for now
 # -----------------------------------------
 
-//Get from env
-dev_pwd=""
+# @name loginStart
+GET {{ORY_PROJECT_URL}}/self-service/login/api
+Content-Type: application/json
+
+@actionURL = {{loginStart.response.body.ui.action}}
+
+###
+
+# @name loginFinish
+POST {{actionURL}}
+Content-Type: application/json
+
+{
+    "identifier": "hello@airbotics.io",
+    "password": "#RjN>w+ngf+B\\_)G'd/r",
+    "method": "password"
+}
+
+
+@SESSION_TOKEN = {{loginFinish.response.body.session_token}}
+
+###
+
 
 #Start the auth flow
 actionUrl=$(\
@@ -32,8 +52,6 @@ sessionToken=$(\
         "$actionUrl" | jq -r '.session_token' \
 )
 
-#Make sure to set this after completing the flow
-@SESSION_TOKEN=nuUh0pyMFiBPopIq3DReAAVBCc8zBlcN
 
 
 # -----------------------------------------
@@ -49,6 +67,19 @@ GET {{BASE_URL}} HTTP/1.1
 
 ###
 GET {{BASE_URL}}/api/{{API_VERSION}}/api/v1/user_repo/targets.json HTTP/1.1
+
+
+
+
+
+PUT {{BASE_URL}}/api/{{API_VERSION}}/admin/account HTTP/1.1
+x-session-token: {{SESSION_TOKEN}}
+Content-Type: application/json
+
+{
+    "first_name": "dev",
+    "last_name": "tester",
+}
 
 
 ### create a team

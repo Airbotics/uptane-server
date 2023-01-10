@@ -8,9 +8,9 @@ import prisma from '@airbotics-core/postgres';
 import { robotManifestSchema } from './schemas';
 import { IRobotManifest, ITargetsImages, IEcuRegistrationPayload } from '@airbotics-types';
 import { toCanonical } from '@airbotics-core/utils';
-import { generateSnapshot, generateTargets, generateTimestamp, getLatestMetadataVersion } from '@airbotics-core/tuf';
+import { generateSignedSnapshot, generateSignedTargets, generateSignedTimestamp, getLatestMetadataVersion } from '@airbotics-core/tuf';
 import { ManifestErrors } from '@airbotics-core/consts/errors';
-import { ensureRobotAndNamespace } from '@airbotics-middlewares';
+import { mustBeRobot } from '@airbotics-middlewares';
 
 
 const router = express.Router();
@@ -26,19 +26,19 @@ const router = express.Router();
  * - no unknown ecu reports are included
  * - top level signature is signed by primary ecu private key
  * - each ecu report signature is signed by corresponding ecu private key
- * - each nonce in the ecu report has never been sent before
+ * - each report counter in the ecu report has never been sent before
  * - no ecu reports have expired
  * - no ecu reports have any reported attacks
  * - probably a few more in time..
  * 
  */
-export const robotManifestChecks = async (robotManifest: IRobotManifest, namespaceID: string, robotId: string, ecuSerials: string[]) => {
+export const robotManifestChecks = async (robotManifest: IRobotManifest, teamID: string, robotId: string, ecuSerials: string[]) => {
 
     //Do the async stuff needed for the checks functions here
     const robot = await prisma.robot.findUnique({
         where: {
-            namespace_id_id: {
-                namespace_id: namespaceID,
+            team_id_id: {
+                team_id: teamID,
                 id: robotId
             }
         },
@@ -57,7 +57,7 @@ export const robotManifestChecks = async (robotManifest: IRobotManifest, namespa
     try {
 
         for (const ecuSerial of ecuSerials) {
-            ecuPubKeys[ecuSerial] = await keyStorage.getKey(`${namespaceID}-${ecuSerial}-public`);
+            ecuPubKeys[ecuSerial] = await keyStorage.getKey(`${teamID}-${ecuSerial}-public`);
         }
 
     } catch (e) {
@@ -69,7 +69,9 @@ export const robotManifestChecks = async (robotManifest: IRobotManifest, namespa
         validateSchema: () => {
             const { error } = robotManifestSchema.validate(robotManifest);
 
-            if (error) throw (ManifestErrors.InvalidSchema);
+            if (error) {
+                throw (ManifestErrors.InvalidSchema);
+            }
 
             return checks;
         },
@@ -100,13 +102,8 @@ export const robotManifestChecks = async (robotManifest: IRobotManifest, namespa
 
         validateTopSignature: () => {
 
-            const hexsig = Buffer.from(robotManifest.signatures[0].sig, 'base64').toString('hex');
-            const verified: boolean = verifySignature({
-                signature: hexsig,
-                pubKey: ecuPubKeys[robotManifest.signed.primary_ecu_serial],
-                algorithm: 'RSA-SHA256',
-                data: toCanonical(robotManifest.signed)
-            });
+            // Note: should we attempt to verify signature from a manifest if it different to the configured signature scheme
+            const verified = verifySignature(toCanonical(robotManifest.signed), robotManifest.signatures[0].sig, ecuPubKeys[robotManifest.signed.primary_ecu_serial], { signatureScheme: config.TUF_SIGNATURE_SCHEME });
 
             if (!verified) throw (ManifestErrors.InvalidSignature)
 
@@ -116,39 +113,36 @@ export const robotManifestChecks = async (robotManifest: IRobotManifest, namespa
 
         validateReportSignatures: () => {
 
-            //NOTE: Its assumed each ecu version report is only signed by one key
+            // NOTE: Its assumed each ecu version report is only signed by one key
             for (const ecuSerial of ecuSerials) {
-                const hexsig = Buffer.from(robotManifest.signed.ecu_version_manifests[ecuSerial].signatures[0].sig, 'base64').toString('hex');
-                const verified = verifySignature({
-                    signature: hexsig,
-                    pubKey: ecuPubKeys[ecuSerial],
-                    algorithm: 'RSA-SHA256',
-                    data: toCanonical(robotManifest.signed.ecu_version_manifests[ecuSerial].signed)
-                });
 
-                if (!verified) throw (ManifestErrors.InvalidReportSignature);
+                const verified = verifySignature(toCanonical(robotManifest.signed.ecu_version_manifests[ecuSerial].signed), robotManifest.signed.ecu_version_manifests[ecuSerial].signatures[0].sig, ecuPubKeys[robotManifest.signed.primary_ecu_serial], { signatureScheme: config.TUF_SIGNATURE_SCHEME });
+
+                if (!verified) {
+                    console.log('breakding')
+                    throw (ManifestErrors.InvalidReportSignature);
+                }
 
             }
 
             return checks;
         },
 
-        // TODO rename this to report counter
-        validateNonces: () => {
-            //For each ecu version report, check if the nonce for that report has ever been 
-            //sent to us before in a previous manifest
+        validateReportCounter: () => {
+            // For each ecu version report, check if the report counter for that report has ever been 
+            // sent to us before in a previous manifest
             for (const ecuSerial of ecuSerials) {
 
-                const previouslySentNonces: number[] = [];
+                const previouslySentReportCounter: number[] = [];
 
                 for (const manifest of robot.robot_manifests) {
-                    //TODO fix typing
+                    // TODO fix typing
                     const fullManifest = manifest.value as any;
-                    previouslySentNonces.push(fullManifest['signed']['ecu_version_manifests'][ecuSerial]['signed']['report_counter']);
+                    previouslySentReportCounter.push(fullManifest['signed']['ecu_version_manifests'][ecuSerial]['signed']['report_counter']);
                 }
 
-                if (previouslySentNonces.includes(robotManifest.signed.ecu_version_manifests[ecuSerial].signed.report_counter)) {
-                    throw (ManifestErrors.InvalidReportNonce)
+                if (previouslySentReportCounter.includes(robotManifest.signed.ecu_version_manifests[ecuSerial].signed.report_counter)) {
+                    throw (ManifestErrors.InvalidReportCounter)
                 }
             }
 
@@ -236,9 +230,7 @@ const determineNewMetadataRequired = async (robotManifest: IRobotManifest, ecuSe
         */
         if (idx == -1) {
             logger.warn('ECU image is not in rollout');
-        }
-
-        else {
+        } else {
 
             /*
             The robot is reporting an ecu that is associated with a rollout
@@ -247,9 +239,8 @@ const determineNewMetadataRequired = async (robotManifest: IRobotManifest, ecuSe
             */
             if (rolloutsPerEcu[idx].acknowledged) {
                 logger.info('Metadata has already been generated for this ECUs image')
-            }
+            } else {
 
-            else {
                 if (rolloutsPerEcu[idx].image.sha256 !==
                     robotManifest.signed.ecu_version_manifests[ecuSerial].signed.installed_image.fileinfo.hashes.sha256) {
 
@@ -270,7 +261,7 @@ const determineNewMetadataRequired = async (robotManifest: IRobotManifest, ecuSe
  * We will generate the entite targets json from scratch and not try to compute which
  * of the ecus 1 - N ecus are different
  */
-const generateNewMetadata = async (namespace_id: string, robot_id: string, ecuSerials: string[]) => {
+const generateNewMetadata = async (team_id: string, robot_id: string, ecuSerials: string[]) => {
 
     //we're repeating ourselves.... will be refactored later
     const rolloutsPerEcu = await prisma.tmpEcuImages.findMany({
@@ -308,26 +299,26 @@ const generateNewMetadata = async (namespace_id: string, robot_id: string, ecuSe
             length: ecuRollout.image.size,
             hashes: {
                 sha256: ecuRollout.image.sha256,
-                sha512: ecuRollout.image.sha512,
+                // sha512: ecuRollout.image.sha512,
             }
         }
     }
 
 
     //determine new metadata versions
-    const newTargetsVersion = await getLatestMetadataVersion(namespace_id, TUFRepo.director, TUFRole.targets, robot_id) + 1;
-    const newSnapshotVersion = await getLatestMetadataVersion(namespace_id, TUFRepo.director, TUFRole.snapshot, robot_id) + 1;
-    const newTimestampVersion = await getLatestMetadataVersion(namespace_id, TUFRepo.director, TUFRole.timestamp, robot_id) + 1;
+    const newTargetsVersion = await getLatestMetadataVersion(team_id, TUFRepo.director, TUFRole.targets, robot_id) + 1;
+    const newSnapshotVersion = await getLatestMetadataVersion(team_id, TUFRepo.director, TUFRole.snapshot, robot_id) + 1;
+    const newTimestampVersion = await getLatestMetadataVersion(team_id, TUFRepo.director, TUFRole.timestamp, robot_id) + 1;
 
     //Read the keys for the director
-    const targetsKeyPair = await loadKeyPair(namespace_id, TUFRepo.director, TUFRole.targets);
-    const snapshotKeyPair = await loadKeyPair(namespace_id, TUFRepo.director, TUFRole.snapshot);
-    const timestampKeyPair = await loadKeyPair(namespace_id, TUFRepo.director, TUFRole.timestamp);
+    const targetsKeyPair = await loadKeyPair(team_id, TUFRepo.director, TUFRole.targets);
+    const snapshotKeyPair = await loadKeyPair(team_id, TUFRepo.director, TUFRole.snapshot);
+    const timestampKeyPair = await loadKeyPair(team_id, TUFRepo.director, TUFRole.timestamp);
 
     //Generate the new metadata
-    const targetsMetadata = generateTargets(config.TUF_TTL.IMAGE.TARGETS, newTargetsVersion, targetsKeyPair, targetsImages);
-    const snapshotMetadata = generateSnapshot(config.TUF_TTL.IMAGE.SNAPSHOT, newSnapshotVersion, snapshotKeyPair, targetsMetadata);
-    const timestampMetadata = generateTimestamp(config.TUF_TTL.IMAGE.TIMESTAMP, newTimestampVersion, timestampKeyPair, snapshotMetadata);
+    const targetsMetadata = generateSignedTargets(config.TUF_TTL.IMAGE.TARGETS, newTargetsVersion, targetsKeyPair, targetsImages);
+    const snapshotMetadata = generateSignedSnapshot(config.TUF_TTL.IMAGE.SNAPSHOT, newSnapshotVersion, snapshotKeyPair, targetsMetadata);
+    const timestampMetadata = generateSignedTimestamp(config.TUF_TTL.IMAGE.TIMESTAMP, newTimestampVersion, timestampKeyPair, snapshotMetadata);
 
     // perform db writes in transaction
     await prisma.$transaction(async tx => {
@@ -336,7 +327,7 @@ const generateNewMetadata = async (namespace_id: string, robot_id: string, ecuSe
         // prisma wants to be passed an `object` instead of our custom interface so we cast it
         await tx.metadata.create({
             data: {
-                namespace_id,
+                team_id,
                 repo: TUFRepo.director,
                 role: TUFRole.targets,
                 robot_id: robot_id,
@@ -348,7 +339,7 @@ const generateNewMetadata = async (namespace_id: string, robot_id: string, ecuSe
 
         await tx.metadata.create({
             data: {
-                namespace_id,
+                team_id,
                 repo: TUFRepo.director,
                 role: TUFRole.snapshot,
                 robot_id: robot_id,
@@ -360,7 +351,7 @@ const generateNewMetadata = async (namespace_id: string, robot_id: string, ecuSe
 
         await tx.metadata.create({
             data: {
-                namespace_id,
+                team_id,
                 repo: TUFRepo.director,
                 role: TUFRole.timestamp,
                 robot_id: robot_id,
@@ -389,12 +380,12 @@ const generateNewMetadata = async (namespace_id: string, robot_id: string, ecuSe
 /**
  * Process a manifest from a robot
  */
-router.put('/manifest', ensureRobotAndNamespace, async (req: Request, res) => {
+router.put('/manifest', mustBeRobot, async (req: Request, res) => {
 
     const manifest: IRobotManifest = req.body;
 
     const {
-        namespace_id,
+        team_id,
         robot_id
     } = req.robotGatewayPayload!;
 
@@ -407,13 +398,13 @@ router.put('/manifest', ensureRobotAndNamespace, async (req: Request, res) => {
     try {
 
         // Perform all of the checks
-        (await robotManifestChecks(manifest, namespace_id, robot_id, ecuSerials))
+        (await robotManifestChecks(manifest, team_id, robot_id, ecuSerials))
             .validatePrimaryECUReport()
             .validateSchema()
             .validateEcuRegistration()
             .validateTopSignature()
             .validateReportSignatures()
-            .validateNonces()
+            .validateReportCounter()
             // .validateTime()
             .validateAttacks()
 
@@ -430,10 +421,8 @@ router.put('/manifest', ensureRobotAndNamespace, async (req: Request, res) => {
 
         if (!updateRequired) {
             logger.info('processed manifest for robot and determined all ecus have already installed their latest images');
-        }
-
-        else {
-            await generateNewMetadata(namespace_id, robot_id, ecuSerials);
+        } else {
+            await generateNewMetadata(team_id, robot_id, ecuSerials);
             logger.info('processed manifest for robot and created new tuf metadata');
         }
 
@@ -453,7 +442,7 @@ router.put('/manifest', ensureRobotAndNamespace, async (req: Request, res) => {
         //Regardless of what happened above, lets save the sent manifest
         await prisma.robotManifest.create({
             data: {
-                namespace_id: namespace_id,
+                team_id: team_id,
                 robot_id: robot_id,
                 value: manifest as object,
                 valid: valid
@@ -473,18 +462,18 @@ router.put('/manifest', ensureRobotAndNamespace, async (req: Request, res) => {
  * TODO
  * - return error if ecu is already registered
  */
-router.post('/ecus', ensureRobotAndNamespace, async (req: Request, res) => {
+router.post('/ecus', mustBeRobot, async (req: Request, res) => {
 
     const payload: IEcuRegistrationPayload = req.body;
 
     const {
-        namespace_id,
+        team_id,
         robot_id
     } = req.robotGatewayPayload!;
 
     const createEcusData = payload.ecus.map(ecu => ({
         id: ecu.ecu_serial,
-        namespace_id,
+        team_id,
         robot_id,
         hwid: ecu.hardware_identifier,
         primary: ecu.ecu_serial === payload.primary_ecu_serial
@@ -494,7 +483,7 @@ router.post('/ecus', ensureRobotAndNamespace, async (req: Request, res) => {
     await prisma.$transaction(async tx => {
 
         for (const ecu of payload.ecus) {
-            await keyStorage.putKey(`${namespace_id}-${ecu.ecu_serial}-public`, ecu.clientKey.keyval.public);
+            await keyStorage.putKey(`${team_id}-${ecu.ecu_serial}-public`, ecu.clientKey.keyval.public);
         }
 
         await tx.ecu.createMany({
@@ -511,15 +500,15 @@ router.post('/ecus', ensureRobotAndNamespace, async (req: Request, res) => {
 
 
 /**
- * Fetch versioned role metadata in a namespace.
+ * Fetch versioned role metadata in a team.
  */
-router.get('/:version.:role.json', ensureRobotAndNamespace, async (req: Request, res) => {
+router.get('/:version.:role.json', mustBeRobot, async (req: Request, res) => {
 
     const version = Number(req.params.version);
     const role = req.params.role;
 
     const {
-        namespace_id,
+        team_id,
         robot_id
     } = req.robotGatewayPayload!;
 
@@ -528,7 +517,7 @@ router.get('/:version.:role.json', ensureRobotAndNamespace, async (req: Request,
     // include the robot_id as a clause
     const metadata = await prisma.metadata.findFirst({
         where: {
-            namespace_id,
+            team_id,
             repo: TUFRepo.director,
             role: role as TUFRole,
             version,
@@ -550,15 +539,15 @@ router.get('/:version.:role.json', ensureRobotAndNamespace, async (req: Request,
 
 
 /**
- * Fetch latest metadata in a namespace.
+ * Fetch latest metadata in a team.
  */
-router.get('/:role.json', ensureRobotAndNamespace, async (req: Request, res) => {
+router.get('/:role.json', mustBeRobot, async (req: Request, res) => {
 
     const role = req.params.role;
 
 
     const {
-        namespace_id,
+        team_id,
         robot_id
     } = req.robotGatewayPayload!;
 
@@ -567,7 +556,7 @@ router.get('/:role.json', ensureRobotAndNamespace, async (req: Request, res) => 
     // include the robot_id as a clause
     const metadata = await prisma.metadata.findMany({
         where: {
-            namespace_id,
+            team_id,
             repo: TUFRepo.director,
             role: req.params.role as TUFRole,
             ...(role !== TUFRole.root && { robot_id })

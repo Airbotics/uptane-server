@@ -24,7 +24,9 @@
         "strictNullChecks": true
     },
     "include": [
-        "./src/"
+        "./src/",
+        "./scripts/",
+        "./tests/"
     ],
     "ts-node": {
         "require": ["tsconfig-paths/register"]

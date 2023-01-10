@@ -1,11 +1,11 @@
 import dotenv from 'dotenv';
-import { EBlobStorageProvider, EKeyStorageProvider } from '@airbotics-core/consts';
+import { EBlobStorageProvider, EKeyStorageProvider, EKeyType, ESignatureScheme } from '@airbotics-core/consts';
 
 dotenv.config();
 
 const DEFAULT_CONN_STR = 'postgresql://user:password@localhost:5432/db?schema=public';
 
-// available time units are here: https://day.js.org/docs/en/manipulate/add#list-of-all-available-units
+
 // NOTE: it would be nice to use something like TOML here, but we'll just keep it js for now
 const config = {
 
@@ -26,13 +26,12 @@ const config = {
     // key storage and management
     KEY_STORAGE_PROVIDER: EKeyStorageProvider.Filesystem,                       // key storage provider to use
     KEYS_FS_STORAGE_DIR: './.keys',                                             // where private keys are stored when filesystem provider is being used
-    KEY_TYPE: 'rsa' as 'rsa',                                                   // the key type to use for all keys (more of a const that config for now...)
 
     // tuf
-    TUF_SPEC_VERSION: '1.0.30',                                                 // TUF spec we're using (more of a const that config for now...)
-    TUF_CONSISTENT_SNAPSHOT: true,                                              // whether we use consistent snapshots (more of a const that config for now...)
+    TUF_KEY_TYPE: EKeyType.Rsa,                                                 // key type to use for TUF
+    TUF_SIGNATURE_SCHEME: ESignatureScheme.RsassaPssSha256,                     // signature scheme to use for TUF (must correspond to key type above)
+    TUF_CONSISTENT_SNAPSHOT: false,                                             // whether we use consistent snapshots (more of a const that config for now...)
     TUF_EXPIRY_WINDOW: [3, 'hour'],                                             // if a TUF metadata is due to expiry within this number of <units> it will be resigned
-    TUF_TIME_FORMAT: 'YYYY-MM-DDTHH:mm:ss[Z]',
     TUF_TTL: {
         DIRECTOR: {
             ROOT: [365, 'day'],                                                 // expiry of director root metadata in days
@@ -70,7 +69,6 @@ const config = {
 
     // root ca
     ROOT_CA_TTL: [10, 'year'],                                                  // expiry of the root ca cert
-    ROOT_CA_CN: 'airbotics-root',                                               // common name of the root ca
 
 
 };

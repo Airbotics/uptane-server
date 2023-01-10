@@ -9,7 +9,7 @@ import {
 import { IKeyPair, ITargetsImages, ITargetsTUF } from '@airbotics-types';
 import { generateSlug } from 'random-word-slugs';
 import {
-    SEED_EXPIRES_AT, SEED_NAMESPACE_ID,
+    SEED_EXPIRES_AT, SEED_TEAM_ID,
     SEED_PRIMARY_ECU_ID, SEED_SECONDARY_ECU_ID
 } from '../consts';
 
@@ -48,7 +48,7 @@ const createImages = async () => {
         data: [
             {
                 id: primaryImageID,
-                namespace_id: SEED_NAMESPACE_ID,
+                team_id: SEED_TEAM_ID,
                 size: Buffer.byteLength(primaryImageBody, "utf-8"),
                 sha256: generateHash(primaryImageBody, { algorithm: 'SHA256' }),
                 sha512: generateHash(primaryImageBody, { algorithm: 'SHA512' }),
@@ -57,7 +57,7 @@ const createImages = async () => {
             },
             {
                 id: secondaryImageID,
-                namespace_id: SEED_NAMESPACE_ID,
+                team_id: SEED_TEAM_ID,
                 size: Buffer.byteLength(secondaryImageBody, "utf-8"),
                 sha256: generateHash(secondaryImageBody, { algorithm: 'SHA256' }),
                 sha512: generateHash(secondaryImageBody, { algorithm: 'SHA512' }),
@@ -75,30 +75,30 @@ const createImages = async () => {
 const createImageRepoMetadata = async () => {
 
     const targetKeyPair: IKeyPair = {
-        publicKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-image-targets-public`),
-        privateKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-image-targets-private`),
+        publicKey: await keyStorage.getKey(`${SEED_TEAM_ID}-image-targets-public`),
+        privateKey: await keyStorage.getKey(`${SEED_TEAM_ID}-image-targets-private`),
     }
 
     const snapshotKeyPair: IKeyPair = {
-        publicKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-image-snapshot-public`),
-        privateKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-image-snapshot-private`),
+        publicKey: await keyStorage.getKey(`${SEED_TEAM_ID}-image-snapshot-public`),
+        privateKey: await keyStorage.getKey(`${SEED_TEAM_ID}-image-snapshot-private`),
     }
 
     const timestampKeyPair: IKeyPair = {
-        publicKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-image-timestamp-public`),
-        privateKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-image-timestamp-private`),
+        publicKey: await keyStorage.getKey(`${SEED_TEAM_ID}-image-timestamp-public`),
+        privateKey: await keyStorage.getKey(`${SEED_TEAM_ID}-image-timestamp-private`),
     }
 
     // get new versions
-    const newTargetsVersion = await getLatestMetadataVersion(SEED_NAMESPACE_ID, TUFRepo.image, TUFRole.targets) + 1;
-    const newSnapshotVersion = await getLatestMetadataVersion(SEED_NAMESPACE_ID, TUFRepo.image, TUFRole.snapshot) + 1;
-    const newTimestampVersion = await getLatestMetadataVersion(SEED_NAMESPACE_ID, TUFRepo.image, TUFRole.timestamp) + 1;
+    const newTargetsVersion = await getLatestMetadataVersion(SEED_TEAM_ID, TUFRepo.image, TUFRole.targets) + 1;
+    const newSnapshotVersion = await getLatestMetadataVersion(SEED_TEAM_ID, TUFRepo.image, TUFRole.snapshot) + 1;
+    const newTimestampVersion = await getLatestMetadataVersion(SEED_TEAM_ID, TUFRepo.image, TUFRole.timestamp) + 1;
 
 
     //To construct the new targets metadata, we need to grab the latest version so we can
     //append the new targets to the previous list.
 
-    const latestTargets = await getLatestMetadata(SEED_NAMESPACE_ID, TUFRepo.image, TUFRole.targets);
+    const latestTargets = await getLatestMetadata(SEED_TEAM_ID, TUFRepo.image, TUFRole.targets);
     const targetsImages: ITargetsImages = latestTargets ? latestTargets.signed.targets : {};
 
 
@@ -131,7 +131,7 @@ const createImageRepoMetadata = async () => {
     await prisma.metadata.createMany({
         data: [
             {
-                namespace_id: SEED_NAMESPACE_ID,
+                team_id: SEED_TEAM_ID,
                 role: TUFRole.targets,
                 repo: TUFRepo.image,
                 version: newTargetsVersion,
@@ -139,7 +139,7 @@ const createImageRepoMetadata = async () => {
                 expires_at: targetsMetadata.signed.expires
             },
             {
-                namespace_id: SEED_NAMESPACE_ID,
+                team_id: SEED_TEAM_ID,
                 role: TUFRole.snapshot,
                 repo: TUFRepo.image,
                 version: newSnapshotVersion,
@@ -147,7 +147,7 @@ const createImageRepoMetadata = async () => {
                 expires_at: snapshotMetadata.signed.expires
             },
             {
-                namespace_id: SEED_NAMESPACE_ID,
+                team_id: SEED_TEAM_ID,
                 role: TUFRole.timestamp,
                 repo: TUFRepo.image,
                 version: newTimestampVersion,

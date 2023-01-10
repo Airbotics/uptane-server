@@ -6,16 +6,18 @@ import forge from 'node-forge';
 import readlineSync from 'readline-sync';
 import { keyStorage } from '../src/core/key-storage';
 import { blobStorage } from '../src/core/blob-storage';
-import { generateCertificate, ICertOpts } from '../src/core/crypto';
+import { generateCertificate, generateKeyPair, ICertOpts } from '../src/core/crypto';
 import {
-    RootBucket,
-    RootCACertObjId,
-    RootCAPrivateKeyId,
-    RootCAPublicKeyId,
-    GatewayCertObjId,
-    GatewayPrivateKeyId,
-    GatewayPublicKeyId
+    ROOT_BUCKET,
+    ROOT_CA_CERT_OBJ_ID,
+    Root_CA_PRIVATE_KEY_ID,
+    Root_CA_PUBLIC_KEY_ID,
+    GATEWAY_CERT_OBJ_ID,
+    GATEWAY_PRIVATE_KEY_ID,
+    GATEWAY_PUBLIC_KEY_ID,
+    EKeyType
 } from '../src/core/consts';
+import config from '../src/config';
 
 
 interface ICmd {
@@ -33,19 +35,19 @@ const createAllCerts: ICmd = {
         const CN: string = readlineSync.question('Enter the Common Name (CN): ');
 
         // generate key pair for root cert
-        const rootCaKeyPair = forge.pki.rsa.generateKeyPair(2048);
+        const rootCaKeyPair = generateKeyPair({ keyType: EKeyType.Rsa });
 
         // generate root cert
         const rootCaCert = generateCertificate(rootCaKeyPair);
 
         // generate key pair for gateway cert
-        const gatewayKeyPair = forge.pki.rsa.generateKeyPair(2048);
+        const gatewayKeyPair = generateKeyPair({ keyType: EKeyType.Rsa });
 
         // opts for gateway cert
         const opts: ICertOpts = {
             commonName: CN,
-            cert: rootCaCert,
-            keyPair: {
+            parentCert: rootCaCert,
+            parentKeyPair: {
                 privateKey: rootCaKeyPair.privateKey,
                 publicKey: rootCaKeyPair.publicKey
             }
@@ -55,14 +57,13 @@ const createAllCerts: ICmd = {
         const gatewayCert = generateCertificate(gatewayKeyPair, opts);
 
         // store everything
-        await blobStorage.createBucket(RootBucket);
-        await blobStorage.putObject(RootBucket, RootCACertObjId, forge.pki.certificateToPem(rootCaCert));
-        await blobStorage.putObject(RootBucket, GatewayCertObjId, forge.pki.certificateToPem(gatewayCert));
-        await keyStorage.putKey(RootCAPrivateKeyId, forge.pki.privateKeyToPem(rootCaKeyPair.privateKey));
-        await keyStorage.putKey(RootCAPublicKeyId, forge.pki.publicKeyToPem(rootCaKeyPair.publicKey));
-        await keyStorage.putKey(GatewayPrivateKeyId, forge.pki.privateKeyToPem(gatewayKeyPair.privateKey));
-        await keyStorage.putKey(GatewayPublicKeyId, forge.pki.publicKeyToPem(gatewayKeyPair.publicKey));
-
+        await blobStorage.createBucket(ROOT_BUCKET);
+        await blobStorage.putObject(ROOT_BUCKET, ROOT_CA_CERT_OBJ_ID, forge.pki.certificateToPem(rootCaCert));
+        await blobStorage.putObject(ROOT_BUCKET, GATEWAY_CERT_OBJ_ID, forge.pki.certificateToPem(gatewayCert));
+        await keyStorage.putKey(Root_CA_PRIVATE_KEY_ID, rootCaKeyPair.privateKey);
+        await keyStorage.putKey(Root_CA_PUBLIC_KEY_ID, rootCaKeyPair.publicKey);
+        await keyStorage.putKey(GATEWAY_PRIVATE_KEY_ID, gatewayKeyPair.privateKey);
+        await keyStorage.putKey(GATEWAY_PUBLIC_KEY_ID, gatewayKeyPair.publicKey);
 
     }
 };
@@ -73,12 +74,12 @@ const deleteAllCerts: ICmd = {
 
         console.log('Deleting root and gateway cert');
 
-        await blobStorage.deleteBucket(RootBucket);
+        await blobStorage.deleteBucket(ROOT_BUCKET);
 
-        await keyStorage.deleteKey(RootCAPrivateKeyId);
-        await keyStorage.deleteKey(RootCAPublicKeyId);
-        await keyStorage.deleteKey(GatewayPrivateKeyId);
-        await keyStorage.deleteKey(GatewayPublicKeyId);
+        await keyStorage.deleteKey(Root_CA_PRIVATE_KEY_ID);
+        await keyStorage.deleteKey(Root_CA_PUBLIC_KEY_ID);
+        await keyStorage.deleteKey(GATEWAY_PRIVATE_KEY_ID);
+        await keyStorage.deleteKey(GATEWAY_PUBLIC_KEY_ID);
 
     }
 };
@@ -102,7 +103,7 @@ const main = async () => {
     // run the command
     await commands[index].run();
 
-    console.log('So long');
+    console.log('Thanks for your time');
 
 }
 

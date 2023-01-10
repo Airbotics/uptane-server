@@ -1,12 +1,18 @@
 import { Request, Response, NextFunction } from 'express';
 import { ory } from '@airbotics-core/drivers/ory';
-import { IdentityApiGetIdentityRequest, IdentityApiListIdentitiesRequest, RelationshipApiGetRelationshipsRequest, RelationshipApiPatchRelationshipsRequest } from '@ory/client';
+import { IdentityApiGetIdentityRequest, RelationshipApiGetRelationshipsRequest, RelationshipApiPatchRelationshipsRequest } from '@ory/client';
 import { OryNamespaces, OryTeamRelations } from '@airbotics-core/consts';
 import { SuccessMessageResponse, BadResponse, SuccessJsonResponse } from '@airbotics-core/network/responses';
 import { logger } from '@airbotics-core/logger';
 import prisma from '@airbotics-core/postgres';
 import { ITeamDetail, OryIdentity } from 'src/types';
 import { auditEventEmitter } from '@airbotics-core/events';
+import { generateKeyPair } from '@airbotics-core/crypto';
+import config from '@airbotics-config';
+import { generateSignedRoot, generateSignedSnapshot, generateSignedTargets, generateSignedTimestamp } from '@airbotics-core/tuf';
+import { TUFRepo, TUFRole } from '@prisma/client';
+import { blobStorage } from '@airbotics-core/blob-storage';
+import { keyStorage } from '@airbotics-core/key-storage';
 
 
 /**
@@ -14,11 +20,16 @@ import { auditEventEmitter } from '@airbotics-core/events';
  * 
  * @description Performs the following:
  * 1. Create the team in our db
- * 2 Create two new relation tuples in ory
+ * 2. Creates bucket in blob storage to hold its blobs
+ * 3. Generates online TUF keys
+ * 4. Creates initial image and director root.json metadata files and saves them to the db.
+ * 5. Creates targets, snapshot and timestamp.json metadata files for the image repo
+ * 6 Create two new relation tuples in ory
  *  a) one to say that ory_id (requester) is the admin of the new team
  *  b) one to say any admins of the new team are also members of that team
  */
 export const createTeam = async (req: Request, res: Response, next: NextFunction) => {
+    
     const {
         name
     } = req.body;
@@ -27,7 +38,41 @@ export const createTeam = async (req: Request, res: Response, next: NextFunction
 
     try {
 
-        await prisma.$transaction(async tx => {
+        // generate 8 TUF key pairs, 4 top-level metadata keys for 2 repos
+        const imageRootKey = generateKeyPair({ keyType: config.TUF_KEY_TYPE });
+        const imageTargetsKey = generateKeyPair({ keyType: config.TUF_KEY_TYPE });
+        const imageSnapshotKey = generateKeyPair({ keyType: config.TUF_KEY_TYPE });
+        const imageTimestampKey = generateKeyPair({ keyType: config.TUF_KEY_TYPE });
+
+        const directorRootKey = generateKeyPair({ keyType: config.TUF_KEY_TYPE });
+        const directorTargetsKey = generateKeyPair({ keyType: config.TUF_KEY_TYPE });
+        const directorSnapshotKey = generateKeyPair({ keyType: config.TUF_KEY_TYPE });
+        const directorTimestampKey = generateKeyPair({ keyType: config.TUF_KEY_TYPE });
+
+        // create initial tuf metadata for TUF repos, we'll start them off at 1
+        const version = 1;
+
+        const directorRepoRoot = generateSignedRoot(config.TUF_TTL.DIRECTOR.ROOT, version,
+            directorRootKey,
+            directorTargetsKey,
+            directorSnapshotKey,
+            directorTimestampKey
+        );
+
+        const imageRepoRoot = generateSignedRoot(config.TUF_TTL.IMAGE.ROOT, version,
+            imageRootKey,
+            imageTargetsKey,
+            imageSnapshotKey,
+            imageTimestampKey
+        );
+
+        const imageRepoTargets = generateSignedTargets(config.TUF_TTL.IMAGE.TARGETS, version, imageTargetsKey, {});
+
+        const imageRepoSnapshot = generateSignedSnapshot(config.TUF_TTL.IMAGE.SNAPSHOT, version, imageSnapshotKey, imageRepoTargets);
+
+        const imageRepoTimestamp = generateSignedTimestamp(config.TUF_TTL.IMAGE.TIMESTAMP, version, imageTimestampKey, imageRepoSnapshot);
+
+        const newTeam = await prisma.$transaction(async tx => {
 
             //Create the team in our db
             const team = await tx.team.create({
@@ -35,6 +80,93 @@ export const createTeam = async (req: Request, res: Response, next: NextFunction
                     name: name
                 }
             });
+
+            // image repo root.json
+            await tx.metadata.create({
+                data: {
+                    team_id: team.id,
+                    repo: TUFRepo.image,
+                    role: TUFRole.root,
+                    version,
+                    value: imageRepoRoot as object,
+                    expires_at: imageRepoRoot.signed.expires
+                }
+            });
+
+            // image repo targets.json
+            await tx.metadata.create({
+                data: {
+                    team_id: team.id,
+                    repo: TUFRepo.image,
+                    role: TUFRole.targets,
+                    version,
+                    value: imageRepoTargets as object,
+                    expires_at: imageRepoTargets.signed.expires
+                }
+            });
+
+            // image repo snapshot.json
+            await tx.metadata.create({
+                data: {
+                    team_id: team.id,
+                    repo: TUFRepo.image,
+                    role: TUFRole.snapshot,
+                    version,
+                    value: imageRepoSnapshot as object,
+                    expires_at: imageRepoSnapshot.signed.expires
+                }
+            });
+
+            // image repo timestamp.json
+            await tx.metadata.create({
+                data: {
+                    team_id: team.id,
+                    repo: TUFRepo.image,
+                    role: TUFRole.timestamp,
+                    version,
+                    value: imageRepoTimestamp as object,
+                    expires_at: imageRepoTimestamp.signed.expires
+                }
+            });
+
+            // director repo root.json
+            await tx.metadata.create({
+                data: {
+                    team_id: team.id,
+                    repo: TUFRepo.director,
+                    role: TUFRole.root,
+                    version,
+                    value: directorRepoRoot as object,
+                    expires_at: directorRepoRoot.signed.expires
+                }
+            });
+
+            // create bucket in blob storage
+            await blobStorage.createBucket(team.id);
+
+            // store image repo private keys
+            await keyStorage.putKey(`${team.id}-image-root-private`, imageRootKey.privateKey);
+            await keyStorage.putKey(`${team.id}-image-targets-private`, imageTargetsKey.privateKey);
+            await keyStorage.putKey(`${team.id}-image-snapshot-private`, imageSnapshotKey.privateKey);
+            await keyStorage.putKey(`${team.id}-image-timestamp-private`, imageTimestampKey.privateKey);
+
+            // store image repo public keys
+            await keyStorage.putKey(`${team.id}-image-root-public`, imageRootKey.publicKey);
+            await keyStorage.putKey(`${team.id}-image-targets-public`, imageTargetsKey.publicKey);
+            await keyStorage.putKey(`${team.id}-image-snapshot-public`, imageSnapshotKey.publicKey);
+            await keyStorage.putKey(`${team.id}-image-timestamp-public`, imageTimestampKey.publicKey);
+
+            // store director repo private keys
+            await keyStorage.putKey(`${team.id}-director-root-private`, directorRootKey.privateKey);
+            await keyStorage.putKey(`${team.id}-director-targets-private`, directorTargetsKey.privateKey);
+            await keyStorage.putKey(`${team.id}-director-snapshot-private`, directorSnapshotKey.privateKey);
+            await keyStorage.putKey(`${team.id}-director-timestamp-private`, directorTimestampKey.privateKey);
+
+            // store director repo public keys
+            await keyStorage.putKey(`${team.id}-director-root-public`, directorRootKey.publicKey);
+            await keyStorage.putKey(`${team.id}-director-targets-public`, directorTargetsKey.publicKey);
+            await keyStorage.putKey(`${team.id}-director-snapshot-public`, directorSnapshotKey.publicKey);
+            await keyStorage.putKey(`${team.id}-director-timestamp-public`, directorTimestampKey.publicKey);
 
             //Create the ory relationships
             const relationsParams: RelationshipApiPatchRelationshipsRequest = {
@@ -67,22 +199,28 @@ export const createTeam = async (req: Request, res: Response, next: NextFunction
             //returns a 201 on success
             await ory.relations.patchRelationships(relationsParams);
 
+            return team;
+
         });
 
         auditEventEmitter.emit({
-            actor: oryID,
+            actor_id: oryID,
+            team_id: newTeam.id,
             action: 'create_team',
         });
 
         logger.info('created a team');
-        return new SuccessMessageResponse(res, 'A new team has been created');
+        return new SuccessJsonResponse(res, newTeam);
 
     } catch (error) {
+        console.log(error);
+        
         logger.error('A user was unable to create a new team');
         return new BadResponse(res, 'Unable to create a new team!')
     }
 
 }
+
 
 /**
  * Lists all teams a requester belongs to. 
@@ -113,6 +251,9 @@ export const listTeams = async (req: Request, res: Response, next: NextFunction)
                 id: {
                     in: teamIDs
                 }
+            },
+            orderBy: {
+                created_at: 'desc'
             }
         });
 
@@ -204,7 +345,7 @@ export const listTeamMembers = async (req: Request, res: Response, next: NextFun
  */
 export const updateTeam = async (req: Request, res: Response, next: NextFunction) => {
 
-    const teamID = req.headers['air-team-id'];
+    const teamID = req.headers['air-team-id']!;
 
     const {
         name
@@ -228,7 +369,8 @@ export const updateTeam = async (req: Request, res: Response, next: NextFunction
         };
 
         auditEventEmitter.emit({
-            actor: req.oryIdentity!.traits.id,
+            actor_id: req.oryIdentity!.traits.id,
+            team_id: teamID,
             action: 'update_team',
         })
 

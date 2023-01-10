@@ -1,10 +1,39 @@
 # vs code extension to make http requests easily
 
-@BASE_URL=http://localhost:8002
+
+
+
+@BASE_URL=http://localhost:8001
 @API_VERSION=v0
-@NAMESPACE=16b814bf-504f-4fe4-bcd3-6b38065e170c
+@TEAM_ID=dev
 @IMAGE=9523db36-30f7-4c66-8236-4d7c3326872c
-@ROBOT=joyous-franzbroetchen-196
+@ROBOT=heavy-eintopf-54
+
+
+# -----------------------------------------
+# Auth
+# Update this to work with REST client, bash for now
+# -----------------------------------------
+
+//Get from env
+dev_pwd=""
+
+#Start the auth flow
+actionUrl=$(\
+  curl -s -X GET -H "Accept: application/json" \
+    "https://dazzling-raman-bd5bt188g5.projects.oryapis.com/self-service/login/api" \
+    | jq -r '.ui.action'\
+)
+
+#Complete the flow and save the session token
+sessionToken=$(\
+    curl -s -X POST -H  "Accept: application/json" -H "Content-Type: application/json" \
+        -d '{"identifier": "hello@airbotics.io", "password": "'$dev_pwd'", "method": "password"}' \
+        "$actionUrl" | jq -r '.session_token' \
+)
+
+#Make sure to set this after completing the flow
+@SESSION_TOKEN=nuUh0pyMFiBPopIq3DReAAVBCc8zBlcN
 
 
 # -----------------------------------------
@@ -14,58 +43,68 @@
 ### healthcheck
 GET {{BASE_URL}} HTTP/1.1
 
-
-
 # -----------------------------------------
 # Admin
 # -----------------------------------------
 
-### create a namespace
-POST {{BASE_URL}}/api/{{API_VERSION}}/admin/namespaces HTTP/1.1
+###
+GET {{BASE_URL}}/api/{{API_VERSION}}/api/v1/user_repo/targets.json HTTP/1.1
 
 
-### list namespaces
-GET {{BASE_URL}}/api/{{API_VERSION}}/admin/namespaces HTTP/1.1
-
-
-### delete a namespace
-DELETE {{BASE_URL}}/api/{{API_VERSION}}/admin/namespaces/{{NAMESPACE}} HTTP/1.1
-
-
-### create provisioning credentials
-GET {{BASE_URL}}/api/{{API_VERSION}}/admin/namespaces/{{NAMESPACE}}/provisioning-credentials HTTP/1.1
-
-
-
-### create a rollout
-POST {{BASE_URL}}/api/{{API_VERSION}}/admin/namespaces/{{NAMESPACE}}/rollouts HTTP/1.1
+### create a team
+POST {{BASE_URL}}/api/{{API_VERSION}}/team HTTP/1.1
+x-session-token: {{SESSION_TOKEN}}
 Content-Type: application/json
 
 {
-    "ecu_id": "f4cd512d6d731356611cfe31699c4a8ef44a4c8cfd627ade57b22ab33ad53aae",
-    "image_id": "80d0bc8c-2ade-4a6f-a2bc-ea8963dc74cf"
+    "name": "test"
+}
+
+### list teams
+GET {{BASE_URL}}/api/{{API_VERSION}}/team HTTP/1.1
+x-session-token: {{SESSION_TOKEN}}
+air-team-id: {{TEAM_ID}}
+
+### delete a team
+DELETE {{BASE_URL}}/api/{{API_VERSION}}/admin/team HTTP/1.1
+x-session-token: {{SESSION_TOKEN}}
+air-team-id: {{TEAM_ID}}
+
+### create provisioning credentials
+POST {{BASE_URL}}/api/{{API_VERSION}}/admin/provisioning-credentials HTTP/1.1
+
+
+### list provisioning credentials
+GET {{BASE_URL}}/api/{{API_VERSION}}/admin/{{TEAM_ID}}/provisioning-credentials HTTP/1.1
+
+
+### create a rollout
+POST {{BASE_URL}}/api/{{API_VERSION}}/admin/{{TEAM_ID}}/rollouts HTTP/1.1
+Content-Type: application/json
+
+{
+    "ecu_id": "8b8a77337315378fbe40381b2c2658daec780e1a78b7d7b6feea8e2788098e7e",
+    "image_id": "9b46eec9-6482-44d2-8b6c-41297bf454bd"
 }
 
 ### list robots
-GET {{BASE_URL}}/api/{{API_VERSION}}/director/{{NAMESPACE}}/robots HTTP/1.1
+GET {{BASE_URL}}/api/{{API_VERSION}}/admin/{{TEAM_ID}}/robots HTTP/1.1
 
 ### get a single robot
-GET {{BASE_URL}}/api/{{API_VERSION}}/director/{{NAMESPACE}}/robots/{{ROBOT}} HTTP/1.1
-
+GET {{BASE_URL}}/api/{{API_VERSION}}/admin/{{TEAM_ID}}/robots/{{ROBOT}} HTTP/1.1
 
 ### delete a robot
-DELETE {{BASE_URL}}/api/{{API_VERSION}}/director/{{NAMESPACE}}/robots/{{ROBOT}} HTTP/1.1
+DELETE {{BASE_URL}}/api/{{API_VERSION}}/admin/{{TEAM_ID}}/robots/{{ROBOT}} HTTP/1.1
 
 
 ### upload an image
-POST {{BASE_URL}}/api/{{API_VERSION}}/admin/{{NAMESPACE}}/images?hwids=some-hw-id,two-hwid HTTP/1.1
+POST {{BASE_URL}}/api/{{API_VERSION}}/admin/{{TEAM_ID}}/images?hwids=some-hw-id,two-hwid HTTP/1.1
 Content-Type: application/octet-stream
 
 this is a sample image 4
 
-
 ### list images
-GET {{BASE_URL}}/api/{{API_VERSION}}/image/{{NAMESPACE}}/images HTTP/1.1
+GET {{BASE_URL}}/api/{{API_VERSION}}/admin/{{TEAM_ID}}/images HTTP/1.1
 
 
 
@@ -74,11 +113,8 @@ GET {{BASE_URL}}/api/{{API_VERSION}}/image/{{NAMESPACE}}/images HTTP/1.1
 # -----------------------------------------
 
 ### get versioned metadata
-GET {{BASE_URL}}/api/{{API_VERSION}}/director/{{NAMESPACE}}/robots/{{ROBOT}}/1.targets.json HTTP/1.1
+GET {{BASE_URL}}/api/{{API_VERSION}}/director/{{TEAM_ID}}/robots/{{ROBOT}}/1.targets.json HTTP/1.1
 
-
-### get latest metadata
-GET {{BASE_URL}}/api/{{API_VERSION}}/director/{{NAMESPACE}}/robots/{{ROBOT}}/targets.json HTTP/1.1
 
 
 
@@ -87,23 +123,20 @@ GET {{BASE_URL}}/api/{{API_VERSION}}/director/{{NAMESPACE}}/robots/{{ROBOT}}/tar
 # -----------------------------------------
 
 ### get metadata
-GET {{BASE_URL}}/api/{{API_VERSION}}/image/{{NAMESPACE}}/targets.json HTTP/1.1
-
-
-### get timestamp
-GET {{BASE_URL}}/api/{{API_VERSION}}/image/{{NAMESPACE}}/timestamp.json HTTP/1.1
+GET {{BASE_URL}}/api/{{API_VERSION}}/robot/repo/root.json HTTP/1.1
+air-client-id: {{ROBOT}}
 
 
 ### download image with image id only
-GET {{BASE_URL}}/api/{{API_VERSION}}/image/{{NAMESPACE}}/images/{{IMAGE}} HTTP/1.1
+GET {{BASE_URL}}/api/{{API_VERSION}}/image/{{TEAM_ID}}/images/{{IMAGE}} HTTP/1.1
 
 
 ### download image with sha256 and image id
-GET {{BASE_URL}}/api/{{API_VERSION}}/image/{{NAMESPACE}}/images/e317b3f3501466ae189499652d5c4d2cc825444efb38c68a6e4df79f6b8beaa0.{{IMAGE}} HTTP/1.1
+GET {{BASE_URL}}/api/{{API_VERSION}}/image/{{TEAM_ID}}/images/e317b3f3501466ae189499652d5c4d2cc825444efb38c68a6e4df79f6b8beaa0.{{IMAGE}} HTTP/1.1
 
 
 ### download image with sha512 and image id
-GET {{BASE_URL}}/api/{{API_VERSION}}/image/{{NAMESPACE}}/images/021a31d187c51c86dda1a3b4ae19e429d32452218c7dd5a145e84ea51718067bc005747b344679d86233f06134e873cc0f85e470a6282e53720eef6c8c9936f3.{{IMAGE}} HTTP/1.1
+GET {{BASE_URL}}/api/{{API_VERSION}}/image/{{TEAM_ID}}/images/021a31d187c51c86dda1a3b4ae19e429d32452218c7dd5a145e84ea51718067bc005747b344679d86233f06134e873cc0f85e470a6282e53720eef6c8c9936f3.{{IMAGE}} HTTP/1.1
 
 
 
@@ -114,12 +147,12 @@ GET {{BASE_URL}}/api/{{API_VERSION}}/image/{{NAMESPACE}}/images/021a31d187c51c86
 # -----------------------------------------
 
 ### get ostree config
-GET {{BASE_URL}}/api/{{API_VERSION}}/treehub/{{NAMESPACE}}/config HTTP/1.1
+GET {{BASE_URL}}/api/{{API_VERSION}}/treehub/{{TEAM_ID}}/config HTTP/1.1
 
 
 
 ### upload a summary
-PUT {{BASE_URL}}/api/{{API_VERSION}}/treehub/{{NAMESPACE}}/summary HTTP/1.1
+PUT {{BASE_URL}}/api/{{API_VERSION}}/treehub/{{TEAM_ID}}/summary HTTP/1.1
 Content-Type: application/octet-stream
 
 this is a sample summary
@@ -127,12 +160,12 @@ this is a sample summary
 
 
 ### download a summary
-GET {{BASE_URL}}/api/{{API_VERSION}}/treehub/{{NAMESPACE}}/summary HTTP/1.1
+GET {{BASE_URL}}/api/{{API_VERSION}}/treehub/{{TEAM_ID}}/summary HTTP/1.1
 
 
 
 ### upload a object
-PUT {{BASE_URL}}/api/{{API_VERSION}}/treehub/{{NAMESPACE}}/objects/25/1dce54d8562166b23d69dd697ee5c136691478f4ae02787c2723fb66126cfc.commit HTTP/1.1
+PUT {{BASE_URL}}/api/{{API_VERSION}}/treehub/{{TEAM_ID}}/objects/25/1dce54d8562166b23d69dd697ee5c136691478f4ae02787c2723fb66126cfc.commit HTTP/1.1
 Content-Type: application/octet-stream
 
 this is a sample ostree object
@@ -140,12 +173,12 @@ this is a sample ostree object
 
 
 ### download a object
-GET {{BASE_URL}}/api/{{API_VERSION}}/treehub/{{NAMESPACE}}/objects/24/1dce54d8562166b23d69dd697ee5c136691478f4ae02787c2723fb66126cfc.commit HTTP/1.1
+GET {{BASE_URL}}/api/{{API_VERSION}}/treehub/{{TEAM_ID}}/objects/24/1dce54d8562166b23d69dd697ee5c136691478f4ae02787c2723fb66126cfc.commit HTTP/1.1
 
 
 
 ### upload a ref
-PUT {{BASE_URL}}/api/{{API_VERSION}}/treehub/{{NAMESPACE}}/refs/head/main HTTP/1.1
+PUT {{BASE_URL}}/api/{{API_VERSION}}/treehub/{{TEAM_ID}}/refs/head/main HTTP/1.1
 Content-Type: text/plain
 
 251dce54d8562166b23d69dd697ee5c136691478f4ae02787c2723fb66126cfc
@@ -153,5 +186,5 @@ Content-Type: text/plain
 
 
 ### get a ref
-GET {{BASE_URL}}/api/{{API_VERSION}}/treehub/{{NAMESPACE}}/refs/head/main HTTP/1.1
+GET {{BASE_URL}}/api/{{API_VERSION}}/treehub/{{TEAM_ID}}/refs/head/main HTTP/1.1
 

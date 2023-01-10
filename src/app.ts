@@ -5,6 +5,7 @@ import schedule from 'node-schedule';
 import config from '@airbotics-config'
 import { logger } from '@airbotics-core/logger';
 import admin from '@airbotics-modules/admin';
+import adminTeam from '@airbotics-modules/admin/teams';
 import treehub from '@airbotics-modules/treehub';
 import imageRepo from '@airbotics-modules/image-repo';
 import directorRepo from '@airbotics-modules/director-repo';
@@ -33,11 +34,14 @@ app.get('/', (req, res) => {
 
 // mount modules
 app.use('/api/v0/admin', admin);
+app.use('/api/v0/admin/team', adminTeam);
+
 app.use('/api/v0/robot', robot);
 app.use('/api/v0/robot/director', directorRepo);
 app.use('/api/v0/robot/repo', imageRepo);
 app.use('/api/v0/treehub', treehub);
 app.use('/api/v0/team', team);
+app.use('/api/v0/robot/treehub', treehub);
 
 
 // optionally mount a background worker in this process, if it has been configured

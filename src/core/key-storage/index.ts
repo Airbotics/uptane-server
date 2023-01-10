@@ -5,12 +5,12 @@ import { FilesystemProvider } from './fs-provider';
 import config from '@airbotics-config';
 
 /**
- * Loads a key pair for a given repo and role in a namespace from storage
+ * Loads a key pair for a given repo and role in a team from storage
  */
-export const loadKeyPair = async (namespace_id: string, repo: TUFRepo, role: TUFRole): Promise<IKeyPair> => {
+export const loadKeyPair = async (team_id: string, repo: TUFRepo, role: TUFRole): Promise<IKeyPair> => {
     return {
-        privateKey: await keyStorage.getKey(`${namespace_id}-${repo}-${role}-private`),
-        publicKey: await keyStorage.getKey(`${namespace_id}-${repo}-${role}-public`)
+        privateKey: await keyStorage.getKey(`${team_id}-${repo}-${role}-private`),
+        publicKey: await keyStorage.getKey(`${team_id}-${repo}-${role}-public`)
     }
 }
 

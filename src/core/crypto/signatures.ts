@@ -1,53 +1,62 @@
-import crypto, { createSign } from 'crypto';
+import forge from 'node-forge';
+import { EKeyType, ESignatureScheme } from '@airbotics-core/consts';
 
 
-/**
- * Generates an RSA signature.
- */
-const generateRsaSignature = (toSign: string, privateKey: string): string => {
-
-    const signer = createSign('RSA-SHA256');
-    signer.write(toSign, 'utf-8');
-    signer.end();
-
-    return signer.sign({
-        key: privateKey,
-        padding: crypto.constants.RSA_PKCS1_PSS_PADDING,
-        saltLength: crypto.constants.RSA_PSS_SALTLEN_DIGEST
-    }, 'base64');
-
+interface IGenerateSignatureOpts {
+    keyType: EKeyType;
 }
 
-
 /**
- * Signs a string using a private key.
+ * Signs a string using a private key and returns it in base64.
  */
-export const generateSignature = (keyType: 'rsa', toSign: string, privateKey: string): string => {
+export const generateSignature = (toSign: string, privateKey: string, { keyType }: IGenerateSignatureOpts): string => {
+
     switch (keyType) {
-        case 'rsa': return generateRsaSignature(toSign, privateKey);
-        default: throw new Error('unsupported signature');
+
+        case EKeyType.Rsa:
+
+            const digest = forge.md.sha256.create();
+            digest.update(toSign, 'utf8');
+
+            const pss = forge.pss.create({
+                md: forge.md.sha256.create(),
+                mgf: forge.mgf.mgf1.create(forge.md.sha256.create()),
+                saltLength: digest.digestLength
+            });
+
+            return forge.util.encode64(forge.pki.privateKeyFromPem(privateKey).sign(digest, pss));
+
+        default: throw new Error('unsupported key type');
     }
+
 }
 
 
-type VerifySigParams = {
-    signature: string;
-    pubKey: string;
-    algorithm: 'RSA-SHA256';
-    data: string;
+interface IVerifySignatureOpts {
+    signatureScheme: ESignatureScheme;
 }
 
-export const verifySignature = (params: VerifySigParams): boolean => {
+/**
+ * Verifies a base64 signature over a payload string using a public key and returns a boolean.
+ */
+export const verifySignature = (payload: string, signature: string, publicKey: string, { signatureScheme }: IVerifySignatureOpts): boolean => {
 
-    return crypto.verify(
-        params.algorithm,
-        Buffer.from(params.data, 'utf-8'),
-        {
-            key: params.pubKey,
-            padding: crypto.constants.RSA_PKCS1_PSS_PADDING,
-            saltLength: crypto.constants.RSA_PSS_SALTLEN_DIGEST,
-        },
-        Buffer.from(params.signature, 'hex')        
-    )
+    switch (signatureScheme) {
+
+        case ESignatureScheme.RsassaPssSha256:
+
+            const digest = forge.md.sha256.create();
+            digest.update(payload, 'utf8');
+
+            const pss = forge.pss.create({
+                md: forge.md.sha256.create(),
+                mgf: forge.mgf.mgf1.create(forge.md.sha256.create()),
+                saltLength: digest.digestLength
+            });
+
+            return forge.pki.publicKeyFromPem(publicKey).verify(digest.digest().getBytes(), forge.util.decode64(signature), pss);
+
+        default: throw new Error('unsupported key type');
+    }
 
 }

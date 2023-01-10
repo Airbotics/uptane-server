@@ -49,8 +49,23 @@ model Team {
     ecus                Ecu[]
     robot_manifests     RobotManifest[]
     network_reports     NetworkReport[]
+    creds               ProvisioningCredentials[]
 
     @@map("teams")
+}
+
+
+// provisioning credentials
+// TODO add in the account downloaded it
+model ProvisioningCredentials {
+    id                  String          @id @default(uuid()) @unique
+    team_id             String
+    created_at          DateTime        @default(now())
+
+    team                Team            @relation(fields: [team_id], references: [id], onDelete: Cascade)
+
+    @@unique([team_id, id])
+    @@map("provisioning_credentials")
 }
 
 
@@ -58,13 +73,12 @@ model Team {
 model Image {
     id                  String          @id @default(uuid()) @unique
     team_id             String
+    name                String                                  // human readable name
     size                Int                                     // size of image in bytes
     sha256              String          @unique                 // sha256 hash of image
-    sha512              String          @unique                 // sha512 hash of image
     hwids               String[]                                // types/ids of ecu hardware this image can be deployed to
     status              UploadStatus                            // uploading or uploaded
-    format              ImageFormat                             // type of image
-
+    format              ImageFormat                             // type of image (binary or ostree)
     created_at          DateTime        @default(now())
     updated_at          DateTime        @updatedAt
 
@@ -133,7 +147,6 @@ model Ecu {
     robot_id            String
     hwid                String                              // hardware type/id of this ecu
     primary             Boolean                             // whether this ecu is the primary, only one per robot is supported
-
     created_at          DateTime        @default(now())
     updated_at          DateTime        @updatedAt
 
@@ -148,17 +161,13 @@ model Ecu {
 }
 
 // a network report from a robot
-// NOTE we could include the id of the ecu that sent it, but it will likely
-// always be the primary, and the primary will never change
 model NetworkReport {
     id                  String          @id @default(uuid()) @unique
     team_id             String
     robot_id            String
-
     hostname            String?
     local_ipv4          String?
     mac                 String?
-
     created_at          DateTime        @default(now())
     updated_at          DateTime        @updatedAt
 
@@ -178,7 +187,6 @@ model RobotManifest {
     robot_id            String
     value               Json            // holds entire signed manifest
     valid               Boolean
-
     created_at          DateTime        @default(now())
 
     team                Team            @relation(fields: [team_id], references: [id], onDelete: Cascade)
@@ -214,7 +222,6 @@ model Object {
     team_id             String
     size                Int                                     // size of object in bytes
     status              UploadStatus
-
     created_at          DateTime        @default(now())
     updated_at          DateTime        @updatedAt
 
@@ -231,7 +238,6 @@ model Object {
 model TmpEcuImages {
     ecu_id              String
     image_id            String
-
     created_at          DateTime        @default(now())
     updated_at          DateTime        @updatedAt
     acknowledged        Boolean         @default(false)

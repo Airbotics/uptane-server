@@ -4,18 +4,18 @@ We like to use AWS and s3 for storing blobs. We tend to use [localstack](https:/
 
 ### Bucket layout
 
-Buckets ids are the same ids used for namespaces. Within a bucket we two types of objects, images and treehub objects. Their object ids are the object type, followed by a slash, followed by the actual id of the object.
+Buckets ids are the same ids used for teams. Within a bucket we two types of objects, images and treehub objects. Their object ids are the object type, followed by a slash, followed by the actual id of the object.
 
 | <- bucket id -> | <- object id ->    |
 | --------------- | ------------------ |
-| \<namespace>     | /images/\<image-id> |
-| \<namespace>     | /images/\<image-id> |
+| \<team-id>     | /images/\<image-id> |
+| \<team-id>     | /images/\<image-id> |
 
 
 Layout:
 
 ```
-├── <namespace>
+├── <team-id>
 │   ├── images
 │   │   └── <image-id>
 │   ├── treehub

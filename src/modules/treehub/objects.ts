@@ -1,8 +1,9 @@
-import express from 'express';
+import express, {Request} from 'express';
 import { UploadStatus } from '@prisma/client';
 import { logger } from '@airbotics-core/logger';
 import { prisma } from '@airbotics-core/postgres';
 import { blobStorage } from '@airbotics-core/blob-storage';
+import { mustBeRobot } from 'src/middlewares';
 
 const router = express.Router();
 
@@ -11,9 +12,9 @@ const router = express.Router();
  * 
  * Will store in s3 or local filesystem depending on config.
  */
-router.post('/:namespace/objects/:prefix/:suffix', express.raw({ type: '*/*', limit: '512mb' }), async (req, res) => {
+router.post('/:team_id/objects/:prefix/:suffix', express.raw({ type: '*/*', limit: '512mb' }), async (req, res) => {
 
-    const namespace_id = req.params.namespace;
+    const teamID = req.params.team_id;
     const prefix = req.params.prefix;
     const suffix = req.params.suffix;
     const content = req.body;
@@ -27,14 +28,14 @@ router.post('/:namespace/objects/:prefix/:suffix', express.raw({ type: '*/*', li
         return res.status(400).end();
     }
 
-    const namespaceCount = await prisma.namespace.count({
+    const teamCount = await prisma.team.count({
         where: {
-            id: namespace_id
+            id: teamID
         }
     });
 
-    if (namespaceCount === 0) {
-        logger.warn('could not upload ostree object because namespace does not exist');
+    if (teamCount === 0) {
+        logger.warn('could not upload ostree object because team does not exist');
         return res.status(400).send('could not upload ostree object');
     }
 
@@ -43,7 +44,7 @@ router.post('/:namespace/objects/:prefix/:suffix', express.raw({ type: '*/*', li
 
         await tx.object.upsert({
             create: {
-                namespace_id,
+                team_id: teamID,
                 object_id,
                 size,
                 status: UploadStatus.uploading
@@ -53,19 +54,19 @@ router.post('/:namespace/objects/:prefix/:suffix', express.raw({ type: '*/*', li
                 status: UploadStatus.uploading
             },
             where: {
-                namespace_id_object_id: {
-                    namespace_id,
+                team_id_object_id: {
+                    team_id: teamID,
                     object_id
                 }
             }
         });
 
-        await blobStorage.putObject(namespace_id, `treehub/${prefix}/${suffix}`, content);
+        await blobStorage.putObject(teamID, `treehub/${prefix}/${suffix}`, content);
 
         await tx.object.update({
             where: {
-                namespace_id_object_id: {
-                    namespace_id,
+                team_id_object_id: {
+                    team_id: teamID,
                     object_id
                 }
             },
@@ -89,9 +90,9 @@ router.post('/:namespace/objects/:prefix/:suffix', express.raw({ type: '*/*', li
  * Note: this does not directly interface with blob storage, instead it checks
  * the record of it in Postgres. This assumes they are in sync.
  */
-router.head('/:namespace/objects/:prefix/:suffix', async (req, res) => {
+router.head('/:team_id/objects/:prefix/:suffix', async (req, res) => {
 
-    const namespace_id = req.params.namespace;
+    const teamID = req.params.team_id;
     const prefix = req.params.prefix;
     const suffix = req.params.suffix;
     const object_id = prefix + suffix;
@@ -99,8 +100,8 @@ router.head('/:namespace/objects/:prefix/:suffix', async (req, res) => {
     
     const object = await prisma.object.findUnique({
         where: {
-            namespace_id_object_id: {
-                namespace_id,
+            team_id_object_id: {
+                team_id: teamID,
                 object_id
             }
         }
@@ -120,17 +121,18 @@ router.head('/:namespace/objects/:prefix/:suffix', async (req, res) => {
  * 
  * Will fetch from s3 or local filesystem depending on config.
  */
-router.get('/:namespace/objects/:prefix/:suffix', async (req, res) => {
+router.get('/objects/:prefix/:suffix', mustBeRobot, async (req: Request, res) => {
 
-    const namespace_id = req.params.namespace;
+    const { team_id } = req.robotGatewayPayload!;
+
     const prefix = req.params.prefix;
     const suffix = req.params.suffix;
     const object_id = prefix + suffix;
 
     const object = await prisma.object.findUnique({
         where: {
-            namespace_id_object_id: {
-                namespace_id,
+            team_id_object_id: {
+                team_id,
                 object_id
             }
         }
@@ -138,11 +140,11 @@ router.get('/:namespace/objects/:prefix/:suffix', async (req, res) => {
 
     if (!object) {
         logger.warn('could not get ostree object because it does not exist');
-        return res.status(400).send('could not download ostree object');
+        return res.status(404).end();
     }
 
     try {
-        const content = await blobStorage.getObject(namespace_id, `treehub/${prefix}/${suffix}`);
+        const content = await blobStorage.getObject(team_id, `treehub/${prefix}/${suffix}`);
 
         res.set('content-type', 'application/octet-stream');
         return res.status(200).send(content);

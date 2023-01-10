@@ -1,16 +1,17 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import { logger } from '@airbotics-core/logger';
 import { prisma } from '@airbotics-core/postgres';
+import { mustBeRobot } from 'src/middlewares';
 
 const router = express.Router();
 
 
 /**
- * Creates a ref.
+ * Creates a ref
  */
-router.post('/:namespace/refs/:name(*)', express.text({ type: '*/*' }), async (req, res) => {
+router.post('/refs/:name(*)', express.text({ type: '*/*' }), async (req: Request, res: Response) => {
 
-    const namespace_id = req.params.namespace;
+    const teamID = req.headers['air-team-id']!;
 
     // this evaluates to something like 'heads/main' so we prepend it with a forward slash
     let name = req.params.name;
@@ -20,15 +21,15 @@ router.post('/:namespace/refs/:name(*)', express.text({ type: '*/*' }), async (r
 
     const object_id = `${commit}.commit`;
 
-    // check namespace exists
-    const namespaceCount = await prisma.namespace.count({
+    // check team exists
+    const teamCount = await prisma.team.count({
         where: {
-            id: namespace_id
+            id: teamID
         }
     });
 
-    if (namespaceCount === 0) {
-        logger.warn('could not upload ostree ref because namespace does not exist');
+    if (teamCount === 0) {
+        logger.warn('could not upload ostree ref because team does not exist');
         return res.status(400).send('could not upload ostree ref');
     }
 
@@ -46,7 +47,7 @@ router.post('/:namespace/refs/:name(*)', express.text({ type: '*/*' }), async (r
 
     await prisma.ref.upsert({
         create: {
-            namespace_id,
+            team_id: teamID,
             name,
             object_id,
             commit
@@ -55,8 +56,8 @@ router.post('/:namespace/refs/:name(*)', express.text({ type: '*/*' }), async (r
             commit
         },
         where: {
-            namespace_id_name: {
-                namespace_id,
+            team_id_name: {
+                team_id: teamID,
                 name
             }
         }
@@ -68,11 +69,11 @@ router.post('/:namespace/refs/:name(*)', express.text({ type: '*/*' }), async (r
 
 
 /**
- * Gets a ref.
+ * Gets a ref
  */
-router.get('/:namespace/refs/:name(*)', async (req, res) => {
+router.get('/refs/:name(*)', mustBeRobot, async (req: Request, res) => {
 
-    const namespace_id = req.params.namespace;
+    const { team_id } = req.robotGatewayPayload!;
 
     // this evaluates to something like 'heads/main' so we prepend it with a forward slash
     let name = req.params.name;
@@ -80,8 +81,8 @@ router.get('/:namespace/refs/:name(*)', async (req, res) => {
 
     const ref = await prisma.ref.findUnique({
         where: {
-            namespace_id_name: {
-                namespace_id,
+            team_id_name: {
+                team_id,
                 name
             }
         }

@@ -1,3 +1,5 @@
+import { EKeyType, ESignatureScheme, ETUFRole } from '@airbotics-core/consts';
+
 export interface IBlobStorageProvider {
     createBucket(bucketId: string): Promise<void>;
     deleteBucket(bucketId: string): Promise<void>;
@@ -12,6 +14,10 @@ export interface IKeyStorageProvider {
     deleteKey(id: string): Promise<void>;
 }
 
+
+/**
+ * Crypto
+ */
 export interface IKeyPair {
     publicKey: string;
     privateKey: string;
@@ -24,32 +30,27 @@ export interface IKeyPair {
 
 export interface IHashes {
     sha256: string;
-    sha512?: string;
+    // sha512?: string;
 }
-
 
 export interface ISignatureTUF {
     keyid: string;
     sig: string;
-    method?: string;
+    method: ESignatureScheme;
 }
 
-
-
-
 export interface ITufKey {
-    keytype: 'rsa' | 'ed25519' | 'ecdsa-sha2-nistp256';
+    keytype: EKeyType;
     keyval: {
-        public: string;
+        public?: string;
+        private?: string;
     };
-    scheme: 'rsassa-pss-sha256' | 'ed25519' | 'ecdsa-sha2-nistp256';
 }
 
 
 export interface IRootSignedTUF {
-    _type: 'root';
+    _type: ETUFRole.Root;
     expires: string;
-    spec_version: string;
     consistent_snapshot: boolean;
     version: number;
     keys: {
@@ -75,7 +76,7 @@ export interface IRootSignedTUF {
     }
 }
 
-export interface IRootTUF {
+export interface ISignedRootTUF {
     signatures: ISignatureTUF[];
     signed: IRootSignedTUF;
 }
@@ -92,15 +93,14 @@ export interface ITargetsImages {
 
 
 export interface ITargetsSignedTUF {
-    _type: 'Targets'; // aktualizr requires uppercase
-    spec_version: string;
+    _type: ETUFRole.Targets;
     version: number;
     expires: string;
     delegations?: any;
     targets: ITargetsImages;
 }
 
-export interface ITargetsTUF {
+export interface ISignedTargetsTUF {
     signatures: ISignatureTUF[];
     signed: ITargetsSignedTUF;
 }
@@ -109,8 +109,7 @@ export interface ITargetsTUF {
 
 
 export interface ISnapshotSignedTUF {
-    _type: 'Snapshot'; // aktualizr requires uppercase
-    spec_version: string;
+    _type: ETUFRole.Snapshot;
     version: number;
     expires: string;
     meta: {
@@ -122,7 +121,7 @@ export interface ISnapshotSignedTUF {
     };
 }
 
-export interface ISnapshotTUF {
+export interface ISignedSnapshotTUF {
     signatures: ISignatureTUF[];
     signed: ISnapshotSignedTUF;
 }
@@ -130,8 +129,7 @@ export interface ISnapshotTUF {
 
 
 export interface ITimestampSignedTUF {
-    _type: 'Timestamp'; // aktualizr requires uppercase
-    spec_version: string;
+    _type: ETUFRole.Timestamp;
     version: number;
     expires: string;
     meta: {
@@ -149,7 +147,7 @@ export interface ITimestampTUF {
 }
 
 
-export interface ITimestampTUF {
+export interface ISignedTimestampTUF {
     signatures: ISignatureTUF[];
     signed: ITimestampSignedTUF;
 }
@@ -159,7 +157,7 @@ export interface ITimestampTUF {
  * Director
  */
 
- export interface IecuVersionReport {
+export interface IecuVersionReport {
     signatures: ISignatureTUF[],
     signed: {
         ecu_serial: string,

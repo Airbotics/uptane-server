@@ -9,7 +9,7 @@ import { generateRoot, generateSnapshot,
     generateTargets, generateTimestamp } from '@airbotics-core/tuf';
 import { IKeyPair, IRootTUF, ITargetsImages, 
     ITargetsTUF, ISnapshotTUF, ITimestampTUF } from '@airbotics-types';
-import { SEED_EXPIRES_AT, SEED_NAMESPACE_ID, 
+import { SEED_EXPIRES_AT, SEED_TEAM_ID, 
     SEED_PRIMARY_ECU_ID, SEED_PRIMARY_IMAGE_ID,
     SEED_ROBOT_ID, SEED_SECONDARY_ECU_ID, SEED_SECONDARY_IMAGE_ID } from '../consts';
 
@@ -33,7 +33,7 @@ import { SEED_EXPIRES_AT, SEED_NAMESPACE_ID,
  * 
  * This seeder creates the following records
  * 
- * 1. One test namespace
+ * 1. One test TEAM
  * 2. Two test images (one for primary and secondary ecus) 
  * 3. One test robot 
  * 4. Two test ECUs (primary and secondary) for the test robot
@@ -43,17 +43,18 @@ import { SEED_EXPIRES_AT, SEED_NAMESPACE_ID,
  */
 
 
-const createNamespace = async () => {
+const createTeam = async () => {
 
-    console.log('dev seeder creating namespace...');
+    console.log('dev seeder creating team...');
 
-    await prisma.namespace.create({
+    await prisma.team.create({
         data: {
-            id: SEED_NAMESPACE_ID
+            id: SEED_TEAM_ID,
+            name: SEED_TEAM_ID
         }
     });
 
-    console.log('dev seeder created namespace');
+    console.log('dev seeder created team');
 
 }
 
@@ -72,7 +73,7 @@ const createImage = async () => {
         data: [
             {
                 id: SEED_PRIMARY_IMAGE_ID,
-                namespace_id: SEED_NAMESPACE_ID,
+                team_id: SEED_TEAM_ID,
                 hwids: [],
                 size: Buffer.byteLength(primaryImage, "utf-8"),
                 sha256: generateHash(primaryImage, {algorithm: 'SHA256'}),
@@ -82,7 +83,7 @@ const createImage = async () => {
             },
             {
                 id: SEED_SECONDARY_IMAGE_ID,
-                namespace_id: SEED_NAMESPACE_ID,
+                team_id: SEED_TEAM_ID,
                 hwids: [],
                 size: Buffer.byteLength(secondaryImage, "utf-8"),
                 sha256: generateHash(secondaryImage, {algorithm: 'SHA256'}),
@@ -106,7 +107,7 @@ const createRobot = async () => {
     await prisma.robot.create({
         data: {
             id: SEED_ROBOT_ID,
-            namespace_id: SEED_NAMESPACE_ID
+            team_id: SEED_TEAM_ID
         }
     });
 
@@ -123,14 +124,14 @@ const createECUs = async () => {
         data: [
             {
                 id: SEED_PRIMARY_ECU_ID,
-                namespace_id: SEED_NAMESPACE_ID,
+                team_id: SEED_TEAM_ID,
                 robot_id: SEED_ROBOT_ID,
                 hwid: 'some-hwid',
                 primary: true
             },
             {
                 id: SEED_SECONDARY_ECU_ID,
-                namespace_id: SEED_NAMESPACE_ID,
+                team_id: SEED_TEAM_ID,
                 robot_id: SEED_ROBOT_ID,
                 hwid: 'some-hwid',
                 primary: false
@@ -148,23 +149,23 @@ const createImageRepoMetadata = async () => {
     console.log('dev seeder creating image repo metadata...');
 
     const rootKeyPair: IKeyPair = {
-        publicKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-image-root-public`),
-        privateKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-image-root-private`),
+        publicKey: await keyStorage.getKey(`${SEED_TEAM_ID}-image-root-public`),
+        privateKey: await keyStorage.getKey(`${SEED_TEAM_ID}-image-root-private`),
     }
 
     const targetKeyPair: IKeyPair = {
-        publicKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-image-targets-public`),
-        privateKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-image-targets-private`),
+        publicKey: await keyStorage.getKey(`${SEED_TEAM_ID}-image-targets-public`),
+        privateKey: await keyStorage.getKey(`${SEED_TEAM_ID}-image-targets-private`),
     }
 
     const snapshotKeyPair: IKeyPair = {
-        publicKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-image-snapshot-public`),
-        privateKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-image-snapshot-private`),
+        publicKey: await keyStorage.getKey(`${SEED_TEAM_ID}-image-snapshot-public`),
+        privateKey: await keyStorage.getKey(`${SEED_TEAM_ID}-image-snapshot-private`),
     }
 
     const timestampKeyPair: IKeyPair = {
-        publicKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-image-timestamp-public`),
-        privateKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-image-timestamp-private`),
+        publicKey: await keyStorage.getKey(`${SEED_TEAM_ID}-image-timestamp-public`),
+        privateKey: await keyStorage.getKey(`${SEED_TEAM_ID}-image-timestamp-private`),
     }
 
     // generate root metadata
@@ -205,7 +206,7 @@ const createImageRepoMetadata = async () => {
     await prisma.metadata.createMany({
         data: [
             {
-                namespace_id: SEED_NAMESPACE_ID,
+                team_id: SEED_TEAM_ID,
                 role: TUFRole.root,
                 repo: TUFRepo.image,
                 version: 1,
@@ -213,7 +214,7 @@ const createImageRepoMetadata = async () => {
                 expires_at: rootMetadata.signed.expires
             },
             {
-                namespace_id: SEED_NAMESPACE_ID,
+                team_id: SEED_TEAM_ID,
                 role: TUFRole.targets,
                 repo: TUFRepo.image,
                 version: 1,
@@ -221,7 +222,7 @@ const createImageRepoMetadata = async () => {
                 expires_at: targetsMetadata.signed.expires
             },
             {
-                namespace_id: SEED_NAMESPACE_ID,
+                team_id: SEED_TEAM_ID,
                 role: TUFRole.snapshot,
                 repo: TUFRepo.image,
                 version: 1,
@@ -229,7 +230,7 @@ const createImageRepoMetadata = async () => {
                 expires_at: snapshotMetadata.signed.expires
             },
             {
-                namespace_id: SEED_NAMESPACE_ID,
+                team_id: SEED_TEAM_ID,
                 role: TUFRole.timestamp,
                 repo: TUFRepo.image,
                 version: 1,
@@ -250,23 +251,23 @@ const createDirectorRepoRootMetadata = async () => {
     console.log('dev seeder creating director repo root metadata...');
 
     const rootKeyPair: IKeyPair = {
-        publicKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-director-root-public`),
-        privateKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-director-root-private`),
+        publicKey: await keyStorage.getKey(`${SEED_TEAM_ID}-director-root-public`),
+        privateKey: await keyStorage.getKey(`${SEED_TEAM_ID}-director-root-private`),
     }
 
     const targetKeyPair: IKeyPair = {
-        publicKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-director-targets-public`),
-        privateKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-director-targets-private`),
+        publicKey: await keyStorage.getKey(`${SEED_TEAM_ID}-director-targets-public`),
+        privateKey: await keyStorage.getKey(`${SEED_TEAM_ID}-director-targets-private`),
     }
 
     const snapshotKeyPair: IKeyPair = {
-        publicKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-director-snapshot-public`),
-        privateKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-director-snapshot-private`),
+        publicKey: await keyStorage.getKey(`${SEED_TEAM_ID}-director-snapshot-public`),
+        privateKey: await keyStorage.getKey(`${SEED_TEAM_ID}-director-snapshot-private`),
     }
 
     const timestampKeyPair: IKeyPair = {
-        publicKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-director-timestamp-public`),
-        privateKey: await keyStorage.getKey(`${SEED_NAMESPACE_ID}-director-timestamp-private`),
+        publicKey: await keyStorage.getKey(`${SEED_TEAM_ID}-director-timestamp-public`),
+        privateKey: await keyStorage.getKey(`${SEED_TEAM_ID}-director-timestamp-private`),
     }
 
     const rootMetadata: IRootTUF = generateRoot(SEED_EXPIRES_AT,
@@ -280,7 +281,7 @@ const createDirectorRepoRootMetadata = async () => {
     //Store the metadata in the db
     await prisma.metadata.create({
         data: {
-            namespace_id: SEED_NAMESPACE_ID,
+            team_id: SEED_TEAM_ID,
             role: TUFRole.root,
             repo: TUFRepo.director,
             version: 1,
@@ -323,7 +324,7 @@ const createTmpRollout = async () => {
 
     //check if the keys have been generated
     //This should probably check for all keys but just checks image root for now
-    const seedRootCertPath = path.join(__filename, '../../../../../',  config.KEYS_FS_STORAGE_DIR, `${SEED_NAMESPACE_ID}-image-root-public.pem`)
+    const seedRootCertPath = path.join(__filename, '../../../../../',  config.KEYS_FS_STORAGE_DIR, `${SEED_TEAM_ID}-image-root-public.pem`)
 
     if(!fs.existsSync(seedRootCertPath)) {
         console.log('This seeder requires certs to be generated first');
@@ -331,7 +332,7 @@ const createTmpRollout = async () => {
         return;
     }
 
-    await createNamespace();
+    await createTeam();
     await createImage();
     await createRobot();
     await createECUs();

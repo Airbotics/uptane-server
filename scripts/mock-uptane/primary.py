@@ -9,7 +9,7 @@ import uuid
 import sys
 import random
 from common import (load_pem_key, _get_time, generate_priv_tuf_key,
-  NAMESPACE, ROBOT_ID,
+  TEAM_ID, ROBOT_ID,
   PRIMARY_ECU_SERIAL, SECONDARY_ECU_SERIAL, PRIMARY_FS_ROOT_PATH,
   IMAGE_REPO_HOST, DIRECTOR_REPO_HOST, IMAGE_REPO_META_DIR, DIRECTOR_REPO_META_DIR,
   DIRECTOR_REPO_TARGETS_DIR, IMAGE_REPO_TARGETS_DIR)
@@ -222,8 +222,8 @@ class Primary():
 
 
       # Load the ECU private keys from pem files
-      primary_ecu_key = load_pem_key(f'{NAMESPACE}-{PRIMARY_ECU_SERIAL}-private')
-      secondary_ecu_key = load_pem_key(f'{NAMESPACE}-{SECONDARY_ECU_SERIAL}-private')
+      primary_ecu_key = load_pem_key(f'{TEAM_ID}-{PRIMARY_ECU_SERIAL}-private')
+      secondary_ecu_key = load_pem_key(f'{TEAM_ID}-{SECONDARY_ECU_SERIAL}-private')
 
       primary_ecu_tuf_key = generate_priv_tuf_key(primary_ecu_key)
       secondary_ecu_tuf_key = generate_priv_tuf_key(secondary_ecu_key)

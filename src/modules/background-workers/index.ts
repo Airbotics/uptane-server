@@ -4,8 +4,8 @@ import { prisma } from '@airbotics-core/postgres';
 import config from '@airbotics-config';
 import { logger } from '@airbotics-core/logger';
 import { dayjs } from '@airbotics-core/time';
-import { generateRoot, generateSnapshot, generateTargets, generateTimestamp, getLatestMetadataVersion } from '@airbotics-core/tuf';
-import { ISnapshotTUF, ITargetsTUF, ITimestampTUF } from '@airbotics-types';
+import { generateSignedRoot, generateSignedSnapshot, generateSignedTargets, generateSignedTimestamp, getLatestMetadataVersion } from '@airbotics-core/tuf';
+import { ISignedSnapshotTUF, ISignedTargetsTUF, ITimestampTUF } from '@airbotics-types';
 import { loadKeyPair } from '@airbotics-core/key-storage';
 
 
@@ -20,7 +20,7 @@ const processRootRoles = async () => {
 
     try {
 
-        // lets process the root roles, we'll get the most recent root for every repo in every namespace.
+        // lets process the root roles, we'll get the most recent root for every repo in every team.
         // there is probably a nice way to check expiry times in prisma but for now we'll just do it in
         // js since we won't have many roots. this is left as homework.
         const mostRecentRoots = await prisma.metadata.findMany({
@@ -30,7 +30,7 @@ const processRootRoles = async () => {
             orderBy: {
                 version: 'desc'
             },
-            distinct: ['namespace_id', 'repo']
+            distinct: ['team_id', 'repo']
         });
 
         logger.debug(`found ${mostRecentRoots.length} root metadata files to process`);
@@ -46,13 +46,13 @@ const processRootRoles = async () => {
 
             // otherwise it has already expired or is about to expire so we create a new signed
             // version of the file and commit it to the db
-            logger.debug(`detected version ${root.version} of root for ${root.repo} repo in ${root.namespace_id} namespace is about to expire`);
+            logger.debug(`detected version ${root.version} of root for ${root.repo} repo in ${root.team_id} team is about to expire`);
 
             // read in keys from key storage
-            const rootKeyPair = await loadKeyPair(root.namespace_id, root.repo, TUFRole.root);
-            const targetsKeyPair = await loadKeyPair(root.namespace_id, root.repo, TUFRole.targets);
-            const snapshotKeyPair = await loadKeyPair(root.namespace_id, root.repo, TUFRole.snapshot);
-            const timestampKeyPair = await loadKeyPair(root.namespace_id, root.repo, TUFRole.timestamp);
+            const rootKeyPair = await loadKeyPair(root.team_id, root.repo, TUFRole.root);
+            const targetsKeyPair = await loadKeyPair(root.team_id, root.repo, TUFRole.targets);
+            const snapshotKeyPair = await loadKeyPair(root.team_id, root.repo, TUFRole.snapshot);
+            const timestampKeyPair = await loadKeyPair(root.team_id, root.repo, TUFRole.timestamp);
 
             // bump the version
             const newVeresion = root.version + 1;
@@ -60,7 +60,7 @@ const processRootRoles = async () => {
             // get expiry depending on repo
             const ttl = root.repo === TUFRepo.director ? config.TUF_TTL.DIRECTOR.ROOT : config.TUF_TTL.IMAGE.ROOT;
 
-            const newRoot = generateRoot(ttl,
+            const newRoot = generateSignedRoot(ttl,
                 newVeresion,
                 rootKeyPair,
                 targetsKeyPair,
@@ -69,7 +69,7 @@ const processRootRoles = async () => {
 
             await prisma.metadata.create({
                 data: {
-                    namespace_id: root.namespace_id,
+                    team_id: root.team_id,
                     repo: root.repo,
                     role: TUFRole.root,
                     version: newVeresion,
@@ -89,9 +89,9 @@ const processRootRoles = async () => {
 /**
  * Find and resign targets metadata that is about to expire.
  * 
- * if we detect that the targets file of a repo in a namespace is about to expire
+ * if we detect that the targets file of a repo in a team is about to expire
  * we should create a new version of it, this triggers the snapshot and timestamp for
- * that repo in that namespace to also be resigned.
+ * that repo in that team to also be resigned.
  */
 const processTargetRoles = async () => {
 
@@ -104,7 +104,7 @@ const processTargetRoles = async () => {
             orderBy: {
                 version: 'desc'
             },
-            distinct: ['namespace_id', 'repo']
+            distinct: ['team_id', 'repo']
         });
 
         logger.debug(`found ${mostRecentTargets.length} targets metadata files to process`);
@@ -120,33 +120,33 @@ const processTargetRoles = async () => {
 
             // otherwise it has already expired or is about to expire so we create a new signed
             // version of the file and commit it to the db
-            logger.debug(`detected version ${targets.version} of target for ${targets.repo} repo in ${targets.namespace_id} namespace is about to expire`);
+            logger.debug(`detected version ${targets.version} of target for ${targets.repo} repo in ${targets.team_id} team is about to expire`);
 
             // add one to get the new version
             const newTargetsVersion = targets.version + 1;
-            const newSnapshotVersion = await getLatestMetadataVersion(targets.namespace_id, targets.repo, TUFRole.snapshot) + 1;
-            const newTimeStampVersion = await getLatestMetadataVersion(targets.namespace_id, targets.repo, TUFRole.timestamp) + 1;
+            const newSnapshotVersion = await getLatestMetadataVersion(targets.team_id, targets.repo, TUFRole.snapshot) + 1;
+            const newTimeStampVersion = await getLatestMetadataVersion(targets.team_id, targets.repo, TUFRole.timestamp) + 1;
 
             // read in keys from key storage
-            const targetsKeyPair = await loadKeyPair(targets.namespace_id, targets.repo, TUFRole.targets);
-            const snapshotKeyPair = await loadKeyPair(targets.namespace_id, targets.repo, TUFRole.snapshot);
-            const timestampKeyPair = await loadKeyPair(targets.namespace_id, targets.repo, TUFRole.timestamp);
+            const targetsKeyPair = await loadKeyPair(targets.team_id, targets.repo, TUFRole.targets);
+            const snapshotKeyPair = await loadKeyPair(targets.team_id, targets.repo, TUFRole.snapshot);
+            const timestampKeyPair = await loadKeyPair(targets.team_id, targets.repo, TUFRole.timestamp);
 
             // get expiry depending on repo
             const targetsTTL = targets.repo === TUFRepo.director ? config.TUF_TTL.DIRECTOR.TARGETS : config.TUF_TTL.IMAGE.TARGETS;
             const snapshotTTL = targets.repo === TUFRepo.director ? config.TUF_TTL.DIRECTOR.SNAPSHOT : config.TUF_TTL.IMAGE.SNAPSHOT;
             const timestampTTL = targets.repo === TUFRepo.director ? config.TUF_TTL.DIRECTOR.TIMESTAMP : config.TUF_TTL.IMAGE.TIMESTAMP;
-            const oldTargetsTuf = targets.value as unknown as ITargetsTUF;
+            const oldTargetsTuf = targets.value as unknown as ISignedTargetsTUF;
 
-            const targetsMetadata = generateTargets(targetsTTL, newTargetsVersion, targetsKeyPair, oldTargetsTuf.signed.targets);
-            const snapshotMetadata = generateSnapshot(snapshotTTL, newSnapshotVersion, snapshotKeyPair, targetsMetadata);
-            const timestampMetadata = generateTimestamp(timestampTTL, newTimeStampVersion, timestampKeyPair, snapshotMetadata);
+            const targetsMetadata = generateSignedTargets(targetsTTL, newTargetsVersion, targetsKeyPair, oldTargetsTuf.signed.targets);
+            const snapshotMetadata = generateSignedSnapshot(snapshotTTL, newSnapshotVersion, snapshotKeyPair, targetsMetadata);
+            const timestampMetadata = generateSignedTimestamp(timestampTTL, newTimeStampVersion, timestampKeyPair, snapshotMetadata);
 
             // perform db writes in transaction
             await prisma.$transaction(async tx => {
                 await tx.metadata.create({
                     data: {
-                        namespace_id: targets.namespace_id,
+                        team_id: targets.team_id,
                         repo: targets.repo,
                         role: TUFRole.targets,
                         version: newTargetsVersion,
@@ -157,7 +157,7 @@ const processTargetRoles = async () => {
 
                 await tx.metadata.create({
                     data: {
-                        namespace_id: targets.namespace_id,
+                        team_id: targets.team_id,
                         repo: targets.repo,
                         role: TUFRole.targets,
                         version: newSnapshotVersion,
@@ -168,7 +168,7 @@ const processTargetRoles = async () => {
 
                 await tx.metadata.create({
                     data: {
-                        namespace_id: targets.namespace_id,
+                        team_id: targets.team_id,
                         repo: targets.repo,
                         role: TUFRole.timestamp,
                         version: newTimeStampVersion,
@@ -201,7 +201,7 @@ const processSnapshotRoles = async () => {
             orderBy: {
                 version: 'desc'
             },
-            distinct: ['namespace_id', 'repo']
+            distinct: ['team_id', 'repo']
         });
 
         logger.debug(`found ${mostRecentSnapshots.length} snapshots metadata files to process`);
@@ -217,31 +217,31 @@ const processSnapshotRoles = async () => {
 
             // otherwise it has already expired or is about to expire so we create a new signed
             // version of the file and commit it to the db
-            logger.debug(`detected version ${snapshot.version} of snapshot for ${snapshot.repo} repo in ${snapshot.namespace_id} namespace is about to expire`);
+            logger.debug(`detected version ${snapshot.version} of snapshot for ${snapshot.repo} repo in ${snapshot.team_id} team is about to expire`);
 
             // add one to get the new version
             const newSnapshotVersion = snapshot.version + 1;
-            const newTimeStampVersion = await getLatestMetadataVersion(snapshot.namespace_id, snapshot.repo, TUFRole.timestamp) + 1;
+            const newTimeStampVersion = await getLatestMetadataVersion(snapshot.team_id, snapshot.repo, TUFRole.timestamp) + 1;
 
             // read in keys from key storage
-            const snapshotKeyPair = await loadKeyPair(snapshot.namespace_id, snapshot.repo, TUFRole.snapshot);
-            const timestampKeyPair = await loadKeyPair(snapshot.namespace_id, snapshot.repo, TUFRole.timestamp);
+            const snapshotKeyPair = await loadKeyPair(snapshot.team_id, snapshot.repo, TUFRole.snapshot);
+            const timestampKeyPair = await loadKeyPair(snapshot.team_id, snapshot.repo, TUFRole.timestamp);
 
             // get expiry depending on repo
             const snapshotTTL = snapshot.repo === TUFRepo.director ? config.TUF_TTL.DIRECTOR.SNAPSHOT : config.TUF_TTL.IMAGE.SNAPSHOT;
             const timestampTTL = snapshot.repo === TUFRepo.director ? config.TUF_TTL.DIRECTOR.TIMESTAMP : config.TUF_TTL.IMAGE.TIMESTAMP;
-            const oldSnapshotTuf = snapshot.value as unknown as ISnapshotTUF;
+            const oldSnapshotTuf = snapshot.value as unknown as ISignedSnapshotTUF;
 
             /*
-            const snapshotMetadata = generateSnapshot(snapshotTTL, newSnapshotVersion, snapshotKeyPair, oldSnapshotTuf);
-            const timestampMetadata = generateTimestamp(timestampTTL, newTimeStampVersion, timestampKeyPair, snapshotMetadata);
+            const snapshotMetadata = generateSignedSnapshot(snapshotTTL, newSnapshotVersion, snapshotKeyPair, oldSnapshotTuf);
+            const timestampMetadata = generateSignedTimestamp(timestampTTL, newTimeStampVersion, timestampKeyPair, snapshotMetadata);
 
             // perform db writes in transaction
             await prisma.$transaction(async tx => {
 
                 await tx.metadata.create({
                     data: {
-                        namespace_id: snapshot.namespace_id,
+                        team_id: snapshot.team_id,
                         repo: snapshot.repo,
                         role: TUFRole.snapshot,
                         version: newSnapshotVersion,
@@ -252,7 +252,7 @@ const processSnapshotRoles = async () => {
 
                 await tx.metadata.create({
                     data: {
-                        namespace_id: snapshot.namespace_id,
+                        team_id: snapshot.team_id,
                         repo: snapshot.repo,
                         role: TUFRole.timestamp,
                         version: newTimeStampVersion,
@@ -286,7 +286,7 @@ const processTimestampRoles = async () => {
             orderBy: {
                 version: 'desc'
             },
-            distinct: ['namespace_id', 'repo']
+            distinct: ['team_id', 'repo']
         });
 
         logger.debug(`found ${mostRecentTimestamps.length} timestamps metadata files to process`);
@@ -302,24 +302,24 @@ const processTimestampRoles = async () => {
 
             // otherwise it has already expired or is about to expire so we create a new signed
             // version of the file and commit it to the db
-            logger.debug(`detected version ${timestamp.version} of timestamp for ${timestamp.repo} repo in ${timestamp.namespace_id} namespace is about to expire`);
+            logger.debug(`detected version ${timestamp.version} of timestamp for ${timestamp.repo} repo in ${timestamp.team_id} team is about to expire`);
 
             // add one to get the new version
             const newTimestampVersion = timestamp.version + 1;
 
             // read in keys from key storage
-            const timestampKeyPair = await loadKeyPair(timestamp.namespace_id, timestamp.repo, TUFRole.timestamp);
+            const timestampKeyPair = await loadKeyPair(timestamp.team_id, timestamp.repo, TUFRole.timestamp);
 
             // get expiry depending on repo
             const timestampTTL = timestamp.repo === TUFRepo.director ? config.TUF_TTL.DIRECTOR.TIMESTAMP : config.TUF_TTL.IMAGE.TIMESTAMP;
             const oldTimestampMetadata = timestamp.value as unknown as ITimestampTUF;
 
             /*
-            const timestampMetadata = generateTimestamp(timestampTTL, newTimestampVersion, timestampKeyPair, oldTimestampMetadata);
+            const timestampMetadata = generateSignedTimestamp(timestampTTL, newTimestampVersion, timestampKeyPair, oldTimestampMetadata);
 
             await prisma.metadata.create({
                 data: {
-                    namespace_id: timestamp.namespace_id,
+                    team_id: timestamp.team_id,
                     repo: timestamp.repo,
                     role: TUFRole.timestamp,
                     version: newTimestampVersion,

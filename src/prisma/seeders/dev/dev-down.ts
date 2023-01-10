@@ -8,7 +8,7 @@ import prisma from '@airbotics-core/postgres';
  * 
  * This seeder removes the following records and cannot be undone
  * 
- * 1. All namespaces
+ * 1. All Teans
  * 2. All images  
  * 3. All robots 
  * 4. All ECUs 
@@ -22,7 +22,7 @@ import prisma from '@airbotics-core/postgres';
 
     console.log('running dev seeder down...');
 
-    await prisma.namespace.deleteMany();
+    await prisma.team.deleteMany();
     await prisma.image.deleteMany();
     await prisma.robot.deleteMany();
     await prisma.ecu.deleteMany();

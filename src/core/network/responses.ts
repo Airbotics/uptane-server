@@ -37,6 +37,13 @@ export class SuccessJsonResponse {
     }
 }
 
+
+export class NoContentResponse {
+    constructor(res: Response, message: string) {
+        return res.status(EStatusCodes.NoContent).json({ message });
+    }
+}
+
 export class ValidationResponse {
     constructor(res: Response, errors: string[]) {
         return res.status(EStatusCodes.BadRequest).json({ errors });

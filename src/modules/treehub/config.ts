@@ -1,33 +1,35 @@
-import express from 'express';
+import express, { Request } from 'express';
 import { prisma } from '@airbotics-core/postgres';
 import { logger } from '@airbotics-core/logger';
 import { OSTREE_CONFIG } from '@airbotics-core/consts';
+import { mustBeRobot } from 'src/middlewares';
 
 const router = express.Router();
 
 
 /**
- * Gets ostree config.
+ * Returns ostree config
  * 
- * - The config is hardcoded and simply returned in plaintext if the namespace exists.
+ * - The config is hardcoded and simply returned in plaintext if the team exists.
  */
-router.get('/:namespace/config', async (req, res) => {
+router.get('/config', mustBeRobot, async (req: Request, res) => {
 
-    const namespace_id = req.params.namespace;
+    const { team_id } = req.robotGatewayPayload!;
 
-    const namespaceCount = await prisma.namespace.count({
+    const teamCount = await prisma.team.count({
         where: {
-            id: namespace_id
+            id: team_id
         }
     });
 
-    if (namespaceCount === 0) {
-        logger.warn('could not get ostree config because namespace does not exist');
-        return res.status(400).send('could not get ostree config');
+    if (teamCount === 0) {
+        logger.warn('could not get ostree config because team does not exist');
+        return res.status(400).end();
     }
 
     res.set('content-type', 'text/plain');
     return res.status(200).send(OSTREE_CONFIG);
+    
 });
 
 

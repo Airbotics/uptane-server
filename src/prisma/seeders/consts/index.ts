@@ -1,4 +1,4 @@
-export const SEED_NAMESPACE_ID = 'seed';
+export const SEED_TEAM_ID = 'seed';
 export const SEED_ROBOT_ID = 'seed-robot';
 export const SEED_PRIMARY_IMAGE_ID = 'seed-factory-primary-image';
 export const SEED_SECONDARY_IMAGE_ID = 'seed-factory-secondary-image';

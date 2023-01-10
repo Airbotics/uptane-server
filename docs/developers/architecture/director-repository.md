@@ -6,7 +6,7 @@ There are four main mutations performed against it:
 
 1. Initialisation
 
-When a namespace is initialised (in the admin module) it will create an initial `root.json` metadata file that will be stored in the director repository using the keys that were created as part of the namespace creation.
+When a team is initialisedit will create an initial `root.json` metadata file that will be stored in the director repository using the keys that were created as part of the team creation.
 
 2. Registering a robot
 

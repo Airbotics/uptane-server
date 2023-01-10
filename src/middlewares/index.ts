@@ -3,7 +3,7 @@ import { logger } from '@airbotics-core/logger';
 import prisma from '@airbotics-core/postgres';
 import { ory } from '@airbotics-core/drivers/ory';
 import { BadResponse, ForbiddenResponse, UnauthorizedResponse } from '@airbotics-core/network/responses';
-import { PermissionApiCheckPermissionRequest } from '@ory/client';
+import { FrontendApiToSessionRequest, PermissionApiCheckPermissionRequest } from '@ory/client';
 import { OryTeamRelations } from '@airbotics-core/consts';
 
 /**
@@ -11,19 +11,19 @@ import { OryTeamRelations } from '@airbotics-core/consts';
  * 
  * - Will try extract the `air-client-id` header sent by the device gateway.
  * - Then try find the robot.
- * - Then populate the request of the id and the namespace it belongs to.
+ * - Then populate the request of the id and the team it belongs to.
  * - Will prematurely return a 400 if this can't be done.
  * 
  * NOTE: the image repo doesn't ever act on the robot id.
  */
-export const ensureRobotAndNamespace = async (req: Request, res: Response, next: NextFunction) => {
+export const mustBeRobot = async (req: Request, res: Response, next: NextFunction) => {
 
     const robotId = req.header('air-client-id');
 
     // TODO perform other validation here using joi
     if (!robotId) {
         logger.warn('robot id header was not provided');
-        return res.status(400).end();
+        return new BadResponse(res, 'could not verify robot');
     }
 
     const robot = await prisma.robot.findUnique({
@@ -34,12 +34,12 @@ export const ensureRobotAndNamespace = async (req: Request, res: Response, next:
 
     if (!robot) {
         logger.warn('robot id header was provided but robot does not exist');
-        return res.status(400).end();
+        return new BadResponse(res, 'could not verify robot');
     }
 
     req.robotGatewayPayload = {
         robot_id: robot.id,
-        namespace_id: robot.namespace_id
+        team_id: robot.team_id
     };
 
     next();
@@ -50,9 +50,18 @@ export const ensureRobotAndNamespace = async (req: Request, res: Response, next:
 export const mustBeAuthenticated = async (req: Request, res: Response, next: NextFunction) => {
 
     try {
-   
-        const orySession = (await ory.frontend.toSession({ cookie: req.header("cookie") })).data;
+        
+        const sessionParams: FrontendApiToSessionRequest = {
+            xSessionToken: req.header("x-session-token"),       //from api authenticated clients
+            cookie: req.header("cookie")                        //from browser authenticated clients
+        }
+                
+        const orySession = (await ory.frontend.toSession(sessionParams)).data;
 
+        // if(orySession.identity.verifiable_addresses && !orySession.identity.verifiable_addresses[0].verified) {
+        //     return new BadResponse(res, 'Please verify your email first!');
+        // }
+    
         req.oryIdentity = {
             session_id: orySession.id,
             traits: {
@@ -83,7 +92,9 @@ export const mustBeInTeam = (relation: OryTeamRelations) => {
 
         const oryID = req.oryIdentity!.traits.id;
         const teamID = req.headers['air-team-id'];
-  
+        console.log(teamID);
+        console.log(oryID);
+        
         if (oryID === undefined || teamID === undefined) {
             logger.warn('A user is trying to access a team protected endpoint without an oryID or teamID in the request');
             return new BadResponse(res, 'Unable to check if you have permission to do that!');
@@ -108,7 +119,9 @@ export const mustBeInTeam = (relation: OryTeamRelations) => {
                 return new ForbiddenResponse(res, "You do not have permission to do that!")
             }
 
-        } catch (error) {           
+        } catch (error) {  
+            console.log(error.response.data);
+                     
             return new BadResponse(res, 'Unable to check if you have permission to do that!');
         }
 

@@ -2,7 +2,7 @@
 
 This guide provides the steps to set up the key Airbotics components to run in a **development** envirnoment. By the end of this guide you should be able to:
 
-* Set up a test namespace
+* Set up a test team
 * Upload a test image
 * Create a test rollout
 * Provision a test robot
@@ -23,7 +23,7 @@ The first step is to get the core backend infrastructure up and running. This in
 2. The Director and Image repos
 3. The database for the Director and Image repos 
 
-Before we can get this core infrastructure running we need to create a root CA, generate some rsa key pairs and x.509 certificates. You can dive into more detail about why these are need in the developers guide.
+Before we can get this core infrastructure running we need to create a root CA, generate some key pairs and x.509 certificates. You can dive into more detail about why these are need in the developers guide.
 
 ### Create a Root CA and gateway cert
 Execute `npm run helper` and choose `[1] Create root and gateway cert`. This will create a pair of keys for the Root CA and gateway cert and use them to create a certificate for both. Keys will be stored in the keyserver and certs in blob storage.
@@ -52,7 +52,7 @@ npx prisma db push --schema ./src/prisma/schema.prisma
 
 ### Seed the database (On first run)
 If this is the first time standing up postgres, seed it with some test data which will create the following records:
-1. One test namespace
+1. One test team
 2. Two test images (one for primary and secondary ecus) 
 3. A full set of TUF Metadata for the 4 top level roles in the image repo
 4. Two tmp rollouts, mapping the two test images to the two test ECUs

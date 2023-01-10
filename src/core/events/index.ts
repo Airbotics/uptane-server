@@ -1,7 +1,8 @@
 import EventEmitter from 'events';
 
 interface AirAuditEvent {
-    actor: string;
+    actor_id: string;
+    team_id: string;
     action: string;
 }
 

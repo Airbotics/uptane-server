@@ -28,14 +28,14 @@ The local file tree should now look like this"
 
 ```
 ├── .keys
-|    ├── <namespace>-image-<tuf-role>-public.pem
-|    ├── <namespace>-image-<tuf-role>-private.pem
-|    ├── <namespace>-director-<tuf-role>-public.pem
-|    ├── <namespace>-director-<tuf-role>-private.pem
-|    ├── <namespace>-<primary-ecu>-public.pem
-|    ├── <namespace>-<primary-ecu>-private.pem
-|    ├── <namespace>-<secondary-ecu>-public.pem
-|    └── <namespace>-<secondary-ecu>-private.pem
+|    ├── <team-id>-image-<tuf-role>-public.pem
+|    ├── <team-id>-image-<tuf-role>-private.pem
+|    ├── <team-id>-director-<tuf-role>-public.pem
+|    ├── <team-id>-director-<tuf-role>-private.pem
+|    ├── <team-id>-<primary-ecu>-public.pem
+|    ├── <team-id>-<primary-ecu>-private.pem
+|    ├── <team-id>-<secondary-ecu>-public.pem
+|    └── <team-id>-<secondary-ecu>-private.pem
 |
 └── scripts
     └── mock-uptane

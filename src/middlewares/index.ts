@@ -75,8 +75,8 @@ export const mustBeAuthenticated = async (req: Request, res: Response, next: Nex
                 state: orySession.identity.state!,
                 email: orySession.identity.traits.email,
                 name: {
-                    first: 'hello',
-                    last: 'test'
+                    first: orySession.identity.traits.name.first,
+                    last: orySession.identity.traits.name.last
                 }
             }
         }

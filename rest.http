@@ -4,15 +4,16 @@
 
 @BASE_URL=http://localhost:8001
 @API_VERSION=v0
-@TEAM_ID=dev
+@TEAM_ID=673bb436-76fe-48d9-ad36-dd449ec15afc
 @IMAGE=9523db36-30f7-4c66-8236-4d7c3326872c
 @ROBOT=heavy-eintopf-54
-@ORY_PROJECT_URL=https://happy-panini-fxyyyptasv.projects.oryapis.com
+@ORY_PROJECT_URL={{$dotenv %ORY_PROJECT_URL}}
 
 
 # -----------------------------------------
 # Auth
 # -----------------------------------------
+###
 
 # @name loginStart
 GET {{ORY_PROJECT_URL}}/self-service/login/api
@@ -22,36 +23,19 @@ Content-Type: application/json
 
 ###
 
+###
 # @name loginFinish
 POST {{actionURL}}
 Content-Type: application/json
 
 {
     "identifier": "hello@airbotics.io",
-    "password": "#RjN>w+ngf+B\\_)G'd/r",
+    "password": "{{$dotenv %ORY_DEV_PWD}}",
     "method": "password"
 }
 
 
 @SESSION_TOKEN = {{loginFinish.response.body.session_token}}
-
-###
-
-
-#Start the auth flow
-actionUrl=$(\
-  curl -s -X GET -H "Accept: application/json" \
-    "https://dazzling-raman-bd5bt188g5.projects.oryapis.com/self-service/login/api" \
-    | jq -r '.ui.action'\
-)
-
-#Complete the flow and save the session token
-sessionToken=$(\
-    curl -s -X POST -H  "Accept: application/json" -H "Content-Type: application/json" \
-        -d '{"identifier": "hello@airbotics.io", "password": "'$dev_pwd'", "method": "password"}' \
-        "$actionUrl" | jq -r '.session_token' \
-)
-
 
 
 # -----------------------------------------
@@ -70,7 +54,7 @@ GET {{BASE_URL}}/api/{{API_VERSION}}/api/v1/user_repo/targets.json HTTP/1.1
 
 
 
-
+### Update an account
 
 PUT {{BASE_URL}}/api/{{API_VERSION}}/admin/account HTTP/1.1
 x-session-token: {{SESSION_TOKEN}}
@@ -78,7 +62,7 @@ Content-Type: application/json
 
 {
     "first_name": "dev",
-    "last_name": "tester",
+    "last_name": "tester"
 }
 
 

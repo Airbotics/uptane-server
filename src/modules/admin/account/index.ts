@@ -5,7 +5,7 @@ import * as controller from './controller';
 const router = express.Router();
 
 //update account details
-router.put('/',
+router.put('/account',
     mustBeAuthenticated,
     controller.updateAccount);
 

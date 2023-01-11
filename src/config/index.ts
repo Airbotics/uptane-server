@@ -56,6 +56,7 @@ const config = {
     //ory
     ORY_ACCESS_TOKEN: process.env.ORY_ACCESS_TOKEN,                             // Access token for ory
     ORY_PROJECT_URL: process.env.ORY_PROJECT_URL,                               // Project url for ory
+    ORY_SCHEMA_ID: process.env.ORY_SCHEMA_ID,                                   // scehma ID for ory
 
     // background worker
     WORKER_CRON: '0 * * * *',                                                   // cron to run background worker, i.e. every hour

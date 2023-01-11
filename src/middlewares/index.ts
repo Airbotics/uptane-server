@@ -50,16 +50,11 @@ export const mustBeRobot = async (req: Request, res: Response, next: NextFunctio
 export const mustBeAuthenticated = async (req: Request, res: Response, next: NextFunction) => {
 
     try {
-
-        
         
         const sessionParams: FrontendApiToSessionRequest = {
             xSessionToken: req.header("x-session-token"),       //from api authenticated clients
             cookie: req.header("cookie")                        //from browser authenticated clients
         }
-
-        console.log(sessionParams);
-        
                 
         const orySession = (await ory.frontend.toSession(sessionParams)).data;
 
@@ -98,8 +93,7 @@ export const mustBeInTeam = (relation: OryTeamRelations) => {
 
         const oryID = req.oryIdentity!.traits.id;
         const teamID = req.headers['air-team-id'];
-        console.log(req.oryIdentity?.session_id);
-                
+
         if (oryID === undefined || teamID === undefined) {
             logger.warn('A user is trying to access a team protected endpoint without an oryID or teamID in the request');
             return new BadResponse(res, 'Unable to check if you have permission to do that!');
@@ -115,7 +109,7 @@ export const mustBeInTeam = (relation: OryTeamRelations) => {
             }
 
             const permCheckRes = (await ory.permission.checkPermission(permCheckParams)).data;
-
+            
             if (permCheckRes.allowed) {
                 next();
             }
@@ -125,8 +119,7 @@ export const mustBeInTeam = (relation: OryTeamRelations) => {
             }
 
         } catch (error) {  
-            console.log(error.response.data);
-                     
+            logger.error(error.response.data);
             return new BadResponse(res, 'Unable to check if you have permission to do that!');
         }
 

@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { EKeyType, ROOT_BUCKET, ROOT_CA_CERT_OBJ_ID, Root_CA_PRIVATE_KEY_ID, Root_CA_PUBLIC_KEY_ID } from '@airbotics-core/consts';
 import { SuccessJsonResponse, NoContentResponse } from '@airbotics-core/network/responses';
 import { logger } from '@airbotics-core/logger';
-import prisma from '@airbotics-core/postgres';
+import prisma from '@airbotics-core/drivers/postgres';
 import { auditEventEmitter } from '@airbotics-core/events';
 import { generateCertificate, generateKeyPair } from '@airbotics-core/crypto';
 import config from '@airbotics-config';

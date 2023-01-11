@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { BadResponse, SuccessJsonResponse, NoContentResponse } from '@airbotics-core/network/responses';
 import { logger } from '@airbotics-core/logger';
-import prisma from '@airbotics-core/postgres';
+import prisma from '@airbotics-core/drivers/postgres';
 
 
 

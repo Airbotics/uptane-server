@@ -3,7 +3,7 @@ import { Request, Response, NextFunction } from 'express';
 import { EHashDigest} from '@airbotics-core/consts';
 import { SuccessJsonResponse, NoContentResponse } from '@airbotics-core/network/responses';
 import { logger } from '@airbotics-core/logger';
-import prisma from '@airbotics-core/postgres';
+import prisma from '@airbotics-core/drivers/postgres';
 import { generateHash } from '@airbotics-core/crypto';
 import config from '@airbotics-config';
 import { generateSignedSnapshot, generateSignedTargets, generateSignedTimestamp, getLatestMetadata, getLatestMetadataVersion } from '@airbotics-core/tuf';

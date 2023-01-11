@@ -4,7 +4,7 @@ import { keyStorage } from '@airbotics-core/key-storage';
 import { blobStorage } from '@airbotics-core/blob-storage';
 import { logger } from '@airbotics-core/logger';
 import { generateCertificate, generateKeyPair } from '@airbotics-core/crypto';
-import prisma from '@airbotics-core/postgres';
+import prisma from '@airbotics-core/drivers/postgres';
 import {
     EKeyType,
     ROOT_BUCKET,

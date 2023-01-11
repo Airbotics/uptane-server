@@ -1,4 +1,4 @@
-import prisma from '@airbotics-core/postgres';
+import prisma from '@airbotics-core/drivers/postgres';
 import { SEED_PRIMARY_IMAGE_ID, SEED_SECONDARY_IMAGE_ID } from '../consts';
 
 

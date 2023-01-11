@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from 'express';
 import { logger } from '@airbotics-core/logger';
-import prisma from '@airbotics-core/postgres';
+import prisma from '@airbotics-core/drivers/postgres';
 import { ory } from '@airbotics-core/drivers/ory';
 import { BadResponse, ForbiddenResponse, UnauthorizedResponse } from '@airbotics-core/network/responses';
 import { FrontendApiToSessionRequest, PermissionApiCheckPermissionRequest } from '@ory/client';

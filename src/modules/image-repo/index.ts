@@ -2,7 +2,7 @@ import express, { Request } from 'express';
 import { TUFRepo, TUFRole, Prisma, UploadStatus, ImageFormat } from '@prisma/client';
 import config from '@airbotics-config';
 import { blobStorage } from '@airbotics-core/blob-storage';
-import { prisma } from '@airbotics-core/postgres';
+import { prisma } from '@airbotics-core/drivers/postgres';
 import { logger } from '@airbotics-core/logger';
 import { mustBeRobot } from '@airbotics-middlewares';
 import { generateHash } from '@airbotics-core/crypto';

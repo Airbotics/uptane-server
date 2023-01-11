@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
 import { logger } from '@airbotics-core/logger';
-import { prisma } from '@airbotics-core/postgres';
+import { prisma } from '@airbotics-core/drivers/postgres';
 import { mustBeRobot } from 'src/middlewares';
 
 const router = express.Router();

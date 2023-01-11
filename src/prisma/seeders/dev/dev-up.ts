@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import config from '@airbotics-config';
-import prisma from '@airbotics-core/postgres';
+import prisma from '@airbotics-core/drivers/postgres';
 import { keyStorage } from '@airbotics-core/key-storage';
 import { generateHash } from '@airbotics-core/crypto/hashes';
 import { UploadStatus, TUFRole, TUFRepo, ImageFormat } from "@prisma/client";

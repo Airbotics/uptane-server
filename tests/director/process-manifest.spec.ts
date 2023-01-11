@@ -51,8 +51,7 @@ beforeEach(() => {
             installed_image: {
               fileinfo: {
                 hashes: {
-                  sha256: "",
-                  sha512: "",
+                  sha256: ""
                 },
                 length: 0
               },

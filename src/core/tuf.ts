@@ -7,7 +7,7 @@ import {
     IKeyPair, IRootSignedTUF, ISignedRootTUF, ISnapshotSignedTUF, ISignedSnapshotTUF, ITargetsImages,
     ITargetsSignedTUF, ISignedTargetsTUF, ITimestampSignedTUF, ISignedTimestampTUF, ITufKey
 } from '@airbotics-types';
-import { prisma } from '@airbotics-core/postgres';
+import { prisma } from '@airbotics-core/drivers/postgres';
 import { EHashDigest, ETUFRole } from '@airbotics-core/consts';
 import { getTUFExpiry } from '@airbotics-core/time';
 

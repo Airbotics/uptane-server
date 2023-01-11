@@ -4,7 +4,7 @@ import { keyStorage, loadKeyPair } from '@airbotics-core/key-storage';
 import config from '@airbotics-config';
 import { logger } from '@airbotics-core/logger';
 import { verifySignature } from '@airbotics-core/crypto';
-import prisma from '@airbotics-core/postgres';
+import prisma from '@airbotics-core/drivers/postgres';
 import { robotManifestSchema } from './schemas';
 import { IRobotManifest, ITargetsImages, IEcuRegistrationPayload } from '@airbotics-types';
 import { toCanonical } from '@airbotics-core/utils';

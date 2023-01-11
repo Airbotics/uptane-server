@@ -7,7 +7,7 @@ import {
     GetObjectCommand,
     PutObjectCommand
 } from '@aws-sdk/client-s3';
-import { s3 } from '@airbotics-core/s3';
+import { s3 } from '@airbotics-core/drivers/s3';
 import { IBlobStorageProvider } from '@airbotics-types';
 import { logger } from '@airbotics-core/logger';
 

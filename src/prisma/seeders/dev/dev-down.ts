@@ -1,4 +1,4 @@
-import prisma from '@airbotics-core/postgres';
+import prisma from '@airbotics-core/drivers/postgres';
 
 
 /**

@@ -26,5 +26,10 @@ router.delete('/robots/:robot_id',
     mustBeInTeam(OryTeamRelations.admin),
     controller.deleteRobot);
 
-    
+//list groups robot is in
+router.get('/robots/:robot_id/groups',
+    mustBeAuthenticated,
+    mustBeInTeam(OryTeamRelations.member),
+    controller.getRobotGroups);
+
 export default router;

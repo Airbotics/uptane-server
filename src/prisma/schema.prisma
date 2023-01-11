@@ -50,6 +50,7 @@ model Team {
     robot_manifests     RobotManifest[]
     network_reports     NetworkReport[]
     creds               ProvisioningCredentials[]
+    groups              Group[]
 
     @@map("teams")
 }
@@ -132,6 +133,7 @@ model Robot {
     robot_manifests     RobotManifest[]
     metadata            Metadata[]
     network_reports     NetworkReport[]
+    groups              RobotGroup[]
 
     @@unique([team_id, id])
     @@map("robots")
@@ -247,4 +249,32 @@ model TmpEcuImages {
 
     @@unique([ecu_id, image_id])
     @@map("tmp_ecu_images")
+}
+
+
+model Group {
+    id                  String          @id @default(uuid()) @unique
+    name                String
+    description         String
+    team_id             String
+    created_at          DateTime        @default(now())
+ 
+    robots              RobotGroup[]
+    team                Team            @relation(fields: [team_id], references: [id], onDelete: Cascade)
+
+    @@unique([id, team_id])
+    @@map("groups")
+}
+
+
+model RobotGroup {
+    robot_id            String
+    group_id            String
+    created_at          DateTime        @default(now())
+
+    robot               Robot           @relation(fields: [robot_id], references: [id], onDelete: Cascade)
+    group               Group           @relation(fields: [group_id], references: [id], onDelete: Cascade)
+
+    @@id([robot_id, group_id])
+    @@map("robot_groups")
 }

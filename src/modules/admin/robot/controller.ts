@@ -7,7 +7,6 @@ import prisma from '@airbotics-core/drivers/postgres';
 
 /**
  * Lists all robots in requesters team. 
- * 
  */
 export const listRobots = async (req: Request, res: Response, next: NextFunction) => {
     
@@ -133,4 +132,9 @@ export const deleteRobot = async (req: Request, res: Response, next: NextFunctio
         throw error;
     }
 
+}
+
+
+export const getRobotGroups = async (req: Request, res: Response, next: NextFunction) => {
+    return new NoContentResponse(res, 'todo');
 }

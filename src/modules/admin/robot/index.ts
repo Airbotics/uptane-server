@@ -30,6 +30,6 @@ router.delete('/robots/:robot_id',
 router.get('/robots/:robot_id/groups',
     mustBeAuthenticated,
     mustBeInTeam(OryTeamRelations.member),
-    controller.getRobotGroups);
+    controller.listRobotGroups);
 
 export default router;

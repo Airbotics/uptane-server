@@ -4,6 +4,7 @@ import { logger } from '@airbotics-core/logger';
 import prisma from '@airbotics-core/drivers/postgres';
 import { IGroup, IGroupRobot } from 'src/types';
 import { auditEventEmitter } from '@airbotics-core/events';
+import { NotFoundResponse } from '../../../core/network/responses';
 
 
 
@@ -240,10 +241,16 @@ export const deleteGroup = async (req: Request, res: Response, next: NextFunctio
             }
         });
 
-        if (group?._count.robots !== 0) {
+        if (!group) {
+            logger.error('A user tried to delete a group that does not exist');
+            return new BadResponse(res, 'That group could not be found');
+        }
+
+        if (group._count.robots !== 0) {
             logger.error('A user tried to delete a group that was associated with one or more robots');
             return new BadResponse(res, 'This group has robots in it, please remove them first.');
         }
+
 
         await prisma.group.delete({
             where: {
@@ -283,6 +290,20 @@ export const listRobotsInGroup = async (req: Request, res: Response, next: NextF
     } = req.query;
 
     try {
+
+        const group = await prisma.group.findUnique({
+            where: {
+                id_team_id: {
+                    id: groupID,
+                    team_id: teamID
+                }
+            }
+        });
+
+        if (!group) {
+            logger.error('A user tried to list robots in a group they arent in or that doesnt exist');
+            return new BadResponse(res, 'That group could not be found');
+        }
 
         const groupRobots = await prisma.robotGroup.findMany({
             where: {
@@ -460,7 +481,7 @@ export const removeRobotFromGroup = async (req: Request, res: Response, next: Ne
         //The user could potentially spoof the robotID or groupID, so we need to check there is a robot and group with the ids provided in their team
         if(!robot || !group) {
             logger.error('A user tried to remove a robot from a group, that either doesnt exist or isnt in their team');
-            return new BadResponse(res, 'Cannot add robot to this group.');
+            return new BadResponse(res, 'Cannot delete the robot from this group.');
         }
 
         await prisma.robotGroup.delete({
@@ -483,8 +504,5 @@ export const removeRobotFromGroup = async (req: Request, res: Response, next: Ne
     } catch (error) {
         next(error);
     }
-
 }
-
-
 

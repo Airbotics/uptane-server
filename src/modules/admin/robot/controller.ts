@@ -1,18 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
-import { ory } from '@airbotics-core/drivers/ory';
-import { IdentityApiGetIdentityRequest, RelationshipApiGetRelationshipsRequest, RelationshipApiPatchRelationshipsRequest } from '@ory/client';
-import { OryNamespaces, OryTeamRelations } from '@airbotics-core/consts';
-import { SuccessMessageResponse, BadResponse, SuccessJsonResponse, NoContentResponse } from '@airbotics-core/network/responses';
+import { BadResponse, SuccessJsonResponse, NoContentResponse } from '@airbotics-core/network/responses';
 import { logger } from '@airbotics-core/logger';
 import prisma from '@airbotics-core/postgres';
-import { ITeamDetail, OryIdentity } from 'src/types';
-import { auditEventEmitter } from '@airbotics-core/events';
-import { generateKeyPair } from '@airbotics-core/crypto';
-import config from '@airbotics-config';
-import { generateSignedRoot, generateSignedSnapshot, generateSignedTargets, generateSignedTimestamp } from '@airbotics-core/tuf';
-import { TUFRepo, TUFRole } from '@prisma/client';
-import { blobStorage } from '@airbotics-core/blob-storage';
-import { keyStorage } from '@airbotics-core/key-storage';
 
 
 

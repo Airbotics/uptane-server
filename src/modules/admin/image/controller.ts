@@ -1,22 +1,16 @@
 import { Request, Response, NextFunction } from 'express';
-import { ory } from '@airbotics-core/drivers/ory';
-import { IdentityApiGetIdentityRequest, RelationshipApiGetRelationshipsRequest, RelationshipApiPatchRelationshipsRequest } from '@ory/client';
-import { EHashDigest, EKeyType, OryNamespaces, OryTeamRelations, ROOT_BUCKET, ROOT_CA_CERT_OBJ_ID, Root_CA_PRIVATE_KEY_ID, Root_CA_PUBLIC_KEY_ID } from '@airbotics-core/consts';
-import { SuccessMessageResponse, BadResponse, SuccessJsonResponse, NoContentResponse } from '@airbotics-core/network/responses';
+
+import { EHashDigest} from '@airbotics-core/consts';
+import { SuccessJsonResponse, NoContentResponse } from '@airbotics-core/network/responses';
 import { logger } from '@airbotics-core/logger';
 import prisma from '@airbotics-core/postgres';
-import { ITeamDetail, OryIdentity } from 'src/types';
-import { auditEventEmitter } from '@airbotics-core/events';
-import { generateCertificate, generateHash, generateKeyPair } from '@airbotics-core/crypto';
+import { generateHash } from '@airbotics-core/crypto';
 import config from '@airbotics-config';
-import { generateSignedRoot, generateSignedSnapshot, generateSignedTargets, generateSignedTimestamp, generateTufKey, getInitialMetadata, getLatestMetadata, getLatestMetadataVersion } from '@airbotics-core/tuf';
+import { generateSignedSnapshot, generateSignedTargets, generateSignedTimestamp, getLatestMetadata, getLatestMetadataVersion } from '@airbotics-core/tuf';
 import { ImageFormat, TUFRepo, TUFRole, UploadStatus } from '@prisma/client';
 import { blobStorage } from '@airbotics-core/blob-storage';
-import { keyStorage, loadKeyPair } from '@airbotics-core/key-storage';
-import archiver from 'archiver';
-import forge from 'node-forge';
+import { loadKeyPair } from '@airbotics-core/key-storage';
 import { v4 as uuidv4 } from 'uuid';
-import { toCanonical } from '@airbotics-core/utils';
 
 
 

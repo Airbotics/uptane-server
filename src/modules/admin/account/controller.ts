@@ -1,7 +1,6 @@
 
 import { Request, Response, NextFunction } from 'express';
-import { SuccessMessageResponse, BadResponse, SuccessJsonResponse, NoContentResponse } from '@airbotics-core/network/responses';
-import { logger } from '@airbotics-core/logger';
+import { SuccessMessageResponse, BadResponse } from '@airbotics-core/network/responses';
 import { ory } from '@airbotics-core/drivers/ory';
 import { IdentityApiUpdateIdentityRequest } from '@ory/client';
 import config from '@airbotics-config';

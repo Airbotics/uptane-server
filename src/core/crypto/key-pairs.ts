@@ -10,6 +10,8 @@ interface IGenerateKeyPairOpts {
 
 /**
  * Generate an asymmetric key pair.
+ * 
+ * Note: node-forge uses CRLF line endings in PEM-formatted RSA keys
  */
 export const generateKeyPair = ({ keyType }: IGenerateKeyPairOpts): IKeyPair => {
 

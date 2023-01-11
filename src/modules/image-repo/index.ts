@@ -222,6 +222,7 @@ router.put('/:team_id/api/v1/user_repo/targets', async (req, res) => {
         await tx.image.create({
             data: {
                 team_id,
+                id: mostRecentTargetKey!,
                 name: mostRecentTarget.custom.name,
                 size: 0,
                 hwids: mostRecentTarget.custom.hardwareIds,

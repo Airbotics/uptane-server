@@ -1,9 +1,9 @@
 import { Ecu, Robot, RobotManifest } from '@prisma/client';
 import { prismaMock } from '../singleton';
 import { robotManifestChecks } from '@airbotics-modules/director-repo'
-import { IRobotManifest } from '../../src/types';
-import { ManifestErrors } from '../../src/core/consts/errors';
-import {ESignatureScheme} from '../../src/core/consts'
+import { IRobotManifest } from '@airbotics-types';
+import { ManifestErrors } from '@airbotics-core/consts/errors';
+import { ESignatureScheme } from '@airbotics-core/consts';
 
 const mockedTeamID = 'test';
 const mockedEcuSerials = ['p1', 's1', 's2'];

@@ -1,3 +1,6 @@
+const { pathsToModuleNameMapper } = require('ts-jest');
+const { compilerOptions } = require('./tsconfig.json');
+
 module.exports = {
     clearMocks: true,
     preset: 'ts-jest',
@@ -5,5 +8,7 @@ module.exports = {
     transform: {
         '^.+\\.ts?$': 'ts-jest',
     },
-    setupFilesAfterEnv: ['<rootDir>/tests/singleton.ts'],
+    roots: ['tests'],
+    modulePaths: [compilerOptions.baseUrl],
+    moduleNameMapper: pathsToModuleNameMapper(compilerOptions.paths)
 }

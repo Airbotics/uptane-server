@@ -1,14 +1,27 @@
-FROM node:18
+# docker build -t air-server .
+
+FROM ubuntu:focal
+# ubuntu 20.04
+# ostree 2020.3
+# nodejs v18.13.0
+# npm 8.19.3
+
+RUN apt -y update \
+    && apt -y install curl  \
+    && curl -sL https://deb.nodesource.com/setup_18.x -o setup.sh \
+    && bash setup.sh \
+    && DEBIAN_FRONTEND=noninteractive apt -y install ostree nodejs
 
 WORKDIR /app
 
 COPY ./package.json ./package-lock.json ./tsconfig.json .eslintrc ./
 COPY ./src ./src
 
-RUN npm install typescript -g && npm install
+RUN npm install typescript tsc-alias -g && npm install
 
 RUN npm run generate
 
-RUN tsc
+# RUN npm run build
+RUN tsc && tsc-alias
 
-CMD [ "node", "dist/src/index.js"]
+ENTRYPOINT [ "node", "dist/index.js" ]

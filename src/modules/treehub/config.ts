@@ -1,20 +1,15 @@
-import express, { Request } from 'express';
+import express, { Request, Response } from 'express';
 import { prisma } from '@airbotics-core/drivers/postgres';
 import { logger } from '@airbotics-core/logger';
 import { OSTREE_CONFIG } from '@airbotics-core/consts';
-import { mustBeRobot } from '@airbotics-middlewares';
+import { mustBeRobot, updateRobotMeta } from '@airbotics-middlewares';
 
 const router = express.Router();
 
 
-/**
- * Returns ostree config
- * 
- * - The config is hardcoded and simply returned in plaintext if the team exists.
- */
-router.get('/config', mustBeRobot, async (req: Request, res) => {
+const getConfig = async (req: Request, res: Response) => {
 
-    const { team_id } = req.robotGatewayPayload!;
+    const team_id = req.params.team_id || req.robotGatewayPayload!.team_id;
 
     const teamCount = await prisma.team.count({
         where: {
@@ -30,7 +25,17 @@ router.get('/config', mustBeRobot, async (req: Request, res) => {
     res.set('content-type', 'text/plain');
     return res.status(200).send(OSTREE_CONFIG);
     
-});
+}
+
+
+/**
+ * Returns ostree config
+ * 
+ * - The config is hardcoded and simply returned in plaintext if the team exists.
+ */
+router.get('/config', mustBeRobot, updateRobotMeta, getConfig);
+
+router.get('/:team_id/config', getConfig);
 
 
 export default router;

@@ -1,11 +1,53 @@
-import express, {Request} from 'express';
+import express, { Request, Response } from 'express';
 import { UploadStatus } from '@prisma/client';
 import { logger } from '@airbotics-core/logger';
 import { prisma } from '@airbotics-core/drivers/postgres';
 import { blobStorage } from '@airbotics-core/blob-storage';
-import { mustBeRobot } from '@airbotics-middlewares';
+import { mustBeRobot, updateRobotMeta } from '@airbotics-middlewares';
 
 const router = express.Router();
+
+
+
+const downloadObject = async (req: Request, res: Response) => {
+
+    const team_id = req.params.team_id || req.robotGatewayPayload!.team_id;
+
+    const prefix = req.params.prefix;
+    const suffix = req.params.suffix;
+    const object_id = prefix + suffix;
+
+    const object = await prisma.object.findUnique({
+        where: {
+            team_id_object_id: {
+                team_id,
+                object_id
+            }
+        }
+    });
+
+    if (!object) {
+        logger.warn('could not get ostree object because it does not exist');
+        return res.status(404).end();
+    }
+
+    try {
+        const content = await blobStorage.getObject(team_id, `treehub/${prefix}/${suffix}`);
+
+        res.set('content-type', 'application/octet-stream');
+        return res.status(200).send(content);
+
+    } catch (error) {
+        // db and blob storage should be in sync
+        // if an object exists in db but not blob storage something has gone wrong, bail on this request
+        logger.error('ostree object in postgres and blob storage are out of sync');
+        return res.status(500).end();
+    }
+
+
+}
+
+
 
 /**
  * Uploads an object to blob storage.
@@ -76,9 +118,9 @@ router.post('/:team_id/objects/:prefix/:suffix', express.raw({ type: '*/*', limi
         });
 
     });
-    
+
     logger.info('uploaded ostree object');
-    
+
     return res.status(204).end();
 
 });
@@ -97,7 +139,7 @@ router.head('/:team_id/objects/:prefix/:suffix', async (req, res) => {
     const suffix = req.params.suffix;
     const object_id = prefix + suffix;
 
-    
+
     const object = await prisma.object.findUnique({
         where: {
             team_id_object_id: {
@@ -121,43 +163,15 @@ router.head('/:team_id/objects/:prefix/:suffix', async (req, res) => {
  * 
  * Will fetch from s3 or local filesystem depending on config.
  */
-router.get('/objects/:prefix/:suffix', mustBeRobot, async (req: Request, res) => {
-
-    const { team_id } = req.robotGatewayPayload!;
-
-    const prefix = req.params.prefix;
-    const suffix = req.params.suffix;
-    const object_id = prefix + suffix;
-
-    const object = await prisma.object.findUnique({
-        where: {
-            team_id_object_id: {
-                team_id,
-                object_id
-            }
-        }
-    });
-
-    if (!object) {
-        logger.warn('could not get ostree object because it does not exist');
-        return res.status(404).end();
-    }
-
-    try {
-        const content = await blobStorage.getObject(team_id, `treehub/${prefix}/${suffix}`);
-
-        res.set('content-type', 'application/octet-stream');
-        return res.status(200).send(content);
-
-    } catch (error) {
-        // db and blob storage should be in sync
-        // if an object exists in db but not blob storage something has gone wrong, bail on this request
-        logger.error('ostree object in postgres and blob storage are out of sync');
-        return res.status(500).end();
-    }
+router.get('/:team_id/objects/:prefix/:suffix', downloadObject);
 
 
-});
+/**
+ * Gets an object from blob storage.
+ * 
+ * Will fetch from s3 or local filesystem depending on config.
+ */
+router.get('/objects/:prefix/:suffix', mustBeRobot, updateRobotMeta, downloadObject);
 
 
 export default router;

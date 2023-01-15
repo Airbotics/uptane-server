@@ -3,14 +3,48 @@ import { UploadStatus } from '@prisma/client';
 import { logger } from '@airbotics-core/logger';
 import { prisma } from '@airbotics-core/drivers/postgres';
 import { blobStorage } from '@airbotics-core/blob-storage';
-import { mustBeRobot } from '@airbotics-middlewares';
+import { mustBeRobot, updateRobotMeta } from '@airbotics-middlewares';
 
 const router = express.Router();
 
 
-/**
- * Upload summary
- */
+const downloadSummary = async (req: Request, res: Response) => {
+
+    const team_id = req.params.team_id || req.robotGatewayPayload!.team_id;
+
+    const object_id = 'summary';
+
+    const summary = await prisma.object.findUnique({
+        where: {
+            team_id_object_id: {
+                team_id,
+                object_id
+            }
+        }
+    });
+
+    if (!summary) {
+        logger.warn('could not download ostree summary because it does not exist')
+        return res.status(404).end();
+    }
+
+    try {
+        const content = await blobStorage.getObject(team_id, 'treehub/summary');
+
+        res.set('content-type', 'application/octet-stream');
+        return res.status(200).send(content);
+
+    } catch (error) {
+        // db and blob storage should be in sync
+        // if an object exists in db but not blob storage something has gone wrong, bail on this request
+        return res.status(500).end();
+    }
+
+}
+
+
+
+// upload summary
 router.put('/:team_id/summary', express.raw({ type: '*/*' }), async (req: Request, res: Response) => {
 
     const teamID = req.params.team_id;
@@ -79,81 +113,11 @@ router.put('/:team_id/summary', express.raw({ type: '*/*' }), async (req: Reques
 
 });
 
+// download summary
+router.get('/:team_id/summary', downloadSummary);
 
-/**
- * Download summary
- */
-router.get('/summary', mustBeRobot, async (req: Request, res) => {
-
-    const { team_id } = req.robotGatewayPayload!;
-
-    const object_id = 'summary';
-
-    const summary = await prisma.object.findUnique({
-        where: {
-            team_id_object_id: {
-                team_id,
-                object_id
-            }
-        }
-    });
-
-    if (!summary) {
-        logger.warn('could not download ostree summary because it does not exist')
-        return res.status(404).end();
-    }
-
-    try {
-        const content = await blobStorage.getObject(team_id, 'treehub/summary');
-
-        res.set('content-type', 'application/octet-stream');
-        return res.status(200).send(content);
-
-    } catch (error) {
-        // db and blob storage should be in sync
-        // if an object exists in db but not blob storage something has gone wrong, bail on this request
-        return res.status(500).end();
-    }
-
-});
-
-
-/**
- * Download summary
- */
-router.get('/summary.sig', mustBeRobot, async (req: Request, res) => {
-
-    const { team_id } = req.robotGatewayPayload!;
-
-    const object_id = 'summary';
-
-    const summary = await prisma.object.findUnique({
-        where: {
-            team_id_object_id: {
-                team_id,
-                object_id
-            }
-        }
-    });
-
-    if (!summary) {
-        logger.warn('could not download ostree summary because it does not exist')
-        return res.status(404).end();
-    }
-
-    try {
-        const content = await blobStorage.getObject(team_id, 'treehub/summary');
-
-        res.set('content-type', 'application/octet-stream');
-        return res.status(200).send(content);
-
-    } catch (error) {
-        // db and blob storage should be in sync
-        // if an object exists in db but not blob storage something has gone wrong, bail on this request
-        return res.status(500).end();
-    }
-
-});
+// download summary
+router.get('/summary', mustBeRobot, updateRobotMeta, downloadSummary);
 
 
 export default router;

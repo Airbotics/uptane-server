@@ -11,7 +11,6 @@ import app from '../../src/app';
 /**
  * Misc
  */
-
 test('health check', async () => {
     const res = await request(app).get('/');
     expect(res.status).not.toEqual(404);

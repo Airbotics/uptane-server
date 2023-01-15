@@ -293,8 +293,7 @@ this is a sample summary
 
 
 ### download a summary
-GET {{BASE_URL}}/api/{{API_VERSION}}/robot/treehub/summary HTTP/1.1
-air-team-id: {{TEAM_ID}}
+GET {{BASE_URL}}/api/{{API_VERSION}}/robot/treehub/{{TEAM_ID}}/summary HTTP/1.1
 
 
 

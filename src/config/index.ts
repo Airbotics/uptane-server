@@ -53,7 +53,7 @@ const config = {
     AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY,                   // aws secret acess key
     AWS_S3_ENDPOINT: process.env.AWS_S3_ENDPOINT,                               // aws s3 endpoint to connect to
 
-    //ory
+    // ory
     ORY_ACCESS_TOKEN: process.env.ORY_ACCESS_TOKEN,                             // Access token for ory
     ORY_PROJECT_URL: process.env.ORY_PROJECT_URL,                               // Project url for ory
     ORY_SCHEMA_ID: process.env.ORY_SCHEMA_ID,                                   // scehma ID for ory

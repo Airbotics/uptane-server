@@ -15,7 +15,7 @@
             "@airbotics-middlewares": ["src/middlewares/"],
             "@airbotics-modules/*": ["src/modules/*"],
             "@airbotics-types": ["src/types/"],
-            "@airbotics-config": ["src/config/"],
+            "@airbotics-config": ["src/config/"]
         },
         "typeRoots": [
             "./src/types",
@@ -26,7 +26,7 @@
     "include": [
         "./src/",
         "./scripts/",
-        "./tests/"
+        "./tests/" 
     ],
     "ts-node": {
         "require": ["tsconfig-paths/register"]

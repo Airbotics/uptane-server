@@ -133,6 +133,11 @@ test('admin - rollouts - create rollout', async () => {
     expect(res.status).not.toEqual(404);
 });
 
+test('admin - rollouts - get rollout detail', async () => {
+    const res = await request(app).get('/api/v0/admin/rollouts/123e4567-e89b-12d3-a456-426614174000');
+    expect(res.status).not.toEqual(404);
+});
+
 test('admin - rollouts - list rollouts', async () => {
     const res = await request(app).get('/api/v0/admin/rollouts');
     expect(res.status).not.toEqual(404);
@@ -157,6 +162,12 @@ test('admin - teams - list team members', async () => {
     const res = await request(app).get('/api/v0/admin/teams/members');
     expect(res.status).not.toEqual(404);
 });
+
+test('admin - teams - delete team', async () => {
+    const res = await request(app).delete('/api/v0/admin/teams');
+    expect(res.status).not.toEqual(404);
+});
+
 
 
 /**

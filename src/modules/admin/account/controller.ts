@@ -1,12 +1,12 @@
 
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
+import { IdentityApiUpdateIdentityRequest } from '@ory/client';
 import { SuccessMessageResponse, BadResponse } from '@airbotics-core/network/responses';
 import { ory } from '@airbotics-core/drivers/ory';
-import { IdentityApiUpdateIdentityRequest } from '@ory/client';
 import config from '@airbotics-config';
 
 
-export const updateAccount = async (req: Request, res: Response, next: NextFunction) => {
+export const updateAccount = async (req: Request, res: Response) => {
     
     const oryID = req.oryIdentity!.traits.id;
 

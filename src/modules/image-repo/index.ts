@@ -194,7 +194,7 @@ router.put('/:team_id/api/v1/user_repo/targets', async (req, res) => {
     let mostRecentTargetKey: string | null = null;
     let mostRecentTarget: any = null;
 
-    const targets = targetsMetadata.signed.targets
+    const targets = targetsMetadata.signed.targets;
 
     for (const targetKey in targets) {
         if (!mostRecentTarget) {
@@ -209,7 +209,7 @@ router.put('/:team_id/api/v1/user_repo/targets', async (req, res) => {
     const snapshotKeyPair = await loadKeyPair(team_id, TUFRepo.image, TUFRole.snapshot);
     const timestampKeyPair = await loadKeyPair(team_id, TUFRepo.image, TUFRole.timestamp);
 
-    const newTargetsVersion = targetsMetadata.signed.version
+    const newTargetsVersion = targetsMetadata.signed.version;
     const newSnapshotVersion = await getLatestMetadataVersion(team_id, TUFRepo.image, TUFRole.snapshot) + 1;
     const newTimestampVersion = await getLatestMetadataVersion(team_id, TUFRepo.image, TUFRole.timestamp) + 1;
 

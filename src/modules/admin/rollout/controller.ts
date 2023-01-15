@@ -1,15 +1,13 @@
-
 import { Request, Response, NextFunction } from 'express';
-import {  BadResponse, SuccessJsonResponse } from '@airbotics-core/network/responses';
+import { BadResponse, SuccessJsonResponse } from '@airbotics-core/network/responses';
 import { logger } from '@airbotics-core/logger';
 import prisma from '@airbotics-core/drivers/postgres';
-
 
 
 /**
  * Create a rollout.
  * 
- * Creates an association betwen an ecu and image.
+ * Creates an association betwen an ecu and image and triggers a delta generate
  */
 export const createRollout = async (req: Request, res: Response, next: NextFunction) => {
 
@@ -19,9 +17,9 @@ export const createRollout = async (req: Request, res: Response, next: NextFunct
     } = req.body;
 
 
-    const teamID = req.headers['air-team-id'];
+    const teamID = req.headers['air-team-id']!;
 
-    // check robot exists
+    // check ecu exists
     const ecuCount = await prisma.ecu.count({
         where: {
             id: ecu_id
@@ -43,7 +41,6 @@ export const createRollout = async (req: Request, res: Response, next: NextFunct
     if (imageCount === 0) {
         logger.warn('could not create a rollout because image does not exist');
         return new BadResponse(res, 'could not create rollout');
-    
     }
 
     const tmpRollout = await prisma.tmpEcuImages.create({

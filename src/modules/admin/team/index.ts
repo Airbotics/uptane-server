@@ -1,8 +1,6 @@
 import { OryTeamRelations } from '@airbotics-core/consts';
 import express, { Request } from 'express';
-
-import { mustBeAuthenticated, mustBeInTeam } from 'src/middlewares';
-
+import { mustBeAuthenticated, mustBeInTeam } from '@airbotics-middlewares';
 import * as controller from './controller';
 
 const router = express.Router();
@@ -15,7 +13,6 @@ router.post('/teams',
 //list teams
 router.get('/teams',
     mustBeAuthenticated,
-    mustBeInTeam(OryTeamRelations.member),
     controller.listTeams);
 
 //update team
@@ -28,9 +25,16 @@ router.patch('/teams',
 //list team members
 router.get('/teams/members',
     mustBeAuthenticated,
-    mustBeInTeam(OryTeamRelations.member),
+    mustBeInTeam(OryTeamRelations.admin),
     controller.listTeamMembers);
 
+// delete team
+router.delete('/teams',
+    mustBeAuthenticated,
+    mustBeInTeam(OryTeamRelations.admin),
+    controller.deleteTeam);
+
+    
 
 /*
 //list a team invites

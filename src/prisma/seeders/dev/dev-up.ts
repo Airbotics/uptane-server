@@ -5,13 +5,14 @@ import prisma from '@airbotics-core/drivers/postgres';
 import { keyStorage } from '@airbotics-core/key-storage';
 import { generateHash } from '@airbotics-core/crypto/hashes';
 import { UploadStatus, TUFRole, TUFRepo, ImageFormat } from "@prisma/client";
-import { generateRoot, generateSnapshot, 
-    generateTargets, generateTimestamp } from '@airbotics-core/tuf';
-import { IKeyPair, IRootTUF, ITargetsImages, 
-    ITargetsTUF, ISnapshotTUF, ITimestampTUF } from '@airbotics-types';
+import { generateSignedRoot, generateSignedSnapshot, 
+    generateSignedTargets, generateSignedTimestamp } from '@airbotics-core/tuf';
+import { IKeyPair, ISignedRootTUF, ITargetsImages, 
+    ISignedTargetsTUF, ISignedSnapshotTUF, ITimestampTUF } from '@airbotics-types';
 import { SEED_EXPIRES_AT, SEED_TEAM_ID, 
     SEED_PRIMARY_ECU_ID, SEED_PRIMARY_IMAGE_ID,
     SEED_ROBOT_ID, SEED_SECONDARY_ECU_ID, SEED_SECONDARY_IMAGE_ID } from '../consts';
+import { EHashDigest } from '@airbotics-core/consts';
 
 
 /**
@@ -73,21 +74,23 @@ const createImage = async () => {
         data: [
             {
                 id: SEED_PRIMARY_IMAGE_ID,
+                name: 'image 1',
                 team_id: SEED_TEAM_ID,
                 hwids: [],
                 size: Buffer.byteLength(primaryImage, "utf-8"),
-                sha256: generateHash(primaryImage, {algorithm: 'SHA256'}),
-                sha512: generateHash(primaryImage, {algorithm: 'SHA512'}),
+                sha256: generateHash(primaryImage, {hashDigest: EHashDigest.Sha256}),
+                // sha512: generateHash(primaryImage, {algorithm: 'SHA512'}),
                 status: UploadStatus.uploaded,
                 format: ImageFormat.binary
             },
             {
                 id: SEED_SECONDARY_IMAGE_ID,
+                name: 'image 1',
                 team_id: SEED_TEAM_ID,
                 hwids: [],
                 size: Buffer.byteLength(secondaryImage, "utf-8"),
-                sha256: generateHash(secondaryImage, {algorithm: 'SHA256'}),
-                sha512: generateHash(secondaryImage, {algorithm: 'SHA512'}),
+                sha256: generateHash(secondaryImage, {hashDigest: EHashDigest.Sha256}),
+                // sha512: generateHash(secondaryImage, {algorithm: 'SHA512'}),
                 status: UploadStatus.uploaded,
                 format: ImageFormat.binary
             }
@@ -169,7 +172,7 @@ const createImageRepoMetadata = async () => {
     }
 
     // generate root metadata
-    const rootMetadata: IRootTUF = generateRoot(SEED_EXPIRES_AT,
+    const rootMetadata: ISignedRootTUF = generateSignedRoot(SEED_EXPIRES_AT,
         1,
         rootKeyPair,
         targetKeyPair,
@@ -184,7 +187,7 @@ const createImageRepoMetadata = async () => {
             length: 5,
             hashes: {
                 sha256: '986a1b7135f4986150aa5fa0028feeaa66cdaf3ed6a00a355dd86e042f7fb494',
-                sha512: 'fa01128f36bcb2fd0ab277bced17de734c0e4a1e022dc26ad9b85d3b64a5c7af499d3af526fa25500bd73f4b2a0886b22a1e1ff68250de496aa4d847ffe9607b'
+                // sha512: 'fa01128f36bcb2fd0ab277bced17de734c0e4a1e022dc26ad9b85d3b64a5c7af499d3af526fa25500bd73f4b2a0886b22a1e1ff68250de496aa4d847ffe9607b'
             }
         },
         [SEED_SECONDARY_IMAGE_ID]: {
@@ -192,15 +195,15 @@ const createImageRepoMetadata = async () => {
             length: 5,
             hashes: {
                 sha256: 'c0f69e19ba252767f183158737ab1bc44f42380d2473ece23a4f276ae7c80dff',
-                sha512: '7ec0750d1e26845a313bf932749748516a1ce5d65f66fb50aa051047e3a91172c1e998a756f3981e38061f1a46d02d0e9162049e3bba1cdda176c42b145370b6'
+                // sha512: '7ec0750d1e26845a313bf932749748516a1ce5d65f66fb50aa051047e3a91172c1e998a756f3981e38061f1a46d02d0e9162049e3bba1cdda176c42b145370b6'
             }
         }
     };
 
     // generate other top level metadata
-    const targetsMetadata: ITargetsTUF = generateTargets(SEED_EXPIRES_AT, 1, targetKeyPair, targetsImages);
-    const snapshotMetadata: ISnapshotTUF = generateSnapshot(SEED_EXPIRES_AT, 1, snapshotKeyPair, targetsMetadata);
-    const timestampMetadata: ITimestampTUF = generateTimestamp(SEED_EXPIRES_AT, 1, timestampKeyPair, snapshotMetadata);
+    const targetsMetadata: ISignedTargetsTUF = generateSignedTargets(SEED_EXPIRES_AT, 1, targetKeyPair, targetsImages);
+    const snapshotMetadata: ISignedSnapshotTUF = generateSignedSnapshot(SEED_EXPIRES_AT, 1, snapshotKeyPair, targetsMetadata);
+    const timestampMetadata: ITimestampTUF = generateSignedTimestamp(SEED_EXPIRES_AT, 1, timestampKeyPair, snapshotMetadata);
     
     //Store the metadata in the db
     await prisma.metadata.createMany({
@@ -270,7 +273,7 @@ const createDirectorRepoRootMetadata = async () => {
         privateKey: await keyStorage.getKey(`${SEED_TEAM_ID}-director-timestamp-private`),
     }
 
-    const rootMetadata: IRootTUF = generateRoot(SEED_EXPIRES_AT,
+    const rootMetadata: ISignedRootTUF = generateSignedRoot(SEED_EXPIRES_AT,
         1,
         rootKeyPair,
         targetKeyPair,

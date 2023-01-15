@@ -3,15 +3,16 @@ import { keyStorage } from '@airbotics-core/key-storage';
 import { generateHash } from '@airbotics-core/crypto/hashes';
 import { UploadStatus, TUFRole, TUFRepo, ImageFormat } from "@prisma/client";
 import {
-    generateSnapshot, generateTargets, generateTimestamp,
+    generateSignedSnapshot, generateSignedTargets, generateSignedTimestamp,
     getLatestMetadata, getLatestMetadataVersion
 } from '@airbotics-core/tuf';
-import { IKeyPair, ITargetsImages, ITargetsTUF } from '@airbotics-types';
+import { IKeyPair, ITargetsImages, ISignedTargetsTUF } from '@airbotics-types';
 import { generateSlug } from 'random-word-slugs';
 import {
     SEED_EXPIRES_AT, SEED_TEAM_ID,
     SEED_PRIMARY_ECU_ID, SEED_SECONDARY_ECU_ID
 } from '../consts';
+import { EHashDigest } from '@airbotics-core/consts';
 
 
 
@@ -48,19 +49,21 @@ const createImages = async () => {
         data: [
             {
                 id: primaryImageID,
+                name: 'name 1',
                 team_id: SEED_TEAM_ID,
                 size: Buffer.byteLength(primaryImageBody, "utf-8"),
-                sha256: generateHash(primaryImageBody, { algorithm: 'SHA256' }),
-                sha512: generateHash(primaryImageBody, { algorithm: 'SHA512' }),
+                sha256: generateHash(primaryImageBody, { hashDigest: EHashDigest.Sha256 }),
+                // sha512: generateHash(primaryImageBody, { algorithm: 'SHA512' }),
                 status: UploadStatus.uploaded,
                 format: ImageFormat.binary
             },
             {
                 id: secondaryImageID,
+                name: 'name 2',
                 team_id: SEED_TEAM_ID,
                 size: Buffer.byteLength(secondaryImageBody, "utf-8"),
-                sha256: generateHash(secondaryImageBody, { algorithm: 'SHA256' }),
-                sha512: generateHash(secondaryImageBody, { algorithm: 'SHA512' }),
+                sha256: generateHash(secondaryImageBody, { hashDigest: EHashDigest.Sha256 }),
+                // sha512: generateHash(secondaryImageBody, { algorithm: 'SHA512' }),
                 status: UploadStatus.uploaded,
                 format: ImageFormat.binary
             }
@@ -107,8 +110,8 @@ const createImageRepoMetadata = async () => {
         custom: {},
         length: Buffer.byteLength(primaryImageBody, "utf-8"),
         hashes: {
-            sha256: generateHash(primaryImageBody, { algorithm: 'SHA256' }),
-            sha512: generateHash(primaryImageBody, { algorithm: 'SHA512' }),
+            sha256: generateHash(primaryImageBody, { hashDigest: EHashDigest.Sha256 }),
+            // sha512: generateHash(primaryImageBody, { algorithm: 'SHA512' }),
         }
     };
 
@@ -116,16 +119,16 @@ const createImageRepoMetadata = async () => {
         custom: {},
         length: Buffer.byteLength(secondaryImageBody, "utf-8"),
         hashes: {
-            sha256: generateHash(secondaryImageBody, { algorithm: 'SHA256' }),
-            sha512: generateHash(secondaryImageBody, { algorithm: 'SHA512' }),
+            sha256: generateHash(secondaryImageBody, { hashDigest: EHashDigest.Sha256 }),
+            // sha512: generateHash(secondaryImageBody, { algorithm: 'SHA512' }),
         }
     }
 
 
     //Generate the new targets metadata with the complete set of images 
-    const targetsMetadata: ITargetsTUF = generateTargets(SEED_EXPIRES_AT, newTargetsVersion, targetKeyPair, targetsImages);
-    const snapshotMetadata = generateSnapshot(SEED_EXPIRES_AT, newSnapshotVersion, snapshotKeyPair, targetsMetadata);
-    const timestampMetadata = generateTimestamp(SEED_EXPIRES_AT, newTimestampVersion, timestampKeyPair, snapshotMetadata);
+    const targetsMetadata: ISignedTargetsTUF = generateSignedTargets(SEED_EXPIRES_AT, newTargetsVersion, targetKeyPair, targetsImages);
+    const snapshotMetadata = generateSignedSnapshot(SEED_EXPIRES_AT, newSnapshotVersion, snapshotKeyPair, targetsMetadata);
+    const timestampMetadata = generateSignedTimestamp(SEED_EXPIRES_AT, newTimestampVersion, timestampKeyPair, snapshotMetadata);
 
     //Store the metadata in the db
     await prisma.metadata.createMany({

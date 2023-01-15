@@ -16,18 +16,19 @@ import { toCanonical } from '@airbotics-core/utils';
 
 
 /**
- * Create a provisioning credentials
+ * Create provisioning credentials.
  * 
  * TODO
  * - catch archive on error event
+ * - potentially store public key of provisioning crednetials in db
  * - record credentials creation in db to enable revocation, expiry, auditing, etc.
  */
-export const createProvisioningCredentials = async (req: Request, res: Response, next: NextFunction) => {
+export const createProvisioningCredentials = async (req: Request, res: Response) => {
     
     const oryID = req.oryIdentity!.traits.id;
-    const teamID = req.params.team_id;
+    const teamID = req.headers['air-team-id']!;
 
-    // create provisioning key, this will not be stored
+    // create provisioning key
     const provisioningKeyPair = generateKeyPair({ keyType: EKeyType.Rsa }); 
 
     // load root ca and key, used to sign provisioning cert
@@ -98,8 +99,10 @@ export const createProvisioningCredentials = async (req: Request, res: Response,
 
 
 
-
-export const listProvisioningCredentials = async (req: Request, res: Response, next: NextFunction) => {
+/**
+ * List previously issued provisioning credentials.
+ */
+export const listProvisioningCredentials = async (req: Request, res: Response) => {
 
     const teamID = req.headers['air-team-id']!;
     

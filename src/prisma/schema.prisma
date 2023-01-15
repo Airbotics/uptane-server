@@ -28,6 +28,12 @@ enum TUFRole {
     timestamp
 }
 
+enum DeltaGeneration {
+    underway
+    failed
+    succeeded
+}
+
 // type/format of image
 enum ImageFormat {
     ostree
@@ -43,6 +49,7 @@ model Team {
 
     refs                Ref[]
     objects             Object[]
+    deltas              Delta[]
     images              Image[]
     metadata            Metadata[]
     robots              Robot[]
@@ -217,6 +224,7 @@ model Ref {
 
 
 // ostree object
+// TODO rename object_id to id
 model Object {
     object_id           String
     team_id             String
@@ -225,11 +233,33 @@ model Object {
     created_at          DateTime        @default(now())
     updated_at          DateTime        @updatedAt
 
-    refs                Ref[]
     team                Team            @relation(fields: [team_id], references: [id], onDelete: Cascade)
+    refs                Ref[]
+    from_deltas         Delta[]         @relation(name: "DeltaFrom")
+    to_deltas           Delta[]         @relation(name: "DeltaTo")
+
 
     @@id([team_id, object_id])
     @@map("objects")
+}
+
+// ostree deltas
+// TODO rename delta_id to id
+model Delta {
+    // delta_id            String          @id @default(uuid()) @unique
+    from                String
+    to                  String
+    team_id             String
+    created_at          DateTime        @default(now())
+    updated_at          DateTime        @updatedAt
+    status              DeltaGeneration @default(underway)
+
+    from_delta          Object          @relation(name: "DeltaFrom", fields: [team_id, from], references: [team_id, object_id], onDelete: Cascade)
+    to_delta            Object          @relation(name: "DeltaTo", fields: [team_id, to], references: [team_id, object_id], onDelete: Cascade)
+    team                Team            @relation(fields: [team_id], references: [id], onDelete: Cascade)
+
+    @@id([team_id, from, to])
+    @@map("deltas")
 }
 
 

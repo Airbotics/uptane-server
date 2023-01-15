@@ -396,6 +396,7 @@ export const updateTeam = async (req: Request, res: Response, next: NextFunction
  * 
  * TODO
  * - delete all keys associated with ecus in this team.
+ * - remove team members in ory
  */
 export const deleteTeam = async (req: Request, res: Response, next: NextFunction) => {
     

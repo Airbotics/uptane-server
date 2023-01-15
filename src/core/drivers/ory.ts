@@ -1,18 +1,18 @@
+import {
+    Configuration,
+    FrontendApi,
+    IdentityApi,
+    PermissionApi,
+    RelationshipApi
+} from '@ory/client';
 import config from '@airbotics-config';
-import { 
-    Configuration, 
-    FrontendApi, 
-    IdentityApi, 
-    PermissionApi, 
-    RelationshipApi 
-} from "@ory/client"
 
 
 const oryConfig = new Configuration({
     basePath: config.ORY_PROJECT_URL,
     accessToken: config.ORY_ACCESS_TOKEN,
     baseOptions: {
-      timeout: 4000
+        timeout: 4000
     }
 });
 

@@ -3,7 +3,7 @@
 
 @BASE_URL=http://localhost:8001
 @API_VERSION=v0
-@TEAM_ID=5b3d92d3-e50d-4c7f-a871-daf1aeeb2a98
+@TEAM_ID=a091e00e-a4be-42d3-8bf9-f935c994a246
 @IMAGE=9523db36-30f7-4c66-8236-4d7c3326872c
 @ROBOT=heavy-eintopf-54
 @ORY_PROJECT_URL={{$dotenv %ORY_PROJECT_URL}}
@@ -42,7 +42,7 @@ Content-Type: application/json
 # -----------------------------------------
 
 ### healthcheck
-GET {{BASE_URL}} HTTP/1.1
+GET {{BASE_URL}}/ HTTP/1.1
 
 
 
@@ -70,21 +70,21 @@ Content-Type: application/json
 # Team
 # -----------------------------------------
 ### create a team
-POST {{BASE_URL}}/api/{{API_VERSION}}/team HTTP/1.1
+POST {{BASE_URL}}/api/{{API_VERSION}}/admin/teams HTTP/1.1
 x-session-token: {{SESSION_TOKEN}}
 Content-Type: application/json
 
 {
-    "name": "test 2"
+    "name": "Test team"
 }
 
 ### list teams
-GET {{BASE_URL}}/api/{{API_VERSION}}/team HTTP/1.1
+GET {{BASE_URL}}/api/{{API_VERSION}}/admin/teams HTTP/1.1
 x-session-token: {{SESSION_TOKEN}}
-air-team-id: {{TEAM_ID}}
+
 
 ### delete a team
-DELETE {{BASE_URL}}/api/{{API_VERSION}}/admin/team HTTP/1.1
+DELETE {{BASE_URL}}/api/{{API_VERSION}}/admin/teams HTTP/1.1
 x-session-token: {{SESSION_TOKEN}}
 air-team-id: {{TEAM_ID}}
 
@@ -96,11 +96,14 @@ air-team-id: {{TEAM_ID}}
 
 ### create provisioning credentials
 POST {{BASE_URL}}/api/{{API_VERSION}}/admin/provisioning-credentials HTTP/1.1
+x-session-token: {{SESSION_TOKEN}}
+air-team-id: {{TEAM_ID}}
 
 
 ### list provisioning credentials
-GET {{BASE_URL}}/api/{{API_VERSION}}/admin/{{TEAM_ID}}/provisioning-credentials HTTP/1.1
-
+GET {{BASE_URL}}/api/{{API_VERSION}}/admin/provisioning-credentials HTTP/1.1
+x-session-token: {{SESSION_TOKEN}}
+air-team-id: {{TEAM_ID}}
 
 
 # -----------------------------------------
@@ -194,9 +197,12 @@ GET {{BASE_URL}}/api/{{API_VERSION}}/image/{{TEAM_ID}}/images/021a31d187c51c86dd
 # TREEHUB
 # -----------------------------------------
 
+### tmp generate deltas
+POST {{BASE_URL}}/api/{{API_VERSION}}/robot/treehub/{{TEAM_ID}}/deltas HTTP/1.1
+
+
 ### get ostree config
 GET {{BASE_URL}}/api/{{API_VERSION}}/treehub/{{TEAM_ID}}/config HTTP/1.1
-
 
 
 ### upload a summary
@@ -208,7 +214,8 @@ this is a sample summary
 
 
 ### download a summary
-GET {{BASE_URL}}/api/{{API_VERSION}}/treehub/{{TEAM_ID}}/summary HTTP/1.1
+GET {{BASE_URL}}/api/{{API_VERSION}}/robot/treehub/summary HTTP/1.1
+air-team-id: {{TEAM_ID}}
 
 
 

@@ -13,10 +13,10 @@ const SEED_SECONDARY_ECU_ID = 'seed-secondary-ecu';
     console.log('Generating keys for seeder...');
     
     //Image repo keys
-    const imageRootKey = generateKeyPair(config.KEY_TYPE);
-    const imageTargetsKey = generateKeyPair(config.KEY_TYPE);
-    const imageSnapshotKey = generateKeyPair(config.KEY_TYPE);
-    const imageTimestampKey = generateKeyPair(config.KEY_TYPE);
+    const imageRootKey = generateKeyPair({keyType: config.TUF_KEY_TYPE});
+    const imageTargetsKey = generateKeyPair({keyType: config.TUF_KEY_TYPE});
+    const imageSnapshotKey = generateKeyPair({keyType: config.TUF_KEY_TYPE});
+    const imageTimestampKey = generateKeyPair({keyType: config.TUF_KEY_TYPE});
 
     await keyStorage.putKey(`${SEED_TEAM_ID}-image-root-private`, imageRootKey.privateKey);
     await keyStorage.putKey(`${SEED_TEAM_ID}-image-targets-private`, imageTargetsKey.privateKey);
@@ -29,10 +29,10 @@ const SEED_SECONDARY_ECU_ID = 'seed-secondary-ecu';
 
 
     //Director repo keys
-    const directorRootKey = generateKeyPair(config.KEY_TYPE);
-    const directorTargetsKey = generateKeyPair(config.KEY_TYPE);
-    const directorSnapshotKey = generateKeyPair(config.KEY_TYPE);
-    const directorTimestampKey = generateKeyPair(config.KEY_TYPE);
+    const directorRootKey = generateKeyPair({keyType: config.TUF_KEY_TYPE});
+    const directorTargetsKey = generateKeyPair({keyType: config.TUF_KEY_TYPE});
+    const directorSnapshotKey = generateKeyPair({keyType: config.TUF_KEY_TYPE});
+    const directorTimestampKey = generateKeyPair({keyType: config.TUF_KEY_TYPE});
 
     await keyStorage.putKey(`${SEED_TEAM_ID}-director-root-private`, directorRootKey.privateKey);
     await keyStorage.putKey(`${SEED_TEAM_ID}-director-targets-private`, directorTargetsKey.privateKey);
@@ -44,8 +44,8 @@ const SEED_SECONDARY_ECU_ID = 'seed-secondary-ecu';
     await keyStorage.putKey(`${SEED_TEAM_ID}-director-timestamp-public`, directorTimestampKey.publicKey);
     
     //ECU keys
-    const primaryEcuKey = generateKeyPair(config.KEY_TYPE);
-    const secondaryEcuKey = generateKeyPair(config.KEY_TYPE);
+    const primaryEcuKey = generateKeyPair({keyType: config.TUF_KEY_TYPE});
+    const secondaryEcuKey = generateKeyPair({keyType: config.TUF_KEY_TYPE});
 
     await keyStorage.putKey(`${SEED_TEAM_ID}-${SEED_PRIMARY_ECU_ID}-private`, primaryEcuKey.privateKey);
     await keyStorage.putKey(`${SEED_TEAM_ID}-${SEED_PRIMARY_ECU_ID}-public`, primaryEcuKey.publicKey);

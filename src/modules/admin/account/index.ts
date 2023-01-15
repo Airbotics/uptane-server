@@ -1,5 +1,5 @@
 import express, { Request } from 'express';
-import { mustBeAuthenticated, mustBeInTeam } from 'src/middlewares';
+import { mustBeAuthenticated, mustBeInTeam } from '@airbotics-middlewares';
 import * as controller from './controller';
 
 const router = express.Router();

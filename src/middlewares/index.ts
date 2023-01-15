@@ -1,9 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
+import { FrontendApiToSessionRequest, PermissionApiCheckPermissionRequest } from '@ory/client';
 import { logger } from '@airbotics-core/logger';
 import prisma from '@airbotics-core/drivers/postgres';
 import { ory } from '@airbotics-core/drivers/ory';
 import { BadResponse, ForbiddenResponse, UnauthorizedResponse } from '@airbotics-core/network/responses';
-import { FrontendApiToSessionRequest, PermissionApiCheckPermissionRequest } from '@ory/client';
 import { OryTeamRelations } from '@airbotics-core/consts';
 
 /**
@@ -14,13 +14,13 @@ import { OryTeamRelations } from '@airbotics-core/consts';
  * - Then populate the request of the id and the team it belongs to.
  * - Will prematurely return a 400 if this can't be done.
  * 
- * NOTE: the image repo doesn't ever act on the robot id.
+ * TODO
+ * - validate `air-client-id` header conforms to expectations
  */
 export const mustBeRobot = async (req: Request, res: Response, next: NextFunction) => {
 
     const robotId = req.header('air-client-id');
 
-    // TODO perform other validation here using joi
     if (!robotId) {
         logger.warn('robot id header was not provided');
         return new BadResponse(res, 'could not verify robot');
@@ -41,6 +41,35 @@ export const mustBeRobot = async (req: Request, res: Response, next: NextFunctio
         robot_id: robot.id,
         team_id: robot.team_id
     };
+
+    next();
+
+};
+
+
+/**
+ * Updates the `last_seen_at` and `agent_version` fields every time a robot makes a request.
+ * 
+ * Note: this should always be used after `mustBeRobot` middleware, we can then be certain
+ * the robot exists
+ * 
+ * TODO
+ * - validate user-agent header conforms to expectations 
+ */
+export const updateRobotMeta = async (req: Request, res: Response, next: NextFunction) => {
+
+    const { robot_id } = req.robotGatewayPayload!;
+    const agent_version = req.header('user-agent');
+
+    await prisma.robot.update({
+        where: {
+            id: robot_id
+        },
+        data: {
+            agent_version,
+            last_seen_at: new Date()
+        }
+    });
 
     next();
 

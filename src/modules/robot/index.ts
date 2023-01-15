@@ -12,7 +12,7 @@ import {
     Root_CA_PRIVATE_KEY_ID,
     Root_CA_PUBLIC_KEY_ID
 } from '@airbotics-core/consts';
-import { mustBeRobot } from '@airbotics-middlewares';
+import { mustBeRobot, updateRobotMeta } from '@airbotics-middlewares';
 
 const router = express.Router();
 
@@ -83,25 +83,25 @@ router.post('/devices', async (req: Request, res) => {
 
 });
 
-router.put('/system_info', mustBeRobot, async (req: Request, res) => {
+router.put('/system_info', mustBeRobot, updateRobotMeta, async (req: Request, res) => {
     console.log(req.headers)
     console.log(req.body)
     return res.status(200).end();
 })
 
-router.post('/system_info/config', mustBeRobot, async (req: Request, res) => {
+router.post('/system_info/config', mustBeRobot, updateRobotMeta, async (req: Request, res) => {
     console.log(req.headers)
     console.log(req.body)
     return res.status(200).end();
 })
 
-router.put('/core/installed', mustBeRobot, async (req: Request, res) => {
+router.put('/core/installed', mustBeRobot, updateRobotMeta, async (req: Request, res) => {
     console.log(req.headers)
     console.log(req.body)
     return res.status(200).end();
 })
 
-router.post('/events', mustBeRobot, async (req: Request, res) => {
+router.post('/events', mustBeRobot, updateRobotMeta, async (req: Request, res) => {
     console.log(req.headers)
     console.log(req.body)
     return res.status(200).end();
@@ -110,7 +110,7 @@ router.post('/events', mustBeRobot, async (req: Request, res) => {
 /**
  * Ingest network info reported by a robot
  */
-router.put('/system_info/network', mustBeRobot, async (req: Request, res) => {
+router.put('/system_info/network', mustBeRobot, updateRobotMeta, async (req: Request, res) => {
 
     const {
         hostname,

@@ -109,7 +109,6 @@ model Metadata {
     repo                TUFRepo                                 // root, targets, snapshot or timestamp
     version             Int                                     // must match the version in the signed portion of the metadata
     value               Json                                    // holds entire signed metadata
-
     created_at          DateTime        @default(now())
     expires_at          DateTime                                // this should always match the 'expires' field in the signed portion
 
@@ -131,7 +130,8 @@ model Metadata {
 model Robot {
     id                  String          @id @default(uuid()) @unique
     team_id             String
-
+    agent_version       String?                             // the version of the agent running on the primary ecu
+    last_seen_at        DateTime?                           // the last time this robot was seen at
     created_at          DateTime        @default(now())
     updated_at          DateTime        @updatedAt
 
@@ -214,7 +214,6 @@ model Ref {
     commit              String                                  // commit hash
     object_id           String                                  // object it points to
     team_id             String
-
     created_at          DateTime        @default(now())
     updated_at          DateTime        @updatedAt
 
@@ -280,7 +279,7 @@ model TmpEcuImages {
     @@map("tmp_ecu_images")
 }
 
-
+// groups that a robot can be in
 model Group {
     id                  String          @id @default(uuid()) @unique
     name                String
@@ -288,14 +287,15 @@ model Group {
     team_id             String
     created_at          DateTime        @default(now())
  
-    robots              RobotGroup[]
     team                Team            @relation(fields: [team_id], references: [id], onDelete: Cascade)
+    
+    robots              RobotGroup[]
 
     @@unique([id, team_id])
     @@map("groups")
 }
 
-
+// mappings between a robot and which groups they are in
 model RobotGroup {
     robot_id            String
     group_id            String

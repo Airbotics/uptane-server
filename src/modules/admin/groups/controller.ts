@@ -7,8 +7,6 @@ import { auditEventEmitter } from '@airbotics-core/events';
 
 
 
-
-
 /**
  * Create new group in requesters team. 
  */
@@ -391,6 +389,7 @@ export const addRobotToGroup = async (req: Request, res: Response, next: NextFun
 
         const groupRobot = await prisma.robotGroup.create({
             data: {
+                team_id: teamID,
                 robot_id: robot_id,
                 group_id: groupID
             },
@@ -484,7 +483,8 @@ export const removeRobotFromGroup = async (req: Request, res: Response, next: Ne
 
         await prisma.robotGroup.delete({
             where: {
-                robot_id_group_id: {
+                team_id_robot_id_group_id: {
+                    team_id: teamID,
                     robot_id: robot_id,
                     group_id: groupID
                 }

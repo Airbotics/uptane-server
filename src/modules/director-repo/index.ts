@@ -10,7 +10,7 @@ import { IRobotManifest, ITargetsImages, IEcuRegistrationPayload } from '@airbot
 import { toCanonical } from '@airbotics-core/utils';
 import { generateSignedSnapshot, generateSignedTargets, generateSignedTimestamp, getLatestMetadataVersion } from '@airbotics-core/tuf';
 import { ManifestErrors } from '@airbotics-core/consts/errors';
-import { mustBeRobot } from '@airbotics-middlewares';
+import { mustBeRobot, updateRobotMeta } from '@airbotics-middlewares';
 
 
 const router = express.Router();
@@ -294,7 +294,8 @@ const generateNewMetadata = async (team_id: string, robot_id: string, ecuSerials
                     }
                 },
                 targetFormat: String(ecuRollout.image.format).toUpperCase(),
-                uri: `${config.ROBOT_GATEWAY_ORIGIN}/api/v0/robot/repo/images/${ecuRollout.image_id}`
+                uri: null
+                // uri: `${config.ROBOT_GATEWAY_ORIGIN}/api/v0/robot/repo/images/${ecuRollout.image_id}`
             },
             length: ecuRollout.image.size,
             hashes: {
@@ -380,7 +381,7 @@ const generateNewMetadata = async (team_id: string, robot_id: string, ecuSerials
 /**
  * Process a manifest from a robot
  */
-router.put('/manifest', mustBeRobot, async (req: Request, res) => {
+router.put('/manifest', mustBeRobot, updateRobotMeta, async (req: Request, res) => {
 
     const manifest: IRobotManifest = req.body;
 
@@ -462,7 +463,7 @@ router.put('/manifest', mustBeRobot, async (req: Request, res) => {
  * TODO
  * - return error if ecu is already registered
  */
-router.post('/ecus', mustBeRobot, async (req: Request, res) => {
+router.post('/ecus', mustBeRobot, updateRobotMeta, async (req: Request, res) => {
 
     const payload: IEcuRegistrationPayload = req.body;
 
@@ -492,7 +493,7 @@ router.post('/ecus', mustBeRobot, async (req: Request, res) => {
 
     });
 
-    logger.info('registered an ecu');
+    logger.info('registered ecus for a robot');
 
     res.status(200).end();
 
@@ -502,7 +503,7 @@ router.post('/ecus', mustBeRobot, async (req: Request, res) => {
 /**
  * Fetch versioned role metadata in a team.
  */
-router.get('/:version.:role.json', mustBeRobot, async (req: Request, res) => {
+router.get('/:version.:role.json', mustBeRobot, updateRobotMeta, async (req: Request, res) => {
 
     const version = Number(req.params.version);
     const role = req.params.role;
@@ -541,7 +542,7 @@ router.get('/:version.:role.json', mustBeRobot, async (req: Request, res) => {
 /**
  * Fetch latest metadata in a team.
  */
-router.get('/:role.json', mustBeRobot, async (req: Request, res) => {
+router.get('/:role.json', mustBeRobot, updateRobotMeta, async (req: Request, res) => {
 
     const role = req.params.role;
 

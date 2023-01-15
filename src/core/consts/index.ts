@@ -29,15 +29,6 @@ export const enum EHashDigest {
     Sha512 = 'SHA512'
 }
 
-export const RootBucket = 'root';                           // for storing various infra objects
-export const RootCACertObjId = 'root-ca-cert';
-export const RootCAPrivateKeyId = 'root-ca-private';
-export const RootCAPublicKeyId = 'root-ca-public';
-export const GatewayCertObjId = 'gateway-cert';
-export const GatewayPrivateKeyId = 'gateway-private';
-export const GatewayPublicKeyId = 'gateway-public';
-
-
 
 export const enum OryTeamRelations {
     member = 'member',

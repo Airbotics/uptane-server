@@ -4,7 +4,7 @@ import config from '@airbotics-config';
 import { blobStorage } from '@airbotics-core/blob-storage';
 import { prisma } from '@airbotics-core/drivers/postgres';
 import { logger } from '@airbotics-core/logger';
-import { mustBeRobot } from '@airbotics-middlewares';
+import { mustBeRobot, updateRobotMeta } from '@airbotics-middlewares';
 import { generateHash } from '@airbotics-core/crypto';
 import { toCanonical } from '@airbotics-core/utils';
 import { EHashDigest } from '@airbotics-core/consts';
@@ -24,7 +24,7 @@ const router = express.Router();
  * - this must be defined before the controller for downloading an image using
  * the image id only. Otherwise express will not match the url pattern.
  */
-router.get('/images/:hash.:id', mustBeRobot, async (req: Request, res) => {
+router.get('/images/:hash.:id', mustBeRobot, updateRobotMeta, async (req: Request, res) => {
 
     const hash = req.params.hash;
     const id = req.params.id;
@@ -68,7 +68,7 @@ router.get('/images/:hash.:id', mustBeRobot, async (req: Request, res) => {
 /**
  * Download image using image id only.
  */
-router.get('/images/:id', mustBeRobot, async (req: Request, res) => {
+router.get('/images/:id', mustBeRobot, updateRobotMeta, async (req: Request, res) => {
 
     const id = req.params.id;
     const {
@@ -108,7 +108,7 @@ router.get('/images/:id', mustBeRobot, async (req: Request, res) => {
 /**
  * Fetch versioned role metadata in a team.
  */
-router.get('/:version.:role.json', mustBeRobot, async (req: Request, res) => {
+router.get('/:version.:role.json', mustBeRobot, updateRobotMeta, async (req: Request, res) => {
 
     const version = Number(req.params.version);
     const role = req.params.role;
@@ -141,7 +141,7 @@ router.get('/:version.:role.json', mustBeRobot, async (req: Request, res) => {
 /**
  * Fetch latest metadata in a team.
  */
-router.get('/:role.json', mustBeRobot, async (req: Request, res) => {
+router.get('/:role.json', mustBeRobot, updateRobotMeta, async (req: Request, res) => {
 
     const role = req.params.role;
     const {

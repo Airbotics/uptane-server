@@ -13,6 +13,7 @@ import {
     Root_CA_PUBLIC_KEY_ID
 } from '@airbotics-core/consts';
 import { mustBeRobot, updateRobotMeta } from '@airbotics-middlewares';
+import { IRobotEvent } from '@airbotics-types';
 
 const router = express.Router();
 
@@ -83,32 +84,129 @@ router.post('/devices', async (req: Request, res) => {
 
 });
 
-router.put('/system_info', mustBeRobot, updateRobotMeta, async (req: Request, res) => {
-    console.log(req.headers)
-    console.log(req.body)
-    return res.status(200).end();
-})
-
-router.post('/system_info/config', mustBeRobot, updateRobotMeta, async (req: Request, res) => {
-    console.log(req.headers)
-    console.log(req.body)
-    return res.status(200).end();
-})
-
-router.put('/core/installed', mustBeRobot, updateRobotMeta, async (req: Request, res) => {
-    console.log(req.headers)
-    console.log(req.body)
-    return res.status(200).end();
-})
-
-router.post('/events', mustBeRobot, updateRobotMeta, async (req: Request, res) => {
-    console.log(req.headers)
-    console.log(req.body)
-    return res.status(200).end();
-})
 
 /**
- * Ingest network info reported by a robot
+ * Ingest a hardware info report from a robot.
+ * 
+ * Note: this is only sent once and never again.
+ */
+router.put('/system_info', mustBeRobot, updateRobotMeta, async (req: Request, res) => {
+
+    const {
+        team_id,
+        robot_id
+    } = req.robotGatewayPayload!;
+
+    await prisma.hardwareInfoReport.create({
+        data: {
+            team_id,
+            robot_id,
+            hardware_info: req.body,
+        }
+    });
+
+    logger.info('ingested hardware info report');
+    return res.status(200).end();
+
+});
+
+
+/**
+ * Ingest a libaktualizr configuration report from a robot.
+ */
+router.post('/system_info/config', mustBeRobot, updateRobotMeta, async (req: Request, res) => {
+
+    const {
+        team_id,
+        robot_id
+    } = req.robotGatewayPayload!;
+
+    await prisma.aktualizrConfigReport.create({
+        data: {
+            team_id,
+            robot_id,
+            config: req.body,
+        }
+    });
+
+    logger.info('ingested aktualizr config report');
+    return res.status(200).end();
+
+});
+
+
+/**
+ * Ingest a installed package report from a robot.
+ */
+router.put('/core/installed', mustBeRobot, updateRobotMeta, async (req: Request, res) => {
+
+    const {
+        team_id,
+        robot_id
+    } = req.robotGatewayPayload!;
+
+    await prisma.installedPackagesReport.create({
+        data: {
+            team_id,
+            robot_id,
+            packages: req.body,
+        }
+    });
+
+    logger.info('ingested installed packages report');
+    return res.status(200).end();
+
+});
+
+
+/**
+ * Ingest telemtry events from a robot.
+ * 
+ * Note: client sends an id which we could use as the id in the db
+ */
+router.post('/events', mustBeRobot, updateRobotMeta, async (req: Request, res) => {
+
+    /*
+    Events sent by aktualizr:
+        CampaignAcceptedReport(const std::string& campaign_id);
+        CampaignDeclinedReport(const std::string& campaign_id);
+        CampaignPostponedReport(const std::string& campaign_id);
+        DevicePausedReport(const std::string& correlation_id);
+        DeviceResumedReport(const std::string& correlation_id);
+        EcuDownloadStartedReport(const Uptane::EcuSerial& ecu, const std::string& correlation_id);
+        EcuDownloadCompletedReport(const Uptane::EcuSerial& ecu, const std::string& correlation_id, bool success);
+        EcuInstallationStartedReport(const Uptane::EcuSerial& ecu, const std::string& correlation_id);
+        EcuInstallationAppliedReport(const Uptane::EcuSerial& ecu, const std::string& correlation_id);
+        EcuInstallationCompletedReport(const Uptane::EcuSerial& ecu, const std::string& correlation_id, bool success);
+    */
+
+    const {
+        team_id,
+        robot_id
+    } = req.robotGatewayPayload!;
+
+    const events = req.body as IRobotEvent[];
+
+    const robotEvents = events.map(robotEvent => ({
+        team_id,
+        robot_id,
+        event_type: robotEvent.eventType.id,
+        device_time: robotEvent.deviceTime,
+        ecu: robotEvent.event.ecu,
+        success: robotEvent.event.success
+    }));
+
+    await prisma.robotEvent.createMany({
+        data: robotEvents
+    });
+
+    logger.info('ingested robot event');
+    return res.status(200).end();
+});
+
+
+/**
+ * Ingest a network info report from a robot.
  */
 router.put('/system_info/network', mustBeRobot, updateRobotMeta, async (req: Request, res) => {
 

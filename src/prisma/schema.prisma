@@ -56,6 +56,10 @@ model Team {
     ecus                Ecu[]
     robot_manifests     RobotManifest[]
     network_reports     NetworkReport[]
+    packages_reports    InstalledPackagesReport[]
+    hw_info_reports     HardwareInfoReport[]
+    akt_config_reports  AktualizrConfigReport[]
+    robot_events        RobotEvent[]
     creds               ProvisioningCredentials[]
     groups              Group[]
     robot_groups        RobotGroup[]
@@ -141,6 +145,10 @@ model Robot {
     robot_manifests     RobotManifest[]
     metadata            Metadata[]
     network_reports     NetworkReport[]
+    packages_reports    InstalledPackagesReport[]
+    hw_info_reports     HardwareInfoReport[]
+    akt_config_reports  AktualizrConfigReport[]
+    events              RobotEvent[]
     groups              RobotGroup[]
 
     @@unique([team_id, id])
@@ -184,9 +192,74 @@ model NetworkReport {
     team                Team            @relation(fields: [team_id], references: [id], onDelete: Cascade)
     robot               Robot           @relation(fields: [team_id, robot_id], references: [team_id, id], onDelete: Cascade)
 
-
     @@unique([team_id, id])
     @@map("network_reports")
+}
+
+// installed packages report from a robot
+model InstalledPackagesReport {
+    id                  String          @id @default(uuid()) @unique
+    team_id             String
+    robot_id            String
+    packages            Json                                // stored as a json field
+    created_at          DateTime        @default(now())
+    updated_at          DateTime        @updatedAt
+
+    team                Team            @relation(fields: [team_id], references: [id], onDelete: Cascade)
+    robot               Robot           @relation(fields: [team_id, robot_id], references: [team_id, id], onDelete: Cascade)
+
+    @@unique([team_id, id])
+    @@map("installed_packages_reports")
+}
+
+// aktualizr config report from a robot
+model AktualizrConfigReport {
+    id                  String          @id @default(uuid()) @unique
+    team_id             String
+    robot_id            String
+    config              Json                                // stored as a json field
+    created_at          DateTime        @default(now())
+    updated_at          DateTime        @updatedAt
+
+    team                Team            @relation(fields: [team_id], references: [id], onDelete: Cascade)
+    robot               Robot           @relation(fields: [team_id, robot_id], references: [team_id, id], onDelete: Cascade)
+
+    @@unique([team_id, id])
+    @@map("aktualizr_config_reports")
+}
+
+// hardware info report from a robot
+model HardwareInfoReport {
+    id                  String          @id @default(uuid()) @unique
+    team_id             String
+    robot_id            String
+    hardware_info       Json                                // stored as a json field
+    created_at          DateTime        @default(now())
+    updated_at          DateTime        @updatedAt
+
+    team                Team            @relation(fields: [team_id], references: [id], onDelete: Cascade)
+    robot               Robot           @relation(fields: [team_id, robot_id], references: [team_id, id], onDelete: Cascade)
+
+    @@unique([team_id, id])
+    @@map("hardware_info_reports")
+}
+
+// telemetry events sent by a robot
+model RobotEvent {
+    id                  String          @id @default(uuid()) @unique
+    team_id             String
+    robot_id            String
+    event_type          String                              // TODO make enum
+    device_time         DateTime
+    ecu                 String                              // TODO make FK to ecu table
+    success             Boolean?
+    created_at          DateTime        @default(now())
+
+    team                Team            @relation(fields: [team_id], references: [id], onDelete: Cascade)
+    robot               Robot           @relation(fields: [team_id, robot_id], references: [team_id, id], onDelete: Cascade)
+
+    @@unique([team_id, id])
+    @@map("robot_events")
 }
 
 

@@ -179,7 +179,7 @@ export interface IRobotManifest {
     signatures: ISignatureTUF[],
     signed: {
         primary_ecu_serial: string,
-        ecu_version_manifests: { [key: string]: IecuVersionReport}, // Will need to be updated to support multiple version reports
+        ecu_version_manifests: { [key: string]: IecuVersionReport }, // Will need to be updated to support multiple version reports
     }
 }
 
@@ -196,6 +196,19 @@ export interface IEcuRegistrationPayload {
         }
     }[];
 }
+
+export interface IRobotEvent {
+    deviceTime: string;
+    event: {
+        ecu: string;
+        success?: boolean;
+    };
+    eventType: {
+        id: string;
+        version: number;
+    };
+    id: string;
+};
 
 
 export interface OryIdentity {

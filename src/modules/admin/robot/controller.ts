@@ -2,12 +2,12 @@ import { Request, Response, NextFunction } from 'express';
 import { BadResponse, SuccessJsonResponse, NoContentResponse } from '@airbotics-core/network/responses';
 import { logger } from '@airbotics-core/logger';
 import prisma from '@airbotics-core/drivers/postgres';
+import { IGroupRobot } from 'src/types';
 
 
 
 /**
  * Lists all robots in requesters team. 
- * 
  */
 export const listRobots = async (req: Request, res: Response, next: NextFunction) => {
     
@@ -133,4 +133,57 @@ export const deleteRobot = async (req: Request, res: Response, next: NextFunctio
         throw error;
     }
 
+}
+
+
+export const listRobotGroups = async (req: Request, res: Response, next: NextFunction) => {
+
+    const oryID = req.oryIdentity!.traits.id;
+    const teamID = req.headers['air-team-id']!;
+    const robotID = req.params.robot_id;
+
+    const {
+        skip,
+        take
+    } = req.query;
+
+    try {
+
+        const robot = await prisma.robot.findUnique({
+            where: {
+                team_id_id: {
+                    id: robotID,
+                    team_id: teamID
+                }
+            },
+            include: {
+                groups: {
+                    include: { group: true },
+                    orderBy: {
+                        created_at: 'desc'
+                    },
+                    skip: skip ? Number(skip) : undefined,
+                    take: take ? Number(take) : undefined
+                },
+            }
+        })
+
+        if (!robot) {
+            logger.error('A user tried to list groups for a robot they dont own or doesnt exist');
+            return new BadResponse(res, 'That robot could not be found');
+        }
+
+        const sanitisedrobotGroups = robot.groups.map(robotGroup => ({
+            group_id: robotGroup.group_id,
+            name: robotGroup.group.name,
+            created_at: robotGroup.group.created_at
+        }));
+
+        logger.info('A user read a list of a robots groups');
+        return new SuccessJsonResponse(res, sanitisedrobotGroups);
+
+    } catch (error) {
+        next(error);
+    }
+    
 }

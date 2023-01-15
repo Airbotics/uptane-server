@@ -5,7 +5,7 @@
 @API_VERSION=v0
 @TEAM_ID=a091e00e-a4be-42d3-8bf9-f935c994a246
 @IMAGE=9523db36-30f7-4c66-8236-4d7c3326872c
-@ROBOT=heavy-eintopf-54
+@ROBOT=1234
 @ORY_PROJECT_URL={{$dotenv %ORY_PROJECT_URL}}
 
 
@@ -89,6 +89,80 @@ x-session-token: {{SESSION_TOKEN}}
 air-team-id: {{TEAM_ID}}
 
 
+# -----------------------------------------
+# Group
+# -----------------------------------------
+
+### list groups
+GET {{BASE_URL}}/api/{{API_VERSION}}/admin/groups HTTP/1.1
+x-session-token: {{SESSION_TOKEN}}
+air-team-id: {{TEAM_ID}}
+
+### create group
+POST {{BASE_URL}}/api/{{API_VERSION}}/admin/groups HTTP/1.1
+x-session-token: {{SESSION_TOKEN}}
+air-team-id: {{TEAM_ID}}
+Content-Type: application/json
+
+{
+    "name": "test group 2",
+    "description": "this is a test group", 
+    "robotIDs": []
+}
+
+
+### get group details
+GET {{BASE_URL}}/api/{{API_VERSION}}/admin/groups/d30e3d38-ef40-48fc-b7e0-af2548798220 HTTP/1.1
+x-session-token: {{SESSION_TOKEN}}
+air-team-id: {{TEAM_ID}}
+Content-Type: application/json
+
+
+### update group details
+PATCH {{BASE_URL}}/api/{{API_VERSION}}/admin/groups/d30e3d38-ef40-48fc-b7e0-af2548798220 HTTP/1.1
+x-session-token: {{SESSION_TOKEN}}
+air-team-id: {{TEAM_ID}}
+Content-Type: application/json
+
+{
+    "name": "updated name",
+    "description": "updated description"
+}
+
+
+### delete group
+DELETE {{BASE_URL}}/api/{{API_VERSION}}/admin/groups/d30e3d38-ef40-48fc-b7e0-af2548798220 HTTP/1.1
+x-session-token: {{SESSION_TOKEN}}
+air-team-id: {{TEAM_ID}}
+
+
+### get robots in a group
+GET {{BASE_URL}}/api/{{API_VERSION}}/admin/groups/1ed45faa-8f7c-4d8e-a389-9f05f4ee2dd1/robots HTTP/1.1
+x-session-token: {{SESSION_TOKEN}}
+air-team-id: {{TEAM_ID}}
+Content-Type: application/json
+
+
+### add a robot to a group
+POST {{BASE_URL}}/api/{{API_VERSION}}/admin/groups/1ed45faa-8f7c-4d8e-a389-9f05f4ee2dd1/robots HTTP/1.1
+x-session-token: {{SESSION_TOKEN}}
+air-team-id: {{TEAM_ID}}
+Content-Type: application/json
+
+{
+    "robot_id": "1234"
+}
+
+
+### delete a robot from a group
+DELETE {{BASE_URL}}/api/{{API_VERSION}}/admin/groups/1ed45faa-8f7c-4d8e-a389-9f05f4ee2dd1/robots HTTP/1.1
+x-session-token: {{SESSION_TOKEN}}
+air-team-id: {{TEAM_ID}}
+Content-Type: application/json
+
+{
+    "robot_id": "1234"
+}
 
 # -----------------------------------------
 # Provisioning
@@ -124,6 +198,11 @@ air-team-id: {{TEAM_ID}}
 ### delete a robot
 DELETE {{BASE_URL}}/api/{{API_VERSION}}/admin/{{TEAM_ID}}/robots/{{ROBOT}} HTTP/1.1
 
+
+### get groups a robot is in
+GET {{BASE_URL}}/api/{{API_VERSION}}/admin/robots/{{ROBOT}}/groups HTTP/1.1
+x-session-token: {{SESSION_TOKEN}}
+air-team-id: {{TEAM_ID}}
 
 
 # -----------------------------------------

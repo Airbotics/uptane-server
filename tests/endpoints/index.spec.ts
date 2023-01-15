@@ -168,6 +168,58 @@ test('admin - teams - delete team', async () => {
     expect(res.status).not.toEqual(404);
 });
 
+/**
+ * Groups
+ */
+
+test('admin - groups - list groups a robot is in', async () => {
+    const res = await request(app).get('/api/v0/admin/robots/123e4567-e89b-12d3-a456-426614174000/groups');
+    expect(res.status).not.toEqual(404);
+});
+
+test('admin - groups - create a group', async () => {
+    const res = await request(app).post('/api/v0/admin/groups');
+    expect(res.status).not.toEqual(404);
+});
+
+
+test('admin - groups - lists group', async () => {
+    const res = await request(app).get('/api/v0/admin/groups');
+    expect(res.status).not.toEqual(404);
+});
+
+
+test('admin - groups - get group detail', async () => {
+    const res = await request(app).get('/api/v0/admin/groups/123e4567-e89b-12d3-a456-426614174000');
+    expect(res.status).not.toEqual(404);
+});
+
+
+test('admin - groups - update group', async () => {
+    const res = await request(app).patch('/api/v0/admin/groups/123e4567-e89b-12d3-a456-426614174000');
+    expect(res.status).not.toEqual(404);
+});
+
+test('admin - groups - delete group', async () => {
+    const res = await request(app).delete('/api/v0/admin/groups/123e4567-e89b-12d3-a456-426614174000');
+    expect(res.status).not.toEqual(404);
+});
+
+test('admin - groups - get robots in a group', async () => {
+    const res = await request(app).get('/api/v0/admin/groups/123e4567-e89b-12d3-a456-426614174000/robots');
+    expect(res.status).not.toEqual(404);
+});
+
+test('admin - groups - add robot to group', async () => {
+    const res = await request(app).post('/api/v0/admin/groups/123e4567-e89b-12d3-a456-426614174000/robots');
+    expect(res.status).not.toEqual(404);
+});
+
+test('admin - groups - remove robot from group', async () => {
+    const res = await request(app).delete('/api/v0/admin/groups/123e4567-e89b-12d3-a456-426614174000/robots');
+    expect(res.status).not.toEqual(404);
+});
+
 
 
 /**

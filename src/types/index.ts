@@ -217,3 +217,20 @@ export interface ITeamDetail {
     name: string;
     created_at: Date;
 }
+
+export interface IGroup {
+    id: string;
+    name: string;
+    description: string;
+    num_robots: number;
+    created_at: Date;
+}
+
+export interface IGroupRobot {
+    robot_id: string;
+    created_at: Date;
+    ecus: {
+        id: string;
+        hwid: string;
+    }[]
+}

@@ -2,9 +2,8 @@ import e, { Request, Response, NextFunction } from 'express';
 import { BadResponse, SuccessJsonResponse, NoContentResponse } from '@airbotics-core/network/responses';
 import { logger } from '@airbotics-core/logger';
 import prisma from '@airbotics-core/drivers/postgres';
-import { IGroup, IGroupRobot } from 'src/types';
+import { IGroup, IGroupRobot } from '@airbotics-types';
 import { auditEventEmitter } from '@airbotics-core/events';
-import { NotFoundResponse } from '../../../core/network/responses';
 
 
 

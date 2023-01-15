@@ -5,7 +5,7 @@ import { OryNamespaces, OryTeamRelations } from '@airbotics-core/consts';
 import { SuccessMessageResponse, BadResponse, SuccessJsonResponse, NoContentResponse } from '@airbotics-core/network/responses';
 import { logger } from '@airbotics-core/logger';
 import prisma from '@airbotics-core/drivers/postgres';
-import { ITeamDetail } from 'src/types';
+import { ITeamDetail } from '@airbotics-types';
 import { auditEventEmitter } from '@airbotics-core/events';
 import { generateKeyPair } from '@airbotics-core/crypto';
 import config from '@airbotics-config';

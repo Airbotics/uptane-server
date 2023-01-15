@@ -2,7 +2,7 @@ import express, { Request } from 'express';
 import { prisma } from '@airbotics-core/drivers/postgres';
 import { logger } from '@airbotics-core/logger';
 import { OSTREE_CONFIG } from '@airbotics-core/consts';
-import { mustBeRobot } from 'src/middlewares';
+import { mustBeRobot } from '@airbotics-middlewares';
 
 const router = express.Router();
 

@@ -9,7 +9,7 @@ import { generateHash } from '@airbotics-core/crypto';
 import { toCanonical } from '@airbotics-core/utils';
 import { EHashDigest } from '@airbotics-core/consts';
 import { dayjs } from '@airbotics-core/time';
-import { ISignedTargetsTUF } from 'src/types';
+import { ISignedTargetsTUF } from '@airbotics-types';
 import { loadKeyPair } from '@airbotics-core/key-storage';
 import { generateSignedSnapshot, generateSignedTimestamp, getLatestMetadata, getLatestMetadataVersion } from '@airbotics-core/tuf';
 

@@ -3,7 +3,7 @@ import { UploadStatus } from '@prisma/client';
 import { logger } from '@airbotics-core/logger';
 import { prisma } from '@airbotics-core/drivers/postgres';
 import { blobStorage } from '@airbotics-core/blob-storage';
-import { mustBeRobot } from 'src/middlewares';
+import { mustBeRobot } from '@airbotics-middlewares';
 
 const router = express.Router();
 

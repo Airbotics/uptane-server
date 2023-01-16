@@ -136,6 +136,7 @@ model Robot {
     team_id             String
     agent_version       String?                             // the version of the agent running on the primary ecu
     last_seen_at        DateTime?                           // the last time this robot was seen at
+    ecus_registered     Boolean         @default(false)     // whether the ecus have been registered, they can only do this once
     created_at          DateTime        @default(now())
     updated_at          DateTime        @updatedAt
 

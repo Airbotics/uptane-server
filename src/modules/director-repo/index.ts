@@ -363,8 +363,8 @@ const generateNewMetadata = async (team_id: string, robot_id: string, ecuSerials
             }
         });
 
-        //Update the acknowledged field in the rollouts table
-        await prisma.tmpEcuImages.updateMany({
+        // update the acknowledged field in the rollouts table
+        await tx.tmpEcuImages.updateMany({
             where: {
                 ecu_id: {
                     in: ecuSerials
@@ -459,10 +459,13 @@ router.put('/manifest', mustBeRobot, updateRobotMeta, async (req: Request, res) 
 
 
 /**
- * A robot is registering an ecu
+ * A robot is registering its ECUs.
+ * 
+ * Note:
+ * - it can only do this once, if ECUs need to be changed the robot should be deleted and another one created.
  * 
  * TODO
- * - return error if ecu is already registered
+ * - return error if robot has already registered ecus
  */
 router.post('/ecus', mustBeRobot, updateRobotMeta, async (req: Request, res) => {
 
@@ -472,6 +475,19 @@ router.post('/ecus', mustBeRobot, updateRobotMeta, async (req: Request, res) => 
         team_id,
         robot_id
     } = req.robotGatewayPayload!;
+
+    // check the robot has not registered its ecus before
+    // middlewares have ensured this robot exists so we don't need to check
+    const robot = await prisma.robot.findUnique({
+        where: {
+            id: robot_id
+        }
+    });
+
+    if(robot!.ecus_registered) {
+        logger.warn('a robot is trying to register ecus more than once');
+        res.status(400).end();
+    }
 
     const createEcusData = payload.ecus.map(ecu => ({
         id: ecu.ecu_serial,
@@ -485,7 +501,8 @@ router.post('/ecus', mustBeRobot, updateRobotMeta, async (req: Request, res) => 
     await prisma.$transaction(async tx => {
 
         for (const ecu of payload.ecus) {
-            // we dont store ecu private keys on the backend
+            
+            // we dont store ecu private keys on the backend so private key is set to an empty string
             await keyStorage.putKeyPair(getKeyStorageEcuKeyId(team_id, ecu.ecu_serial), {
                 publicKey: ecu.clientKey.keyval.public,
                 privateKey: ''
@@ -496,10 +513,18 @@ router.post('/ecus', mustBeRobot, updateRobotMeta, async (req: Request, res) => 
             data: createEcusData
         });
 
+        await tx.robot.update({
+            where: {
+                id: robot_id,
+            },
+            data: {
+                ecus_registered: true
+            }
+        });
+
     });
 
     logger.info('registered ecus for a robot');
-
     res.status(200).end();
 
 });

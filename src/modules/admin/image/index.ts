@@ -11,4 +11,10 @@ router.get('/images',
     mustBeInTeam(OryTeamRelations.member),
     controller.listImages);
 
+// get single image
+router.get('/images/:image_id',
+    mustBeAuthenticated,
+    mustBeInTeam(OryTeamRelations.member),
+    controller.getImage);
+
 export default router;

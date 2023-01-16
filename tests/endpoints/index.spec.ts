@@ -92,11 +92,6 @@ test('admin - account - update account', async () => {
     expect(res.status).not.toEqual(404);
 });
 
-test('admin - images - upload image', async () => {
-    const res = await request(app).post('/api/v0/admin/images');
-    expect(res.status).not.toEqual(404);
-});
-
 test('admin - images - list images', async () => {
     const res = await request(app).get('/api/v0/admin/images');
     expect(res.status).not.toEqual(404);
@@ -248,16 +243,6 @@ test('director repo - get latest role', async () => {
 /**
  * Image repo
  */
-test('image repo - get image with hash', async () => {
-    const res = await request(app).get('/api/v0/robot/repo/images/b94d27b9934d3e08a52e52d7da7dabfac484efe37a5380ee9088f7ace2efcde9.id');
-    expect(res.status).not.toEqual(404);
-});
-
-test('image repo - get image with hash', async () => {
-    const res = await request(app).get('/api/v0/robot/repo/images/id');
-    expect(res.status).not.toEqual(404);
-});
-
 test('image repo - get version of a role', async () => {
     const res = await request(app).get('/api/v0/robot/repo/1.root.json');
     expect(res.status).not.toEqual(404);

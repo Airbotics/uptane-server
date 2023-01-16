@@ -18,94 +18,6 @@ const router = express.Router();
 
 
 /**
- * Download image using hash and image id.
- * 
- * NOTE:
- * - this must be defined before the controller for downloading an image using
- * the image id only. Otherwise express will not match the url pattern.
- */
-router.get('/images/:hash.:id', mustBeRobot, updateRobotMeta, async (req: Request, res) => {
-
-    const hash = req.params.hash;
-    const id = req.params.id;
-    const {
-        team_id
-    } = req.robotGatewayPayload!;
-
-    // FIND image WHERE team = team AND image_id = image_id AND sha256 = hash
-    const image = await prisma.image.findFirst({
-        where: {
-            AND: [
-                { team_id },
-                { id },
-                { sha256: hash }
-            ]
-        }
-    });
-
-    if (!image) {
-        logger.warn('could not download image because it does not exist');
-        return res.status(400).send('could not download image');
-    }
-
-    try {
-        // const content = await blobStorage.getObject(bucketId);
-        const content = await blobStorage.getObject(team_id, `images/${image.id}`);
-
-        res.set('content-type', 'application/octet-stream');
-        return res.status(200).send(content);
-
-    } catch (error) {
-        // db and blob storage should be in sync
-        // if an image exists in db but not blob storage something has gone wrong, bail on this request
-        logger.error('images in postgres and blob storage are out of sync');
-        return res.status(500).end();
-    }
-
-});
-
-
-/**
- * Download image using image id only.
- */
-router.get('/images/:id', mustBeRobot, updateRobotMeta, async (req: Request, res) => {
-
-    const id = req.params.id;
-    const {
-        team_id
-    } = req.robotGatewayPayload!;
-
-    const image = await prisma.image.findUnique({
-        where: {
-            team_id_id: {
-                team_id,
-                id
-            }
-        }
-    });
-
-    if (!image) {
-        logger.warn('could not download image because it does not exist');
-        return res.status(400).send('could not download image');
-    }
-
-    try {
-        const content = await blobStorage.getObject(team_id, `images/${image.id}`);
-
-        res.set('content-type', 'application/octet-stream');
-        return res.status(200).send(content);
-
-    } catch (error) {
-        // db and blob storage should be in sync
-        // if an image exists in db but not blob storage something has gone wrong, bail on this request
-        logger.error('images in postgres and blob storage are out of sync');
-        return res.status(500).end();
-    }
-
-});
-
-
-/**
  * Fetch versioned role metadata in a team.
  */
 router.get('/:version.:role.json', mustBeRobot, updateRobotMeta, async (req: Request, res) => {
@@ -270,7 +182,8 @@ router.put('/:team_id/api/v1/user_repo/targets', async (req, res) => {
 
     return res.status(200).end();
 
-})
+});
+
 
 /**
  * Get targets for offline signing.

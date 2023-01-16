@@ -5,15 +5,7 @@ import * as controller from './controller';
 
 const router = express.Router();
 
-//create an image
-router.post('/images',
-    express.raw({ type: '*/*' }),
-    mustBeAuthenticated,
-    mustBeInTeam(OryTeamRelations.admin),
-    controller.createImage);
-
-    
-//list images
+// list images
 router.get('/images',
     mustBeAuthenticated,
     mustBeInTeam(OryTeamRelations.member),

@@ -37,7 +37,7 @@ enum DeltaGeneration {
 // type/format of image
 enum ImageFormat {
     ostree
-    binary
+    binary                                                      // this is not supported for now
 }
 
 // team to contain all resources (metadata, ecus, manifests, images, etc.) related to the same project

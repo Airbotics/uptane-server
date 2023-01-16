@@ -10,14 +10,11 @@ import { generateCertificate, generateKeyPair, ICertOpts } from '../src/core/cry
 import {
     ROOT_BUCKET,
     ROOT_CA_CERT_OBJ_ID,
-    Root_CA_PRIVATE_KEY_ID,
-    Root_CA_PUBLIC_KEY_ID,
     GATEWAY_CERT_OBJ_ID,
-    GATEWAY_PRIVATE_KEY_ID,
-    GATEWAY_PUBLIC_KEY_ID,
+    ROOT_CA_KEY_ID,
+    GATEWAY_KEY_ID,
     EKeyType
 } from '../src/core/consts';
-import config from '../src/config';
 
 
 interface ICmd {
@@ -31,9 +28,6 @@ const createAllCerts: ICmd = {
 
         console.log('Creating root and gateway cert');
 
-        //Ask the user for the common name. This must match the hostname the gateway is reachable at
-        const CN: string = readlineSync.question('Enter the Common Name (CN): ');
-
         // generate key pair for root cert
         const rootCaKeyPair = generateKeyPair({ keyType: EKeyType.Rsa });
 
@@ -45,7 +39,7 @@ const createAllCerts: ICmd = {
 
         // opts for gateway cert
         const opts: ICertOpts = {
-            commonName: CN,
+            commonName: 'localhost',
             parentCert: rootCaCert,
             parentKeyPair: {
                 privateKey: rootCaKeyPair.privateKey,
@@ -60,10 +54,14 @@ const createAllCerts: ICmd = {
         await blobStorage.createBucket(ROOT_BUCKET);
         await blobStorage.putObject(ROOT_BUCKET, ROOT_CA_CERT_OBJ_ID, forge.pki.certificateToPem(rootCaCert));
         await blobStorage.putObject(ROOT_BUCKET, GATEWAY_CERT_OBJ_ID, forge.pki.certificateToPem(gatewayCert));
-        await keyStorage.putKey(Root_CA_PRIVATE_KEY_ID, rootCaKeyPair.privateKey);
-        await keyStorage.putKey(Root_CA_PUBLIC_KEY_ID, rootCaKeyPair.publicKey);
-        await keyStorage.putKey(GATEWAY_PRIVATE_KEY_ID, gatewayKeyPair.privateKey);
-        await keyStorage.putKey(GATEWAY_PUBLIC_KEY_ID, gatewayKeyPair.publicKey);
+        await keyStorage.putKeyPair(ROOT_CA_KEY_ID, {
+            publicKey: rootCaKeyPair.publicKey, 
+            privateKey: rootCaKeyPair.privateKey
+        });
+        await keyStorage.putKeyPair(GATEWAY_KEY_ID, {
+            publicKey: gatewayKeyPair.publicKey, 
+            privateKey: gatewayKeyPair.privateKey
+        });
 
     }
 };
@@ -76,10 +74,8 @@ const deleteAllCerts: ICmd = {
 
         await blobStorage.deleteBucket(ROOT_BUCKET);
 
-        await keyStorage.deleteKey(Root_CA_PRIVATE_KEY_ID);
-        await keyStorage.deleteKey(Root_CA_PUBLIC_KEY_ID);
-        await keyStorage.deleteKey(GATEWAY_PRIVATE_KEY_ID);
-        await keyStorage.deleteKey(GATEWAY_PUBLIC_KEY_ID);
+        await keyStorage.deleteKeyPair(ROOT_CA_KEY_ID);
+        await keyStorage.deleteKeyPair(GATEWAY_KEY_ID);
 
     }
 };

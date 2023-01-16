@@ -6,7 +6,8 @@ export const enum EBlobStorageProvider {
 
 // supported providers for key storage
 export const enum EKeyStorageProvider {
-    Filesystem = 'fs'
+    Filesystem = 'fs',
+    AWS = 'aws'
 }
 
 // default ostree config
@@ -56,11 +57,9 @@ export const enum ESignatureScheme {
 // root bucket consts
 export const ROOT_BUCKET = 'root';                           // for storing various infra objects
 export const ROOT_CA_CERT_OBJ_ID = 'root-ca-cert';
-export const Root_CA_PRIVATE_KEY_ID = 'root-ca-private';
-export const Root_CA_PUBLIC_KEY_ID = 'root-ca-public';
+export const ROOT_CA_KEY_ID = 'root-ca-keypair';
 export const GATEWAY_CERT_OBJ_ID = 'gateway-cert';
-export const GATEWAY_PRIVATE_KEY_ID = 'gateway-private';
-export const GATEWAY_PUBLIC_KEY_ID = 'gateway-public';
+export const GATEWAY_KEY_ID = 'gateway-keypair';
 
 // root cert fields
 export const ROOT_CERT_COMMON_NAME = 'airbotics-root';

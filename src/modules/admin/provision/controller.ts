@@ -1,5 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
-import { EKeyType, ROOT_BUCKET, ROOT_CA_CERT_OBJ_ID, Root_CA_PRIVATE_KEY_ID, Root_CA_PUBLIC_KEY_ID } from '@airbotics-core/consts';
+import archiver from 'archiver';
+import forge from 'node-forge';
+import { TUFRepo, TUFRole } from '@prisma/client';
+import {
+    EKeyType,
+    ROOT_BUCKET,
+    ROOT_CA_CERT_OBJ_ID,
+    ROOT_CA_KEY_ID
+} from '@airbotics-core/consts';
 import { SuccessJsonResponse, NoContentResponse } from '@airbotics-core/network/responses';
 import { logger } from '@airbotics-core/logger';
 import prisma from '@airbotics-core/drivers/postgres';
@@ -7,12 +15,9 @@ import { auditEventEmitter } from '@airbotics-core/events';
 import { generateCertificate, generateKeyPair } from '@airbotics-core/crypto';
 import config from '@airbotics-config';
 import { generateTufKey, getInitialMetadata } from '@airbotics-core/tuf';
-import { TUFRepo, TUFRole } from '@prisma/client';
 import { blobStorage } from '@airbotics-core/blob-storage';
-import { keyStorage, loadKeyPair } from '@airbotics-core/key-storage';
-import archiver from 'archiver';
-import forge from 'node-forge';
-import { toCanonical } from '@airbotics-core/utils';
+import { keyStorage } from '@airbotics-core/key-storage';
+import { getKeyStorageRepoKeyId, toCanonical } from '@airbotics-core/utils';
 
 
 /**
@@ -24,16 +29,15 @@ import { toCanonical } from '@airbotics-core/utils';
  * - record credentials creation in db to enable revocation, expiry, auditing, etc.
  */
 export const createProvisioningCredentials = async (req: Request, res: Response) => {
-    
+
     const oryID = req.oryIdentity!.traits.id;
     const teamID = req.headers['air-team-id']!;
 
     // create provisioning key
-    const provisioningKeyPair = generateKeyPair({ keyType: EKeyType.Rsa }); 
+    const provisioningKeyPair = generateKeyPair({ keyType: EKeyType.Rsa });
 
     // load root ca and key, used to sign provisioning cert
-    const rootCaPrivateKeyStr = await keyStorage.getKey(Root_CA_PRIVATE_KEY_ID);
-    const rootCaPublicKeyStr = await keyStorage.getKey(Root_CA_PUBLIC_KEY_ID);
+    const rootCaKeyPair = await keyStorage.getKeyPair(ROOT_CA_KEY_ID);
     const rootCaCertStr = await blobStorage.getObject(ROOT_BUCKET, ROOT_CA_CERT_OBJ_ID) as string;
     const rootCaCert = forge.pki.certificateFromPem(rootCaCertStr);
 
@@ -41,10 +45,7 @@ export const createProvisioningCredentials = async (req: Request, res: Response)
     const opts = {
         commonName: teamID,
         parentCert: rootCaCert,
-        parentKeyPair: {
-            privateKey: rootCaPrivateKeyStr,
-            publicKey: rootCaPublicKeyStr
-        }
+        parentKeyPair: rootCaKeyPair
     };
     const provisioningCert = generateCertificate(provisioningKeyPair, opts);
 
@@ -59,7 +60,7 @@ export const createProvisioningCredentials = async (req: Request, res: Response)
         return res.status(400).send('could not create provisioning credentials');
     }
 
-    const targetsKeyPair = await loadKeyPair(teamID, TUFRepo.image, TUFRole.targets);
+    const targetsKeyPair = await keyStorage.getKeyPair(getKeyStorageRepoKeyId(teamID, TUFRepo.image, TUFRole.targets));
     const targetsTufKeyPublic = generateTufKey(targetsKeyPair.publicKey, { isPublic: true });
     const targetsTufKeyPrivate = generateTufKey(targetsKeyPair.privateKey, { isPublic: false });
 
@@ -105,7 +106,7 @@ export const createProvisioningCredentials = async (req: Request, res: Response)
 export const listProvisioningCredentials = async (req: Request, res: Response) => {
 
     const teamID = req.headers['air-team-id']!;
-    
+
     const provisioningCredentials = await prisma.provisioningCredentials.findMany({
         where: {
             team_id: teamID
@@ -114,12 +115,12 @@ export const listProvisioningCredentials = async (req: Request, res: Response) =
             created_at: 'desc'
         }
     });
-    
+
     const credentialsSanitised = provisioningCredentials.map(cred => ({
         id: cred.id,
         created_at: cred.created_at
     }));
-    
+
     logger.info('A user read a list of the provisioning credentials');
     return new SuccessJsonResponse(res, credentialsSanitised);
 

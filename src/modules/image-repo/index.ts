@@ -6,11 +6,11 @@ import { prisma } from '@airbotics-core/drivers/postgres';
 import { logger } from '@airbotics-core/logger';
 import { mustBeRobot, updateRobotMeta } from '@airbotics-middlewares';
 import { generateHash } from '@airbotics-core/crypto';
-import { toCanonical } from '@airbotics-core/utils';
+import { getKeyStorageRepoKeyId, toCanonical } from '@airbotics-core/utils';
 import { EHashDigest } from '@airbotics-core/consts';
 import { dayjs } from '@airbotics-core/time';
 import { ISignedTargetsTUF } from '@airbotics-types';
-import { loadKeyPair } from '@airbotics-core/key-storage';
+import { keyStorage } from '@airbotics-core/key-storage';
 import { generateSignedSnapshot, generateSignedTimestamp, getLatestMetadata, getLatestMetadataVersion } from '@airbotics-core/tuf';
 
 
@@ -206,8 +206,8 @@ router.put('/:team_id/api/v1/user_repo/targets', async (req, res) => {
         }
     }
 
-    const snapshotKeyPair = await loadKeyPair(team_id, TUFRepo.image, TUFRole.snapshot);
-    const timestampKeyPair = await loadKeyPair(team_id, TUFRepo.image, TUFRole.timestamp);
+    const snapshotKeyPair = await keyStorage.getKeyPair(getKeyStorageRepoKeyId(team_id, TUFRepo.image, TUFRole.snapshot));
+    const timestampKeyPair = await keyStorage.getKeyPair(getKeyStorageRepoKeyId(team_id, TUFRepo.image, TUFRole.timestamp));
 
     const newTargetsVersion = targetsMetadata.signed.version;
     const newSnapshotVersion = await getLatestMetadataVersion(team_id, TUFRepo.image, TUFRole.snapshot) + 1;

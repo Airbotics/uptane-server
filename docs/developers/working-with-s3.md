@@ -1,6 +1,6 @@
 # Working with s3
 
-We like to use AWS and s3 for storing blobs. We tend to use [localstack](https://localstack.cloud/) for development, this runs a mocked AWS cloud locally. You can swap this out with some other provider.
+We like to use AWS and s3 for storing blobs. We tend to use [localstack](https://localstack.cloud/) for development, this runs a mocked AWS cloud locally.
 
 ### Bucket layout
 

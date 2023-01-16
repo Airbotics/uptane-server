@@ -9,9 +9,9 @@ export interface IBlobStorageProvider {
 }
 
 export interface IKeyStorageProvider {
-    putKey(id: string, privKey: string): Promise<void>;
-    getKey(id: string): Promise<string>;
-    deleteKey(id: string): Promise<void>;
+    putKeyPair(id: string, keypair: IKeyPair): Promise<void>;
+    getKeyPair(id: string): Promise<IKeyPair>;
+    deleteKeyPair(id: string): Promise<void>;
 }
 
 

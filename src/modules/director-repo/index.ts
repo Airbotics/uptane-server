@@ -1,13 +1,13 @@
 import express, { Request } from 'express';
 import { TUFRepo, TUFRole, Prisma } from '@prisma/client';
-import { keyStorage, loadKeyPair } from '@airbotics-core/key-storage';
+import { keyStorage } from '@airbotics-core/key-storage';
 import config from '@airbotics-config';
 import { logger } from '@airbotics-core/logger';
 import { verifySignature } from '@airbotics-core/crypto';
 import prisma from '@airbotics-core/drivers/postgres';
 import { robotManifestSchema } from './schemas';
 import { IRobotManifest, ITargetsImages, IEcuRegistrationPayload } from '@airbotics-types';
-import { toCanonical } from '@airbotics-core/utils';
+import { getKeyStorageRepoKeyId, getKeyStorageEcuKeyId, toCanonical } from '@airbotics-core/utils';
 import { generateSignedSnapshot, generateSignedTargets, generateSignedTimestamp, getLatestMetadataVersion } from '@airbotics-core/tuf';
 import { ManifestErrors } from '@airbotics-core/consts/errors';
 import { mustBeRobot, updateRobotMeta } from '@airbotics-middlewares';
@@ -57,7 +57,8 @@ export const robotManifestChecks = async (robotManifest: IRobotManifest, teamID:
     try {
 
         for (const ecuSerial of ecuSerials) {
-            ecuPubKeys[ecuSerial] = await keyStorage.getKey(`${teamID}-${ecuSerial}-public`);
+            const ecuKeypair = await keyStorage.getKeyPair(getKeyStorageEcuKeyId(teamID, ecuSerial));
+            ecuPubKeys[ecuSerial] = ecuKeypair.publicKey;
         }
 
     } catch (e) {
@@ -312,9 +313,9 @@ const generateNewMetadata = async (team_id: string, robot_id: string, ecuSerials
     const newTimestampVersion = await getLatestMetadataVersion(team_id, TUFRepo.director, TUFRole.timestamp, robot_id) + 1;
 
     //Read the keys for the director
-    const targetsKeyPair = await loadKeyPair(team_id, TUFRepo.director, TUFRole.targets);
-    const snapshotKeyPair = await loadKeyPair(team_id, TUFRepo.director, TUFRole.snapshot);
-    const timestampKeyPair = await loadKeyPair(team_id, TUFRepo.director, TUFRole.timestamp);
+    const targetsKeyPair = await keyStorage.getKeyPair(getKeyStorageRepoKeyId(team_id, TUFRepo.director, TUFRole.targets));
+    const snapshotKeyPair = await keyStorage.getKeyPair(getKeyStorageRepoKeyId(team_id, TUFRepo.director, TUFRole.snapshot));
+    const timestampKeyPair = await keyStorage.getKeyPair(getKeyStorageRepoKeyId(team_id, TUFRepo.director, TUFRole.timestamp));
 
     //Generate the new metadata
     const targetsMetadata = generateSignedTargets(config.TUF_TTL.IMAGE.TARGETS, newTargetsVersion, targetsKeyPair, targetsImages);
@@ -484,7 +485,11 @@ router.post('/ecus', mustBeRobot, updateRobotMeta, async (req: Request, res) => 
     await prisma.$transaction(async tx => {
 
         for (const ecu of payload.ecus) {
-            await keyStorage.putKey(`${team_id}-${ecu.ecu_serial}-public`, ecu.clientKey.keyval.public);
+            // we dont store ecu private keys on the backend
+            await keyStorage.putKeyPair(getKeyStorageEcuKeyId(team_id, ecu.ecu_serial), {
+                publicKey: ecu.clientKey.keyval.public,
+                privateKey: ''
+            });
         }
 
         await tx.ecu.createMany({

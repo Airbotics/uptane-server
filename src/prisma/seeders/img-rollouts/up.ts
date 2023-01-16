@@ -76,21 +76,12 @@ const createImages = async () => {
 
 
 const createImageRepoMetadata = async () => {
+    
 
-    const targetKeyPair: IKeyPair = {
-        publicKey: await keyStorage.getKey(`${SEED_TEAM_ID}-image-targets-public`),
-        privateKey: await keyStorage.getKey(`${SEED_TEAM_ID}-image-targets-private`),
-    }
+    const targetKeyPair = await keyStorage.getKeyPair(`${SEED_TEAM_ID}-image-targets-public`);
+    const snapshotKeyPair = await keyStorage.getKeyPair(`${SEED_TEAM_ID}-image-snapshot-public`);
+    const timestampKeyPair = await keyStorage.getKeyPair(`${SEED_TEAM_ID}-image-timestamp-public`);
 
-    const snapshotKeyPair: IKeyPair = {
-        publicKey: await keyStorage.getKey(`${SEED_TEAM_ID}-image-snapshot-public`),
-        privateKey: await keyStorage.getKey(`${SEED_TEAM_ID}-image-snapshot-private`),
-    }
-
-    const timestampKeyPair: IKeyPair = {
-        publicKey: await keyStorage.getKey(`${SEED_TEAM_ID}-image-timestamp-public`),
-        privateKey: await keyStorage.getKey(`${SEED_TEAM_ID}-image-timestamp-private`),
-    }
 
     // get new versions
     const newTargetsVersion = await getLatestMetadataVersion(SEED_TEAM_ID, TUFRepo.image, TUFRole.targets) + 1;

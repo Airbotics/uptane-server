@@ -9,8 +9,7 @@ import {
     EKeyType,
     ROOT_BUCKET,
     ROOT_CA_CERT_OBJ_ID,
-    Root_CA_PRIVATE_KEY_ID,
-    Root_CA_PUBLIC_KEY_ID
+    ROOT_CA_KEY_ID
 } from '@airbotics-core/consts';
 import { mustBeRobot, updateRobotMeta } from '@airbotics-middlewares';
 import { IRobotEvent } from '@airbotics-types';
@@ -60,8 +59,7 @@ router.post('/devices', async (req: Request, res) => {
     const robotKeyPair = generateKeyPair({ keyType: EKeyType.Rsa });
 
     // load root ca and key, used to sign provisioning cert
-    const rootCaPrivateKeyStr = await keyStorage.getKey(Root_CA_PRIVATE_KEY_ID);
-    const rootCaPublicKeyStr = await keyStorage.getKey(Root_CA_PUBLIC_KEY_ID);
+    const rootCaKeyPair = await keyStorage.getKeyPair(ROOT_CA_KEY_ID);
     const rootCaCertStr = await blobStorage.getObject(ROOT_BUCKET, ROOT_CA_CERT_OBJ_ID) as string;
     const rootCaCert = forge.pki.certificateFromPem(rootCaCertStr);
 
@@ -69,10 +67,7 @@ router.post('/devices', async (req: Request, res) => {
     const opts = {
         commonName: deviceId,
         parentCert: rootCaCert,
-        parentKeyPair: {
-            privateKey: rootCaPrivateKeyStr,
-            publicKey: rootCaPublicKeyStr
-        }
+        parentKeyPair: rootCaKeyPair
     };
     const robotCert = generateCertificate(robotKeyPair, opts);
 

@@ -11,6 +11,8 @@ const mockedEcuSerials = ['p1', 's1', 's2'];
 const mockedRobot: Robot & { ecus: Ecu[]; robot_manifests: RobotManifest[]; } = {
   id: '1',
   team_id: mockedTeamID,
+  last_seen_at: null,
+  agent_version: null,
   created_at: new Date(),
   updated_at: new Date(),
   ecus: [],

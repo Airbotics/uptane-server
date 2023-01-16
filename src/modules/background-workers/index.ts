@@ -6,7 +6,8 @@ import { logger } from '@airbotics-core/logger';
 import { dayjs } from '@airbotics-core/time';
 import { generateSignedRoot, generateSignedSnapshot, generateSignedTargets, generateSignedTimestamp, getLatestMetadataVersion } from '@airbotics-core/tuf';
 import { ISignedSnapshotTUF, ISignedTargetsTUF, ITimestampTUF } from '@airbotics-types';
-import { loadKeyPair } from '@airbotics-core/key-storage';
+import { keyStorage } from '@airbotics-core/key-storage';
+import { getKeyStorageRepoKeyId } from '@airbotics-core/utils';
 
 
 
@@ -49,10 +50,10 @@ const processRootRoles = async () => {
             logger.debug(`detected version ${root.version} of root for ${root.repo} repo in ${root.team_id} team is about to expire`);
 
             // read in keys from key storage
-            const rootKeyPair = await loadKeyPair(root.team_id, root.repo, TUFRole.root);
-            const targetsKeyPair = await loadKeyPair(root.team_id, root.repo, TUFRole.targets);
-            const snapshotKeyPair = await loadKeyPair(root.team_id, root.repo, TUFRole.snapshot);
-            const timestampKeyPair = await loadKeyPair(root.team_id, root.repo, TUFRole.timestamp);
+            const rootKeyPair = await keyStorage.getKeyPair(getKeyStorageRepoKeyId(root.team_id, root.repo, TUFRole.root));
+            const targetsKeyPair = await keyStorage.getKeyPair(getKeyStorageRepoKeyId(root.team_id, root.repo, TUFRole.targets));
+            const snapshotKeyPair = await keyStorage.getKeyPair(getKeyStorageRepoKeyId(root.team_id, root.repo, TUFRole.snapshot));
+            const timestampKeyPair = await keyStorage.getKeyPair(getKeyStorageRepoKeyId(root.team_id, root.repo, TUFRole.timestamp));
 
             // bump the version
             const newVeresion = root.version + 1;
@@ -128,9 +129,9 @@ const processTargetRoles = async () => {
             const newTimeStampVersion = await getLatestMetadataVersion(targets.team_id, targets.repo, TUFRole.timestamp) + 1;
 
             // read in keys from key storage
-            const targetsKeyPair = await loadKeyPair(targets.team_id, targets.repo, TUFRole.targets);
-            const snapshotKeyPair = await loadKeyPair(targets.team_id, targets.repo, TUFRole.snapshot);
-            const timestampKeyPair = await loadKeyPair(targets.team_id, targets.repo, TUFRole.timestamp);
+            const targetsKeyPair = await keyStorage.getKeyPair(getKeyStorageRepoKeyId(targets.team_id, targets.repo, TUFRole.targets));
+            const snapshotKeyPair = await keyStorage.getKeyPair(getKeyStorageRepoKeyId(targets.team_id, targets.repo, TUFRole.snapshot));
+            const timestampKeyPair = await keyStorage.getKeyPair(getKeyStorageRepoKeyId(targets.team_id, targets.repo, TUFRole.timestamp));
 
             // get expiry depending on repo
             const targetsTTL = targets.repo === TUFRepo.director ? config.TUF_TTL.DIRECTOR.TARGETS : config.TUF_TTL.IMAGE.TARGETS;
@@ -224,8 +225,8 @@ const processSnapshotRoles = async () => {
             const newTimeStampVersion = await getLatestMetadataVersion(snapshot.team_id, snapshot.repo, TUFRole.timestamp) + 1;
 
             // read in keys from key storage
-            const snapshotKeyPair = await loadKeyPair(snapshot.team_id, snapshot.repo, TUFRole.snapshot);
-            const timestampKeyPair = await loadKeyPair(snapshot.team_id, snapshot.repo, TUFRole.timestamp);
+            const snapshotKeyPair = await keyStorage.getKeyPair(getKeyStorageRepoKeyId(snapshot.team_id, snapshot.repo, TUFRole.snapshot));
+            const timestampKeyPair = await keyStorage.getKeyPair(getKeyStorageRepoKeyId(snapshot.team_id, snapshot.repo, TUFRole.timestamp));
 
             // get expiry depending on repo
             const snapshotTTL = snapshot.repo === TUFRepo.director ? config.TUF_TTL.DIRECTOR.SNAPSHOT : config.TUF_TTL.IMAGE.SNAPSHOT;
@@ -308,7 +309,7 @@ const processTimestampRoles = async () => {
             const newTimestampVersion = timestamp.version + 1;
 
             // read in keys from key storage
-            const timestampKeyPair = await loadKeyPair(timestamp.team_id, timestamp.repo, TUFRole.timestamp);
+            const timestampKeyPair = await keyStorage.getKeyPair(getKeyStorageRepoKeyId(timestamp.team_id, timestamp.repo, TUFRole.timestamp));
 
             // get expiry depending on repo
             const timestampTTL = timestamp.repo === TUFRepo.director ? config.TUF_TTL.DIRECTOR.TIMESTAMP : config.TUF_TTL.IMAGE.TIMESTAMP;

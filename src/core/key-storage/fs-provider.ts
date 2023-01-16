@@ -1,7 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import config from '@airbotics-config';
-import { IKeyStorageProvider } from '@airbotics-types';
+import { IKeyPair, IKeyStorageProvider } from '@airbotics-types';
 
 
 /**
@@ -13,26 +13,29 @@ import { IKeyStorageProvider } from '@airbotics-types';
  */
 export class FilesystemProvider implements IKeyStorageProvider {
 
+    // keyid has the form: <team-id>/<repo>/<role>
+    // we save under: .keys/<team-id>-<repo>-<role>.json
+
     private keysPath: string;
-    
+
     constructor() {
         this.keysPath = path.resolve(path.join(__filename, '..', '..', '..', '..', config.KEYS_FS_STORAGE_DIR));
         fs.mkdirSync(this.keysPath, { recursive: true });
     }
 
-    async putKey(id: string, key: string): Promise<void> {
-        const filePathKey = path.resolve(path.join(this.keysPath, `${id}.pem`));
-        fs.writeFileSync(filePathKey, key, 'ascii');
+    async putKeyPair(id: string, keypair: IKeyPair): Promise<void> {
+        const filePathKey = path.resolve(path.join(this.keysPath, `${id.replace(/\//g, '-')}.json`));
+        fs.writeFileSync(filePathKey, JSON.stringify(keypair), 'ascii');
     }
 
-    async getKey(id: string): Promise<string> {
-        const filePathKey = path.resolve(path.join(this.keysPath, `${id}.pem`));        
-        return fs.readFileSync(filePathKey).toString();
+    async getKeyPair(id: string): Promise<IKeyPair> {
+        const filePathKey = path.resolve(path.join(this.keysPath, `${id.replace(/\//g, '-')}.json`));
+        return JSON.parse(fs.readFileSync(filePathKey, 'ascii')) as IKeyPair;
     }
 
-    async deleteKey(id: string): Promise<void> {
-        const filePathKey = path.resolve(path.join(this.keysPath, `${id}.pem`));
-        return fs.rmSync(filePathKey)
+    async deleteKeyPair(id: string): Promise<void> {
+        const filePathKey = path.resolve(path.join(this.keysPath, `${id.replace(/\//g, '-')}.json`));
+        fs.rmSync(filePathKey);
     }
 
 }

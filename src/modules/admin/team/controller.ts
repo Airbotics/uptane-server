@@ -13,6 +13,7 @@ import { generateSignedRoot, generateSignedSnapshot, generateSignedTargets, gene
 import { TUFRepo, TUFRole } from '@prisma/client';
 import { blobStorage } from '@airbotics-core/blob-storage';
 import { keyStorage } from '@airbotics-core/key-storage';
+import { getKeyStorageRepoKeyId } from '@airbotics-core/utils';
 
 
 
@@ -30,7 +31,7 @@ import { keyStorage } from '@airbotics-core/key-storage';
  *  b) one to say any admins of the new team are also members of that team
  */
 export const createTeam = async (req: Request, res: Response, next: NextFunction) => {
-    
+
     const {
         name
     } = req.body;
@@ -40,38 +41,38 @@ export const createTeam = async (req: Request, res: Response, next: NextFunction
     try {
 
         // generate 8 TUF key pairs, 4 top-level metadata keys for 2 repos
-        const imageRootKey = generateKeyPair({ keyType: config.TUF_KEY_TYPE });
-        const imageTargetsKey = generateKeyPair({ keyType: config.TUF_KEY_TYPE });
-        const imageSnapshotKey = generateKeyPair({ keyType: config.TUF_KEY_TYPE });
-        const imageTimestampKey = generateKeyPair({ keyType: config.TUF_KEY_TYPE });
+        const imageRootKeyPair = generateKeyPair({ keyType: config.TUF_KEY_TYPE });
+        const imageTargetsKeyPair = generateKeyPair({ keyType: config.TUF_KEY_TYPE });
+        const imageSnapshotKeyPair = generateKeyPair({ keyType: config.TUF_KEY_TYPE });
+        const imageTimestampKeyPair = generateKeyPair({ keyType: config.TUF_KEY_TYPE });
 
-        const directorRootKey = generateKeyPair({ keyType: config.TUF_KEY_TYPE });
-        const directorTargetsKey = generateKeyPair({ keyType: config.TUF_KEY_TYPE });
-        const directorSnapshotKey = generateKeyPair({ keyType: config.TUF_KEY_TYPE });
-        const directorTimestampKey = generateKeyPair({ keyType: config.TUF_KEY_TYPE });
+        const directorRootKeyPair = generateKeyPair({ keyType: config.TUF_KEY_TYPE });
+        const directorTargetsKeyPair = generateKeyPair({ keyType: config.TUF_KEY_TYPE });
+        const directorSnapshotKeyPair = generateKeyPair({ keyType: config.TUF_KEY_TYPE });
+        const directorTimestampKeyPair = generateKeyPair({ keyType: config.TUF_KEY_TYPE });
 
         // create initial tuf metadata for TUF repos, we'll start them off at 1
         const version = 1;
 
         const directorRepoRoot = generateSignedRoot(config.TUF_TTL.DIRECTOR.ROOT, version,
-            directorRootKey,
-            directorTargetsKey,
-            directorSnapshotKey,
-            directorTimestampKey
+            directorRootKeyPair,
+            directorTargetsKeyPair,
+            directorSnapshotKeyPair,
+            directorTimestampKeyPair
         );
 
         const imageRepoRoot = generateSignedRoot(config.TUF_TTL.IMAGE.ROOT, version,
-            imageRootKey,
-            imageTargetsKey,
-            imageSnapshotKey,
-            imageTimestampKey
+            imageRootKeyPair,
+            imageTargetsKeyPair,
+            imageSnapshotKeyPair,
+            imageTimestampKeyPair
         );
 
-        const imageRepoTargets = generateSignedTargets(config.TUF_TTL.IMAGE.TARGETS, version, imageTargetsKey, {});
+        const imageRepoTargets = generateSignedTargets(config.TUF_TTL.IMAGE.TARGETS, version, imageTargetsKeyPair, {});
 
-        const imageRepoSnapshot = generateSignedSnapshot(config.TUF_TTL.IMAGE.SNAPSHOT, version, imageSnapshotKey, imageRepoTargets);
+        const imageRepoSnapshot = generateSignedSnapshot(config.TUF_TTL.IMAGE.SNAPSHOT, version, imageSnapshotKeyPair, imageRepoTargets);
 
-        const imageRepoTimestamp = generateSignedTimestamp(config.TUF_TTL.IMAGE.TIMESTAMP, version, imageTimestampKey, imageRepoSnapshot);
+        const imageRepoTimestamp = generateSignedTimestamp(config.TUF_TTL.IMAGE.TIMESTAMP, version, imageTimestampKeyPair, imageRepoSnapshot);
 
         const newTeam = await prisma.$transaction(async tx => {
 
@@ -145,6 +146,43 @@ export const createTeam = async (req: Request, res: Response, next: NextFunction
             // create bucket in blob storage
             await blobStorage.createBucket(team.id);
 
+            // store image repo key pairs
+            await keyStorage.putKeyPair(getKeyStorageRepoKeyId(team.id, TUFRepo.image, TUFRole.root), {
+                publicKey: imageRootKeyPair.publicKey,
+                privateKey: imageRootKeyPair.privateKey
+            });
+            await keyStorage.putKeyPair(getKeyStorageRepoKeyId(team.id, TUFRepo.image, TUFRole.targets), {
+                publicKey: imageTargetsKeyPair.publicKey,
+                privateKey: imageTargetsKeyPair.privateKey
+            });
+            await keyStorage.putKeyPair(getKeyStorageRepoKeyId(team.id, TUFRepo.image, TUFRole.snapshot), {
+                publicKey: imageSnapshotKeyPair.publicKey,
+                privateKey: imageSnapshotKeyPair.privateKey
+            });
+            await keyStorage.putKeyPair(getKeyStorageRepoKeyId(team.id, TUFRepo.image, TUFRole.timestamp), {
+                publicKey: imageTimestampKeyPair.publicKey,
+                privateKey: imageTimestampKeyPair.privateKey
+            });
+
+            // store director repo key pairs
+            await keyStorage.putKeyPair(getKeyStorageRepoKeyId(team.id, TUFRepo.director, TUFRole.root), {
+                publicKey: directorRootKeyPair.publicKey,
+                privateKey: directorRootKeyPair.privateKey
+            });
+            await keyStorage.putKeyPair(getKeyStorageRepoKeyId(team.id, TUFRepo.director, TUFRole.targets), {
+                publicKey: directorTargetsKeyPair.publicKey,
+                privateKey: directorTargetsKeyPair.privateKey
+            });
+            await keyStorage.putKeyPair(getKeyStorageRepoKeyId(team.id, TUFRepo.director, TUFRole.snapshot), {
+                publicKey: directorSnapshotKeyPair.publicKey,
+                privateKey: directorSnapshotKeyPair.privateKey
+            });
+            await keyStorage.putKeyPair(getKeyStorageRepoKeyId(team.id, TUFRepo.director, TUFRole.timestamp), {
+                publicKey: directorTimestampKeyPair.publicKey,
+                privateKey: directorTimestampKeyPair.privateKey
+            });
+
+            /*
             // store image repo private keys
             await keyStorage.putKey(`${team.id}-image-root-private`, imageRootKey.privateKey);
             await keyStorage.putKey(`${team.id}-image-targets-private`, imageTargetsKey.privateKey);
@@ -168,6 +206,7 @@ export const createTeam = async (req: Request, res: Response, next: NextFunction
             await keyStorage.putKey(`${team.id}-director-targets-public`, directorTargetsKey.publicKey);
             await keyStorage.putKey(`${team.id}-director-snapshot-public`, directorSnapshotKey.publicKey);
             await keyStorage.putKey(`${team.id}-director-timestamp-public`, directorTimestampKey.publicKey);
+            */
 
             //Create the ory relationships
             const relationsParams: RelationshipApiPatchRelationshipsRequest = {
@@ -215,7 +254,7 @@ export const createTeam = async (req: Request, res: Response, next: NextFunction
 
     } catch (error) {
         console.log(error);
-        
+
         logger.error('A user was unable to create a new team');
         return new BadResponse(res, 'Unable to create a new team!')
     }
@@ -269,7 +308,7 @@ export const listTeams = async (req: Request, res: Response, next: NextFunction)
         return new SuccessJsonResponse(res, sanitisedTeams);
 
 
-    } catch(error) {
+    } catch (error) {
 
     }
 }
@@ -399,7 +438,7 @@ export const updateTeam = async (req: Request, res: Response, next: NextFunction
  * - remove team members in ory
  */
 export const deleteTeam = async (req: Request, res: Response, next: NextFunction) => {
-    
+
     const teamID = req.headers['air-team-id']!;
 
     const teamCount = await prisma.team.count({
@@ -425,25 +464,15 @@ export const deleteTeam = async (req: Request, res: Response, next: NextFunction
         // deletes bucket in blob storage
         await blobStorage.deleteBucket(teamID);
 
-        await keyStorage.deleteKey(`${teamID}-image-root-private`);
-        await keyStorage.deleteKey(`${teamID}-image-targets-private`);
-        await keyStorage.deleteKey(`${teamID}-image-snapshot-private`);
-        await keyStorage.deleteKey(`${teamID}-image-timestamp-private`);
+        await keyStorage.deleteKeyPair(getKeyStorageRepoKeyId(teamID, TUFRepo.image, TUFRole.root));
+        await keyStorage.deleteKeyPair(getKeyStorageRepoKeyId(teamID, TUFRepo.image, TUFRole.targets));
+        await keyStorage.deleteKeyPair(getKeyStorageRepoKeyId(teamID, TUFRepo.image, TUFRole.snapshot));
+        await keyStorage.deleteKeyPair(getKeyStorageRepoKeyId(teamID, TUFRepo.image, TUFRole.timestamp));
 
-        await keyStorage.deleteKey(`${teamID}-image-root-public`);
-        await keyStorage.deleteKey(`${teamID}-image-targets-public`);
-        await keyStorage.deleteKey(`${teamID}-image-snapshot-public`);
-        await keyStorage.deleteKey(`${teamID}-image-timestamp-public`);
-
-        await keyStorage.deleteKey(`${teamID}-director-root-private`);
-        await keyStorage.deleteKey(`${teamID}-director-targets-private`);
-        await keyStorage.deleteKey(`${teamID}-director-snapshot-private`);
-        await keyStorage.deleteKey(`${teamID}-director-timestamp-private`);
-
-        await keyStorage.deleteKey(`${teamID}-director-root-public`);
-        await keyStorage.deleteKey(`${teamID}-director-targets-public`);
-        await keyStorage.deleteKey(`${teamID}-director-snapshot-public`);
-        await keyStorage.deleteKey(`${teamID}-director-timestamp-public`);
+        await keyStorage.deleteKeyPair(getKeyStorageRepoKeyId(teamID, TUFRepo.director, TUFRole.root));
+        await keyStorage.deleteKeyPair(getKeyStorageRepoKeyId(teamID, TUFRepo.director, TUFRole.targets));
+        await keyStorage.deleteKeyPair(getKeyStorageRepoKeyId(teamID, TUFRepo.director, TUFRole.snapshot));
+        await keyStorage.deleteKeyPair(getKeyStorageRepoKeyId(teamID, TUFRepo.director, TUFRole.timestamp));
 
     });
 

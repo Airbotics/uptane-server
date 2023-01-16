@@ -34,13 +34,13 @@ services:
             POSTGRES_DB: db
         ports:
             - 5432:5432
-    s3:
+    aws:
         image: localstack/localstack:latest
         container_name: s3
         environment: 
             - AWS_DEFAULT_REGION=eu-west-1
             - EDGE_PORT=4566
-            - SERVICES=s3
+            - SERVICES=s3,secretsmanager
         ports: 
             - '4566-4583:4566-4583'
         volumes: 

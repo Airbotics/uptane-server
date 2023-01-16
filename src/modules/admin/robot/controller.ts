@@ -122,7 +122,7 @@ export const deleteRobot = async (req: Request, res: Response, next: NextFunctio
 
     } catch (error) {
         // catch deletion failure error code
-        // someone has tried to create a robot that does not exist in this team, return 400
+        // someone has tried to delete a robot that does not exist in this team, return 400
         if (error.code === 'P2025') {
             logger.warn('could not delete a robot because it does not exist');
             return new BadResponse(res, 'Could not delete the robot');
@@ -135,6 +135,9 @@ export const deleteRobot = async (req: Request, res: Response, next: NextFunctio
 }
 
 
+/**
+ * List the groups this robot is in.
+ */
 export const listRobotGroups = async (req: Request, res: Response, next: NextFunction) => {
 
     const oryID = req.oryIdentity!.traits.id;

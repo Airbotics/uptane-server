@@ -18,14 +18,23 @@ const SEED_SECONDARY_ECU_ID = 'seed-secondary-ecu';
     const imageSnapshotKey = generateKeyPair({keyType: config.TUF_KEY_TYPE});
     const imageTimestampKey = generateKeyPair({keyType: config.TUF_KEY_TYPE});
 
-    await keyStorage.putKey(`${SEED_TEAM_ID}-image-root-private`, imageRootKey.privateKey);
-    await keyStorage.putKey(`${SEED_TEAM_ID}-image-targets-private`, imageTargetsKey.privateKey);
-    await keyStorage.putKey(`${SEED_TEAM_ID}-image-snapshot-private`, imageSnapshotKey.privateKey);
-    await keyStorage.putKey(`${SEED_TEAM_ID}-image-timestamp-private`, imageTimestampKey.privateKey);
-    await keyStorage.putKey(`${SEED_TEAM_ID}-image-root-public`, imageRootKey.publicKey);
-    await keyStorage.putKey(`${SEED_TEAM_ID}-image-targets-public`, imageTargetsKey.publicKey);
-    await keyStorage.putKey(`${SEED_TEAM_ID}-image-snapshot-public`, imageSnapshotKey.publicKey);
-    await keyStorage.putKey(`${SEED_TEAM_ID}-image-timestamp-public`, imageTimestampKey.publicKey);
+    await keyStorage.putKeyPair(`${SEED_TEAM_ID}-image-root`, {
+        publicKey: imageRootKey.publicKey,
+        privateKey: imageRootKey.privateKey
+    });
+    await keyStorage.putKeyPair(`${SEED_TEAM_ID}-image-targets`, {
+        publicKey: imageTargetsKey.publicKey,
+        privateKey: imageTargetsKey.privateKey
+    });
+    await keyStorage.putKeyPair(`${SEED_TEAM_ID}-image-snapshot`, {
+        publicKey: imageSnapshotKey.publicKey,
+        privateKey: imageSnapshotKey.privateKey
+    });
+    await keyStorage.putKeyPair(`${SEED_TEAM_ID}-image-timestamp`, {
+        publicKey: imageTimestampKey.publicKey,
+        privateKey: imageTimestampKey.privateKey
+    });
+
 
 
     //Director repo keys
@@ -34,23 +43,36 @@ const SEED_SECONDARY_ECU_ID = 'seed-secondary-ecu';
     const directorSnapshotKey = generateKeyPair({keyType: config.TUF_KEY_TYPE});
     const directorTimestampKey = generateKeyPair({keyType: config.TUF_KEY_TYPE});
 
-    await keyStorage.putKey(`${SEED_TEAM_ID}-director-root-private`, directorRootKey.privateKey);
-    await keyStorage.putKey(`${SEED_TEAM_ID}-director-targets-private`, directorTargetsKey.privateKey);
-    await keyStorage.putKey(`${SEED_TEAM_ID}-director-snapshot-private`, directorSnapshotKey.privateKey);
-    await keyStorage.putKey(`${SEED_TEAM_ID}-director-timestamp-private`, directorTimestampKey.privateKey);
-    await keyStorage.putKey(`${SEED_TEAM_ID}-director-root-public`, directorRootKey.publicKey);
-    await keyStorage.putKey(`${SEED_TEAM_ID}-director-targets-public`, directorTargetsKey.publicKey);
-    await keyStorage.putKey(`${SEED_TEAM_ID}-director-snapshot-public`, directorSnapshotKey.publicKey);
-    await keyStorage.putKey(`${SEED_TEAM_ID}-director-timestamp-public`, directorTimestampKey.publicKey);
+    await keyStorage.putKeyPair(`${SEED_TEAM_ID}-director-root`, {
+        publicKey: directorRootKey.publicKey,
+        privateKey: directorRootKey.privateKey
+    });
+    await keyStorage.putKeyPair(`${SEED_TEAM_ID}-director-targets`, {
+        publicKey: directorTargetsKey.publicKey,
+        privateKey: directorTargetsKey.privateKey
+    });
+    await keyStorage.putKeyPair(`${SEED_TEAM_ID}-director-snapshot`, {
+        publicKey: directorSnapshotKey.publicKey,
+        privateKey: directorSnapshotKey.privateKey
+    });
+    await keyStorage.putKeyPair(`${SEED_TEAM_ID}-director-timestamp`, {
+        publicKey: directorTimestampKey.publicKey,
+        privateKey: directorTimestampKey.privateKey
+    });
     
     //ECU keys
     const primaryEcuKey = generateKeyPair({keyType: config.TUF_KEY_TYPE});
     const secondaryEcuKey = generateKeyPair({keyType: config.TUF_KEY_TYPE});
+    
+    await keyStorage.putKeyPair(`${SEED_TEAM_ID}-${SEED_PRIMARY_ECU_ID}`, {
+        publicKey: primaryEcuKey.publicKey,
+        privateKey: ''
+    });
 
-    await keyStorage.putKey(`${SEED_TEAM_ID}-${SEED_PRIMARY_ECU_ID}-private`, primaryEcuKey.privateKey);
-    await keyStorage.putKey(`${SEED_TEAM_ID}-${SEED_PRIMARY_ECU_ID}-public`, primaryEcuKey.publicKey);
-    await keyStorage.putKey(`${SEED_TEAM_ID}-${SEED_SECONDARY_ECU_ID}-private`, secondaryEcuKey.privateKey);
-    await keyStorage.putKey(`${SEED_TEAM_ID}-${SEED_SECONDARY_ECU_ID}-public`, secondaryEcuKey.publicKey);
+    await keyStorage.putKeyPair(`${SEED_TEAM_ID}-${SEED_SECONDARY_ECU_ID}`, {
+        publicKey: secondaryEcuKey.publicKey,
+        privateKey: ''
+    });
 
     console.log('Generated keys for seeder');
 

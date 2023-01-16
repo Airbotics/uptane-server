@@ -1,5 +1,4 @@
 import { Request, Response, NextFunction } from 'express';
-
 import { EHashDigest} from '@airbotics-core/consts';
 import { SuccessJsonResponse, NoContentResponse } from '@airbotics-core/network/responses';
 import { logger } from '@airbotics-core/logger';
@@ -9,8 +8,9 @@ import config from '@airbotics-config';
 import { generateSignedSnapshot, generateSignedTargets, generateSignedTimestamp, getLatestMetadata, getLatestMetadataVersion } from '@airbotics-core/tuf';
 import { ImageFormat, TUFRepo, TUFRole, UploadStatus } from '@prisma/client';
 import { blobStorage } from '@airbotics-core/blob-storage';
-import { loadKeyPair } from '@airbotics-core/key-storage';
+import { keyStorage } from '@airbotics-core/key-storage';
 import { v4 as uuidv4 } from 'uuid';
+import { getKeyStorageRepoKeyId } from '@airbotics-core/utils';
 
 
 
@@ -80,9 +80,10 @@ export const createImage = async (req: Request, res: Response, next: NextFunctio
     const newTimestampVersion = await getLatestMetadataVersion(teamID, TUFRepo.image, TUFRole.timestamp) + 1;
 
     // read in keys from key storage
-    const targetsKeyPair = await loadKeyPair(teamID, TUFRepo.image, TUFRole.targets);
-    const snapshotKeyPair = await loadKeyPair(teamID, TUFRepo.image, TUFRole.snapshot);
-    const timestampKeyPair = await loadKeyPair(teamID, TUFRepo.image, TUFRole.timestamp);
+    const targetsKeyPair = await keyStorage.getKeyPair(getKeyStorageRepoKeyId(teamID, TUFRepo.image, TUFRole.targets));
+    const snapshotKeyPair = await keyStorage.getKeyPair(getKeyStorageRepoKeyId(teamID, TUFRepo.image, TUFRole.snapshot));
+    const timestampKeyPair = await keyStorage.getKeyPair(getKeyStorageRepoKeyId(teamID, TUFRepo.image, TUFRole.timestamp));
+
 
     // assemble information about this image to be put in the targets.json metadata
     // we grab the previous targets portion of the targets metadata and append this new image to it

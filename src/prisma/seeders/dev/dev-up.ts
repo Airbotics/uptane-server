@@ -151,25 +151,10 @@ const createImageRepoMetadata = async () => {
 
     console.log('dev seeder creating image repo metadata...');
 
-    const rootKeyPair: IKeyPair = {
-        publicKey: await keyStorage.getKey(`${SEED_TEAM_ID}-image-root-public`),
-        privateKey: await keyStorage.getKey(`${SEED_TEAM_ID}-image-root-private`),
-    }
-
-    const targetKeyPair: IKeyPair = {
-        publicKey: await keyStorage.getKey(`${SEED_TEAM_ID}-image-targets-public`),
-        privateKey: await keyStorage.getKey(`${SEED_TEAM_ID}-image-targets-private`),
-    }
-
-    const snapshotKeyPair: IKeyPair = {
-        publicKey: await keyStorage.getKey(`${SEED_TEAM_ID}-image-snapshot-public`),
-        privateKey: await keyStorage.getKey(`${SEED_TEAM_ID}-image-snapshot-private`),
-    }
-
-    const timestampKeyPair: IKeyPair = {
-        publicKey: await keyStorage.getKey(`${SEED_TEAM_ID}-image-timestamp-public`),
-        privateKey: await keyStorage.getKey(`${SEED_TEAM_ID}-image-timestamp-private`),
-    }
+    const rootKeyPair = await keyStorage.getKeyPair(`${SEED_TEAM_ID}-image-root-public`);
+    const targetKeyPair = await keyStorage.getKeyPair(`${SEED_TEAM_ID}-image-targets-public`);
+    const snapshotKeyPair = await keyStorage.getKeyPair(`${SEED_TEAM_ID}-image-snapshot-public`);
+    const timestampKeyPair = await keyStorage.getKeyPair(`${SEED_TEAM_ID}-image-timestamp-public`);
 
     // generate root metadata
     const rootMetadata: ISignedRootTUF = generateSignedRoot(SEED_EXPIRES_AT,
@@ -253,25 +238,10 @@ const createDirectorRepoRootMetadata = async () => {
 
     console.log('dev seeder creating director repo root metadata...');
 
-    const rootKeyPair: IKeyPair = {
-        publicKey: await keyStorage.getKey(`${SEED_TEAM_ID}-director-root-public`),
-        privateKey: await keyStorage.getKey(`${SEED_TEAM_ID}-director-root-private`),
-    }
-
-    const targetKeyPair: IKeyPair = {
-        publicKey: await keyStorage.getKey(`${SEED_TEAM_ID}-director-targets-public`),
-        privateKey: await keyStorage.getKey(`${SEED_TEAM_ID}-director-targets-private`),
-    }
-
-    const snapshotKeyPair: IKeyPair = {
-        publicKey: await keyStorage.getKey(`${SEED_TEAM_ID}-director-snapshot-public`),
-        privateKey: await keyStorage.getKey(`${SEED_TEAM_ID}-director-snapshot-private`),
-    }
-
-    const timestampKeyPair: IKeyPair = {
-        publicKey: await keyStorage.getKey(`${SEED_TEAM_ID}-director-timestamp-public`),
-        privateKey: await keyStorage.getKey(`${SEED_TEAM_ID}-director-timestamp-private`),
-    }
+    const rootKeyPair = await keyStorage.getKeyPair(`${SEED_TEAM_ID}-director-root-public`);
+    const targetKeyPair = await keyStorage.getKeyPair(`${SEED_TEAM_ID}-director-targets-public`);
+    const snapshotKeyPair = await keyStorage.getKeyPair(`${SEED_TEAM_ID}-director-snapshot-public`);
+    const timestampKeyPair = await keyStorage.getKeyPair(`${SEED_TEAM_ID}-director-timestamp-public`);
 
     const rootMetadata: ISignedRootTUF = generateSignedRoot(SEED_EXPIRES_AT,
         1,

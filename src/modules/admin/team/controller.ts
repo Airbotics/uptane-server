@@ -13,7 +13,7 @@ import { generateSignedRoot, generateSignedSnapshot, generateSignedTargets, gene
 import { TUFRepo, TUFRole } from '@prisma/client';
 import { blobStorage } from '@airbotics-core/blob-storage';
 import { keyStorage } from '@airbotics-core/key-storage';
-import { getKeyStorageRepoKeyId } from '@airbotics-core/utils';
+import { getKeyStorageEcuKeyId, getKeyStorageRepoKeyId } from '@airbotics-core/utils';
 
 
 
@@ -434,7 +434,6 @@ export const updateTeam = async (req: Request, res: Response, next: NextFunction
  * - Deletes keys, images and treehub objects associated with this team.
  * 
  * TODO
- * - delete all keys associated with ecus in this team.
  * - remove team members in ory
  */
 export const deleteTeam = async (req: Request, res: Response, next: NextFunction) => {
@@ -455,15 +454,24 @@ export const deleteTeam = async (req: Request, res: Response, next: NextFunction
     await prisma.$transaction(async tx => {
 
         // delete team in db
-        await tx.team.delete({
+        const team = await tx.team.delete({
             where: {
                 id: teamID
+            },
+            include: {
+                ecus: true
             }
         });
+
+        // delete ecu keys
+        for(const ecu of team.ecus) {
+            await keyStorage.deleteKeyPair(getKeyStorageEcuKeyId(teamID, ecu.id));
+        }
 
         // deletes bucket in blob storage
         await blobStorage.deleteBucket(teamID);
 
+        // delete tuf keys
         await keyStorage.deleteKeyPair(getKeyStorageRepoKeyId(teamID, TUFRepo.image, TUFRole.root));
         await keyStorage.deleteKeyPair(getKeyStorageRepoKeyId(teamID, TUFRepo.image, TUFRole.targets));
         await keyStorage.deleteKeyPair(getKeyStorageRepoKeyId(teamID, TUFRepo.image, TUFRole.snapshot));

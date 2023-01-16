@@ -156,11 +156,9 @@ model Robot {
 }
 
 
-// ecus on robots
-// TODO 
-// - add last_seen field
+// ecus in robots
 model Ecu {
-    id                  String          @id @default(uuid()) @unique
+    id                  String          @id @default(uuid()) @unique        // equivalent to ecu serial
     team_id             String
     robot_id            String
     hwid                String                              // hardware type/id of this ecu

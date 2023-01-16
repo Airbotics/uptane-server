@@ -2,7 +2,8 @@ import { Request, Response, NextFunction } from 'express';
 import { BadResponse, SuccessJsonResponse, NoContentResponse } from '@airbotics-core/network/responses';
 import { logger } from '@airbotics-core/logger';
 import prisma from '@airbotics-core/drivers/postgres';
-
+import { getKeyStorageEcuKeyId } from '@airbotics-core/utils';
+import { keyStorage } from '@airbotics-core/key-storage';
 
 
 /**
@@ -32,7 +33,6 @@ export const listRobots = async (req: Request, res: Response, next: NextFunction
     return new SuccessJsonResponse(res, robotsSanitised);
 
 }
-
 
 
 
@@ -93,12 +93,8 @@ export const getRobot = async (req: Request, res: Response, next: NextFunction) 
 
 
 
-
 /**
  * Delete a robot
- * 
- * TODO
- * - delete all associated ecu keys
  */
 export const deleteRobot = async (req: Request, res: Response, next: NextFunction) => {
 
@@ -108,14 +104,22 @@ export const deleteRobot = async (req: Request, res: Response, next: NextFunctio
     // try delete robot
     try {
 
-        await prisma.robot.delete({
+        const robot = await prisma.robot.delete({
             where: {
                 team_id_id: {
                     team_id: teamID,
                     id: robotID
                 }
+            },
+            include: {
+                ecus: true
             }
         });
+
+        // deleta ecu keys for this robot
+        for(const ecu of robot.ecus) {
+            await keyStorage.deleteKeyPair(getKeyStorageEcuKeyId(teamID, ecu.id));
+        }
 
         logger.info('deleted a robot');
         return new NoContentResponse(res, 'The robot has been deleted')

@@ -3,9 +3,9 @@
 
 @BASE_URL=http://localhost:8001
 @API_VERSION=v0
-@TEAM_ID=a091e00e-a4be-42d3-8bf9-f935c994a246
+@TEAM_ID=d4a9ee79-5fe6-4939-8ecf-dd732d0019c7
 @IMAGE=9523db36-30f7-4c66-8236-4d7c3326872c
-@ROBOT=1234
+@ROBOT_ID=1234
 @ORY_PROJECT_URL={{$dotenv %ORY_PROJECT_URL}}
 
 
@@ -191,16 +191,21 @@ air-team-id: {{TEAM_ID}}
 
 
 ### get a single robot
-GET {{BASE_URL}}/api/{{API_VERSION}}/admin/robots/{{ROBOT}} HTTP/1.1
+GET {{BASE_URL}}/api/{{API_VERSION}}/admin/robots/{{ROBOT_ID}} HTTP/1.1
 x-session-token: {{SESSION_TOKEN}}
 air-team-id: {{TEAM_ID}}
 
 ### delete a robot
-DELETE {{BASE_URL}}/api/{{API_VERSION}}/admin/{{TEAM_ID}}/robots/{{ROBOT}} HTTP/1.1
+DELETE {{BASE_URL}}/api/{{API_VERSION}}/admin/{{TEAM_ID}}/robots/{{ROBOT_ID}} HTTP/1.1
+
+### delete a robot
+DELETE {{BASE_URL}}/api/{{API_VERSION}}/admin/robots/{{ROBOT_ID}} HTTP/1.1
+x-session-token: {{SESSION_TOKEN}}
+air-team-id: {{TEAM_ID}}
 
 
 ### get groups a robot is in
-GET {{BASE_URL}}/api/{{API_VERSION}}/admin/robots/{{ROBOT}}/groups HTTP/1.1
+GET {{BASE_URL}}/api/{{API_VERSION}}/admin/robots/{{ROBOT_ID}}/groups HTTP/1.1
 x-session-token: {{SESSION_TOKEN}}
 air-team-id: {{TEAM_ID}}
 
@@ -243,7 +248,7 @@ GET {{BASE_URL}}/api/{{API_VERSION}}/admin/{{TEAM_ID}}/images HTTP/1.1
 # -----------------------------------------
 
 ### get versioned metadata
-GET {{BASE_URL}}/api/{{API_VERSION}}/director/{{TEAM_ID}}/robots/{{ROBOT}}/1.targets.json HTTP/1.1
+GET {{BASE_URL}}/api/{{API_VERSION}}/director/{{TEAM_ID}}/robots/{{ROBOT_ID}}/1.targets.json HTTP/1.1
 
 
 
@@ -254,7 +259,7 @@ GET {{BASE_URL}}/api/{{API_VERSION}}/director/{{TEAM_ID}}/robots/{{ROBOT}}/1.tar
 
 ### get metadata
 GET {{BASE_URL}}/api/{{API_VERSION}}/robot/repo/root.json HTTP/1.1
-air-client-id: {{ROBOT}}
+air-client-id: {{ROBOT_ID}}
 
 
 ### download image with image id only

@@ -280,10 +280,10 @@ export const listRobotsInGroup = async (req: Request, res: Response, next: NextF
     const teamID = req.headers['air-team-id']!;
     const groupID = req.params.group_id;
 
-    const {
-        skip,
-        take
-    } = req.query;
+    // const {
+    //     skip,
+    //     take
+    // } = req.query;
 
     try {
 
@@ -320,8 +320,8 @@ export const listRobotsInGroup = async (req: Request, res: Response, next: NextF
             orderBy: {
                 created_at: 'desc'
             },
-            skip: skip ? Number(skip) : undefined,
-            take: take ? Number(take) : undefined
+            // skip: skip ? Number(skip) : undefined,
+            // take: take ? Number(take) : undefined
         });
 
         const sanitisedGroupRobots: IGroupRobot[] = groupRobots.map(groupRobot => ({
@@ -411,7 +411,7 @@ export const addRobotToGroup = async (req: Request, res: Response, next: NextFun
             actor_id: oryID,
             action: 'add_group_robot',
             team_id: teamID
-        })
+        });
 
         const sanitisedGroupRobot: IGroupRobot = {
             robot_id: groupRobot.robot_id,

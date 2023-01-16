@@ -1,7 +1,8 @@
-import { OryTeamRelations } from '@airbotics-core/consts';
-import express, { Request } from 'express';
-import { mustBeAuthenticated, mustBeInTeam } from '@airbotics-middlewares';
+import { EValidationSource, OryTeamRelations } from '@airbotics-core/consts';
+import express from 'express';
+import { mustBeAuthenticated, mustBeInTeam, validate } from '@airbotics-middlewares';
 import * as controller from './controller';
+import { imageIdSchema } from '../schemas';
 
 const router = express.Router();
 
@@ -15,6 +16,7 @@ router.get('/images',
 router.get('/images/:image_id',
     mustBeAuthenticated,
     mustBeInTeam(OryTeamRelations.member),
+    validate(imageIdSchema, EValidationSource.Path),
     controller.getImage);
 
 export default router;

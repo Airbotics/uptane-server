@@ -1,10 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
+import Joi from 'joi';
 import { FrontendApiToSessionRequest, PermissionApiCheckPermissionRequest } from '@ory/client';
-import { logger } from '@airbotics-core/logger';
 import prisma from '@airbotics-core/drivers/postgres';
 import { ory } from '@airbotics-core/drivers/ory';
-import { BadResponse, ForbiddenResponse, UnauthorizedResponse } from '@airbotics-core/network/responses';
-import { OryTeamRelations } from '@airbotics-core/consts';
+import { BadResponse, ForbiddenResponse, UnauthorizedResponse, ValidationResponse } from '@airbotics-core/network/responses';
+import { OryTeamRelations, EValidationSource } from '@airbotics-core/consts';
+import { logger } from '@airbotics-core/logger';
+
 
 /**
  * Middleware used on the director and image repo to populate the request with robot details.
@@ -79,18 +81,18 @@ export const updateRobotMeta = async (req: Request, res: Response, next: NextFun
 export const mustBeAuthenticated = async (req: Request, res: Response, next: NextFunction) => {
 
     try {
-        
+
         const sessionParams: FrontendApiToSessionRequest = {
             xSessionToken: req.header("x-session-token"),       //from api authenticated clients
             cookie: req.header("cookie")                        //from browser authenticated clients
         }
-                
+
         const orySession = (await ory.frontend.toSession(sessionParams)).data;
 
         // if(orySession.identity.verifiable_addresses && !orySession.identity.verifiable_addresses[0].verified) {
         //     return new BadResponse(res, 'Please verify your email first!');
         // }
-    
+
         req.oryIdentity = {
             session_id: orySession.id,
             traits: {
@@ -137,19 +139,47 @@ export const mustBeInTeam = (relation: OryTeamRelations) => {
             }
 
             const permCheckRes = (await ory.permission.checkPermission(permCheckParams)).data;
-            
+
             if (permCheckRes.allowed) {
                 next();
             }
-            
+
             else {
                 return new ForbiddenResponse(res, "You do not have permission to do that!")
             }
 
-        } catch (error) {  
+        } catch (error) {
             logger.error(error.response.data);
             return new BadResponse(res, 'Unable to check if you have permission to do that!');
         }
 
     }
 }
+
+
+/**
+ * This returns an express middleware that will validate part of the request against a schema.
+ */
+export const validate = (schema: Joi.ObjectSchema, source: EValidationSource) =>
+    (req: Request, res: Response, next: NextFunction): ValidationResponse | void => {
+
+        try {
+
+            const { error } = schema.validate(req[source], { abortEarly: false });
+
+            if (!error) {
+                return next();
+            }
+
+            const errorMessages = error.details.map((i) => i.message.replace(/['"]+/g, ''));
+
+            logger.warn(`400 validation - ${errorMessages.toString()}`);
+            return new ValidationResponse(res, errorMessages);
+
+        } catch (error) {
+            // something unknown happened, throw the error and let the global
+            // error hander pick it up
+            next(error);
+        }
+
+    };

@@ -26,7 +26,7 @@
     "include": [
         "./src/",
         "./scripts/",
-        "./tests/" 
+        "./tests/"
     ],
     "ts-node": {
         "require": ["tsconfig-paths/register"]

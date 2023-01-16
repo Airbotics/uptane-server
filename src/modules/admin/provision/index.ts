@@ -6,19 +6,17 @@ import * as controller from './controller';
 const router = express.Router();
 
 
-//create provisioning credentials
+// create provisioning credentials
 router.post('/provisioning-credentials',
     mustBeAuthenticated,
     mustBeInTeam(OryTeamRelations.admin),
     controller.createProvisioningCredentials);
 
 
-//list provisioning credentials
+// list provisioning credentials
 router.get('/provisioning-credentials',
     mustBeAuthenticated,
     mustBeInTeam(OryTeamRelations.member),
     controller.listProvisioningCredentials);
 
-
-    
 export default router;

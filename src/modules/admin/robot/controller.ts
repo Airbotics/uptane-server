@@ -148,10 +148,10 @@ export const listRobotGroups = async (req: Request, res: Response, next: NextFun
     const teamID = req.headers['air-team-id']!;
     const robotID = req.params.robot_id;
 
-    const {
-        skip,
-        take
-    } = req.query;
+    // const {
+    //     skip,
+    //     take
+    // } = req.query;
 
     try {
 
@@ -168,8 +168,8 @@ export const listRobotGroups = async (req: Request, res: Response, next: NextFun
                     orderBy: {
                         created_at: 'desc'
                     },
-                    skip: skip ? Number(skip) : undefined,
-                    take: take ? Number(take) : undefined
+                    // skip: skip ? Number(skip) : undefined,
+                    // take: take ? Number(take) : undefined
                 },
             }
         })

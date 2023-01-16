@@ -30,6 +30,13 @@ export const enum EHashDigest {
     Sha512 = 'SHA512'
 }
 
+// parts of a request which we validate 
+export const enum EValidationSource {
+    Body = 'body',
+    Headers = 'headers',
+    Query = 'query',
+    Path = 'params'
+}
 
 export const enum OryTeamRelations {
     member = 'member',

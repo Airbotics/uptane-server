@@ -9,7 +9,7 @@ import prisma from '@airbotics-core/drivers/postgres';
  * 
  * Creates an association betwen an ecu and image and triggers a delta generate
  */
-export const createRollout = async (req: Request, res: Response, next: NextFunction) => {
+export const createRollout = async (req: Request, res: Response) => {
 
     const {
         ecu_id,
@@ -60,4 +60,26 @@ export const createRollout = async (req: Request, res: Response, next: NextFunct
     logger.info('created tmp rollout');
     return new SuccessJsonResponse(res, santistedRollout);
 
+}
+
+/**
+ * List rollouts.
+ * 
+ * TODO
+ * - implement
+ */
+export const listRollouts = async (req: Request, res: Response) => {
+    logger.info('a user has gotten a list of rollout');
+    return new SuccessJsonResponse(res, []);
+}
+
+/**
+ * Get a rollout detail.
+ * 
+ * TODO
+ * - implement
+ */
+export const getRollout = async (req: Request, res: Response) => {
+    logger.info('a user has gotten details of a rollout');
+    return new SuccessJsonResponse(res, {});
 }

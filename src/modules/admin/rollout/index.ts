@@ -1,7 +1,8 @@
-import { OryTeamRelations } from '@airbotics-core/consts';
+import { EValidationSource, OryTeamRelations } from '@airbotics-core/consts';
 import express, { Request } from 'express';
-import { mustBeAuthenticated, mustBeInTeam } from '@airbotics-middlewares';
+import { mustBeAuthenticated, mustBeInTeam, validate } from '@airbotics-middlewares';
 import * as controller from './controller';
+import { createRolloutSchema, rolloutIdSchema } from '../schemas';
 
 const router = express.Router();
 
@@ -10,15 +11,20 @@ const router = express.Router();
 router.post('/rollouts',
     mustBeAuthenticated,
     mustBeInTeam(OryTeamRelations.admin),
+    validate(createRolloutSchema, EValidationSource.Body),
     controller.createRollout);
 
 // list rollouts
-// TODO
-router.get('/rollouts', (req,res) => res.end());
+router.get('/rollouts',
+    mustBeAuthenticated,
+    mustBeInTeam(OryTeamRelations.admin),
+    controller.listRollouts);
 
 // get rollout detail
-// TODO
-router.get('/rollouts/:rollout_id', (req,res) => res.end());
+router.get('/rollouts/:rollout_id',
+    mustBeAuthenticated,
+    mustBeInTeam(OryTeamRelations.admin),
+    validate(rolloutIdSchema, EValidationSource.Path),
+    controller.getRollout);
 
-    
 export default router;

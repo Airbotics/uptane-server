@@ -1,7 +1,8 @@
-import { OryTeamRelations } from '@airbotics-core/consts';
-import express, { Request } from 'express';
-import { mustBeAuthenticated, mustBeInTeam } from '@airbotics-middlewares';
+import { EValidationSource, OryTeamRelations } from '@airbotics-core/consts';
+import express from 'express';
+import { mustBeAuthenticated, mustBeInTeam, validate } from '@airbotics-middlewares';
 import * as controller from './controller';
+import { robotIdSchema } from '../schemas';
 
 const router = express.Router();
 
@@ -16,6 +17,7 @@ router.get('/robots',
 router.get('/robots/:robot_id',
     mustBeAuthenticated,
     mustBeInTeam(OryTeamRelations.member),
+    validate(robotIdSchema, EValidationSource.Path),
     controller.getRobot);
 
 //delete robot
@@ -28,6 +30,7 @@ router.delete('/robots/:robot_id',
 router.get('/robots/:robot_id/groups',
     mustBeAuthenticated,
     mustBeInTeam(OryTeamRelations.member),
+    validate(robotIdSchema, EValidationSource.Path),
     controller.listRobotGroups);
 
 export default router;

@@ -1,13 +1,20 @@
-
 import { Request, Response } from 'express';
 import { IdentityApiUpdateIdentityRequest } from '@ory/client';
 import { SuccessMessageResponse, BadResponse } from '@airbotics-core/network/responses';
 import { ory } from '@airbotics-core/drivers/ory';
 import config from '@airbotics-config';
+import { logger } from '@airbotics-core/logger';
 
 
+/**
+ * Updates the account details of a user.
+ * 
+ * Notes:
+ * - can only update first or last name
+ * - this goes to Ory Kratos.
+ */
 export const updateAccount = async (req: Request, res: Response) => {
-    
+
     const oryID = req.oryIdentity!.traits.id;
 
     const {
@@ -31,19 +38,14 @@ export const updateAccount = async (req: Request, res: Response) => {
                 }
             }
         };
-    
+
         await ory.identities.updateIdentity(identityParms);
 
+        logger.info('a user has updated their account details');
         return new SuccessMessageResponse(res, 'Account details were updated');
 
-
-    } catch(error) {
-        console.log(error.response.data.error);
+    } catch (error) {
         return new BadResponse(res, 'Unable to update account details');
     }
-
-
-
-
 
 }

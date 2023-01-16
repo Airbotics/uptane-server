@@ -1,12 +1,15 @@
-import express, { Request } from 'express';
-import { mustBeAuthenticated, mustBeInTeam } from '@airbotics-middlewares';
+import express from 'express';
+import { mustBeAuthenticated, validate } from '@airbotics-middlewares';
 import * as controller from './controller';
+import { EValidationSource } from '@airbotics-core/consts';
+import { updateAccountSchema } from '../schemas';
 
 const router = express.Router();
 
-//update account details
+// update account details
 router.put('/account',
     mustBeAuthenticated,
+    validate(updateAccountSchema, EValidationSource.Body),
     controller.updateAccount);
 
 export default router;

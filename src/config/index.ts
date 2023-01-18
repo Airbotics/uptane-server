@@ -32,6 +32,7 @@ const config = {
     TUF_SIGNATURE_SCHEME: ESignatureScheme.RsassaPssSha256,                     // signature scheme to use for TUF (must correspond to key type above)
     TUF_CONSISTENT_SNAPSHOT: false,                                             // whether we use consistent snapshots (more of a const that config for now...)
     TUF_EXPIRY_WINDOW: [3, 'hour'],                                             // if a TUF metadata is due to expiry within this number of <units> it will be resigned
+    TUF_TARGETS_FILE_SIZE_LIMIT: 10737418240,                                   // 10 gb in bytes
     TUF_TTL: {
         DIRECTOR: {
             ROOT: [365, 'day'],                                                 // expiry of director root metadata in days

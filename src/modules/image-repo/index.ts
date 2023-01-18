@@ -4,14 +4,15 @@ import config from '@airbotics-config';
 import { blobStorage } from '@airbotics-core/blob-storage';
 import { prisma } from '@airbotics-core/drivers/postgres';
 import { logger } from '@airbotics-core/logger';
-import { mustBeRobot, updateRobotMeta } from '@airbotics-middlewares';
-import { generateHash } from '@airbotics-core/crypto';
+import { mustBeRobot, updateRobotMeta, validate } from '@airbotics-middlewares';
+import { generateHash, generateSignature, verifySignature } from '@airbotics-core/crypto';
 import { getKeyStorageRepoKeyId, toCanonical } from '@airbotics-core/utils';
-import { EHashDigest } from '@airbotics-core/consts';
+import { EHashDigest, EKeyType, ESignatureScheme, EValidationSource } from '@airbotics-core/consts';
 import { dayjs } from '@airbotics-core/time';
 import { ISignedTargetsTUF } from '@airbotics-types';
 import { keyStorage } from '@airbotics-core/key-storage';
 import { generateSignedSnapshot, generateSignedTimestamp, getLatestMetadata, getLatestMetadataVersion } from '@airbotics-core/tuf';
+import { targetsSchema } from './schemas';
 
 
 const router = express.Router();
@@ -87,26 +88,46 @@ router.get('/:role.json', mustBeRobot, updateRobotMeta, async (req: Request, res
 
 
 /**
- * Upload targets.json signed by offline key
+ * Upload targets.json signed by offline key.
+ * 
+ * Notes:
+ * - the size of the targets.json file isn't taken into consideration.
  * 
  * TODO: 
  * - fix untidy url structure, put team id in header
- * - return checksum
- * - validate sent checksum
- * - validate sent targets.json
+ * - image size is 0
+ * - update ostree commit and ref
  */
-router.put('/:team_id/api/v1/user_repo/targets', async (req, res) => {
+router.put('/:team_id/api/v1/user_repo/targets', validate(targetsSchema, EValidationSource.Body), async (req, res) => {
 
-
-    const checksum = req.header('x-ats-role-checksum');
-    const targetsMetadata = req.body as ISignedTargetsTUF;
+    const clientChecksum = req.header('x-ats-role-checksum');
+    const clientTargetsMetadata = req.body as ISignedTargetsTUF;
     const team_id = req.params.team_id;
+
+    // validate checksum
+    const targetsCheckSum = generateHash(toCanonical(clientTargetsMetadata), { hashDigest: EHashDigest.Sha256 });
+
+    if (targetsCheckSum !== clientChecksum) {
+        logger.warn('a client is trying to upload a targets.json whose checksum is incorrect');
+        return res.status(412).json({ code: 'role_checksum_mismatch' });
+    }
+
+    // validate signature
+    // assuming only one signature is sent and rsa keys are used
+    const targetsKeyPair = await keyStorage.getKeyPair(getKeyStorageRepoKeyId(team_id, TUFRepo.image, TUFRole.targets));
+
+    const verified = verifySignature(toCanonical(clientTargetsMetadata), clientTargetsMetadata.signatures[0].sig, targetsKeyPair.publicKey, { signatureScheme: ESignatureScheme.RsassaPssSha256 });
+
+    if (!verified) {
+        logger.warn('a client is trying to upload a targets.json whose checksum is incorrect');
+        return res.status(412).json({ code: 'role_checksum_mismatch' });
+    }
 
     // get most recently created target
     let mostRecentTargetKey: string | null = null;
     let mostRecentTarget: any = null;
 
-    const targets = targetsMetadata.signed.targets;
+    const targets = clientTargetsMetadata.signed.targets;
 
     for (const targetKey in targets) {
         if (!mostRecentTarget) {
@@ -121,11 +142,11 @@ router.put('/:team_id/api/v1/user_repo/targets', async (req, res) => {
     const snapshotKeyPair = await keyStorage.getKeyPair(getKeyStorageRepoKeyId(team_id, TUFRepo.image, TUFRole.snapshot));
     const timestampKeyPair = await keyStorage.getKeyPair(getKeyStorageRepoKeyId(team_id, TUFRepo.image, TUFRole.timestamp));
 
-    const newTargetsVersion = targetsMetadata.signed.version;
+    const newTargetsVersion = clientTargetsMetadata.signed.version;
     const newSnapshotVersion = await getLatestMetadataVersion(team_id, TUFRepo.image, TUFRole.snapshot) + 1;
     const newTimestampVersion = await getLatestMetadataVersion(team_id, TUFRepo.image, TUFRole.timestamp) + 1;
 
-    const snapshotMetadata = generateSignedSnapshot(config.TUF_TTL.IMAGE.SNAPSHOT, newSnapshotVersion, snapshotKeyPair, targetsMetadata);
+    const snapshotMetadata = generateSignedSnapshot(config.TUF_TTL.IMAGE.SNAPSHOT, newSnapshotVersion, snapshotKeyPair, clientTargetsMetadata);
     const timestampMetadata = generateSignedTimestamp(config.TUF_TTL.IMAGE.TIMESTAMP, newTimestampVersion, timestampKeyPair, snapshotMetadata);
 
     // perform db writes in transaction
@@ -151,8 +172,8 @@ router.put('/:team_id/api/v1/user_repo/targets', async (req, res) => {
                 repo: TUFRepo.image,
                 role: TUFRole.targets,
                 version: newTargetsVersion,
-                value: targetsMetadata as object,
-                expires_at: targetsMetadata.signed.expires
+                value: clientTargetsMetadata as object,
+                expires_at: clientTargetsMetadata.signed.expires
             }
         });
 
@@ -179,6 +200,9 @@ router.put('/:team_id/api/v1/user_repo/targets', async (req, res) => {
         });
 
     });
+
+    res.set('x-ats-role-checksum', targetsCheckSum);
+    res.set('x-ats-targets-role-size-limit', String(config.TUF_TARGETS_FILE_SIZE_LIMIT));
 
     return res.status(200).end();
 

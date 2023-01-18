@@ -27,7 +27,7 @@ export const ecuVersionReportSchema = Joi.object({
         timeserver_time: Joi.string().required(), //.format('YYYY-MM-DDThh:mm:SS[Z]')
         installed_image: Joi.object({
             fileinfo: Joi.object({
-                hashes: hashschema,
+                hashes: hashschema.required(),
                 length: Joi.number().required(),
             }),
             filepath: Joi.string().required(),
@@ -41,7 +41,7 @@ export const robotManifestSchema = Joi.object({
     signatures: Joi.array().items(signatureSchema).required().min(1), 
     signed: Joi.object({
         primary_ecu_serial: Joi.string().required(),
-        ecu_version_manifests: Joi.object().pattern(/^/, ecuVersionReportSchema), // will need to be updated to support multiple version reports
+        ecu_version_manifests: Joi.object().pattern(/^/, ecuVersionReportSchema).required(), // will need to be updated to support multiple version reports
         installation_report: Joi.optional()
-    })
+    }).required()
 });

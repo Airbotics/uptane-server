@@ -8,18 +8,21 @@ Buckets ids are the same ids used for teams. Within a bucket we two types of obj
 
 | <- bucket id -> | <- object id ->    |
 | --------------- | ------------------ |
-| \<team-id>     | /images/\<image-id> |
-| \<team-id>     | /images/\<image-id> |
+| \<team-id>     | /treehub/summary |
+| \<team-id>     | /treehub/deltas/\<delta-id> |
+| \<team-id>     | /treehub/objects/\<object-id> |
 
 
 Layout:
 
 ```
 ├── <team-id>
-│   ├── images
-│   │   └── <image-id>
-│   ├── treehub
-│   │   └── <object-id>
+│   └── treehub
+│       ├── objects
+│       |   └── <object-id>
+│       ├── deltas
+│       |   └── <delta-id>
+│       └── summary
 ```
 
 

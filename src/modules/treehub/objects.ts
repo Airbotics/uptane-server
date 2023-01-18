@@ -32,7 +32,7 @@ const downloadObject = async (req: Request, res: Response) => {
     }
 
     try {
-        const content = await blobStorage.getObject(team_id, `treehub/${prefix}/${suffix}`);
+        const content = await blobStorage.getObject(team_id, `treehub/objects/${prefix}/${suffix}`);
 
         res.set('content-type', 'application/octet-stream');
         return res.status(200).send(content);
@@ -103,7 +103,7 @@ router.post('/:team_id/objects/:prefix/:suffix', express.raw({ type: '*/*', limi
             }
         });
 
-        await blobStorage.putObject(teamID, `treehub/${prefix}/${suffix}`, content);
+        await blobStorage.putObject(teamID, `treehub/objects/${prefix}/${suffix}`, content);
 
         await tx.object.update({
             where: {

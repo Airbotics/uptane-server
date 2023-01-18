@@ -21,7 +21,7 @@ services:
             - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
             - .blobs/root/root-ca-cert:/etc/ssl/airbotics-root-ca-cert.pem
             - .blobs/root/gateway-cert:/etc/ssl/airbotics-gateway-cert.pem
-            - .keys/gateway-private.pem:/etc/ssl/airbotics-gateway-key.pem
+            - .keys/gateway-keypair-private.pem:/etc/ssl/airbotics-gateway-key.pem
         ports:
             - 8002:80
             - 8003:443

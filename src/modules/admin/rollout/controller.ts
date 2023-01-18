@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { BadResponse, SuccessJsonResponse } from '@airbotics-core/network/responses';
 import { logger } from '@airbotics-core/logger';
 import prisma from '@airbotics-core/drivers/postgres';
+import { generateStaticDelta } from '@airbotics-core/generate-static-delta';
 
 
 /**
@@ -16,19 +17,24 @@ export const createRollout = async (req: Request, res: Response) => {
         image_id
     } = req.body;
 
-
     const teamID = req.headers['air-team-id']!;
 
     // check ecu exists
-    const ecuCount = await prisma.ecu.count({
+    const ecu = await prisma.ecu.findUnique({
         where: {
             id: ecu_id
         }
     });
 
-    if (ecuCount === 0) {
+    if (!ecu) {
         logger.warn('could not create a rollout because ecu does not exist');
         return new BadResponse(res, 'could not create rollout');
+    }
+
+    // if this ecu has an image already then we'll create a delta between it and the image we want to go to
+    if(ecu.image_id) {
+        // TODO compute static delta
+        // await generateStaticDelta(teamID, branch, from, to);
     }
 
     // check image exists

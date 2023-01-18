@@ -318,15 +318,13 @@ const generateNewMetadata = async (team_id: string, robot_id: string, ecuSerials
     const timestampKeyPair = await keyStorage.getKeyPair(getKeyStorageRepoKeyId(team_id, TUFRepo.director, TUFRole.timestamp));
 
     //Generate the new metadata
-    const targetsMetadata = generateSignedTargets(config.TUF_TTL.IMAGE.TARGETS, newTargetsVersion, targetsKeyPair, targetsImages);
-    const snapshotMetadata = generateSignedSnapshot(config.TUF_TTL.IMAGE.SNAPSHOT, newSnapshotVersion, snapshotKeyPair, targetsMetadata);
-    const timestampMetadata = generateSignedTimestamp(config.TUF_TTL.IMAGE.TIMESTAMP, newTimestampVersion, timestampKeyPair, snapshotMetadata);
+    const targetsMetadata = generateSignedTargets(config.TUF_TTL.DIRECTOR.TARGETS, newTargetsVersion, targetsKeyPair, targetsImages);
+    const snapshotMetadata = generateSignedSnapshot(config.TUF_TTL.DIRECTOR.SNAPSHOT, newSnapshotVersion, snapshotKeyPair, targetsMetadata);
+    const timestampMetadata = generateSignedTimestamp(config.TUF_TTL.DIRECTOR.TIMESTAMP, newTimestampVersion, timestampKeyPair, snapshotMetadata);
 
     // perform db writes in transaction
     await prisma.$transaction(async tx => {
 
-        // create tuf metadata
-        // prisma wants to be passed an `object` instead of our custom interface so we cast it
         await tx.metadata.create({
             data: {
                 team_id,
@@ -419,6 +417,24 @@ router.put('/manifest', mustBeRobot, updateRobotMeta, async (req: Request, res) 
          * snapshot and timestamp files for each ecu that needs updated.
          */
 
+        // firstly record which images are installed on the ecus
+        // TODO these should be done in a transaction
+        // TODO only need to do this if the image id has actually changed
+        for(const ecuSerial in manifest.signed.ecu_version_manifests) {
+
+            await prisma.ecu.update({
+                where: {
+                    team_id_id: {
+                        team_id,
+                        id: ecuSerial
+                    }
+                },
+                data: {
+                    image_id: manifest.signed.ecu_version_manifests[ecuSerial].signed.installed_image.filepath
+                }
+            });
+        }
+
         const updateRequired = await determineNewMetadataRequired(manifest, ecuSerials);
 
         if (!updateRequired) {
@@ -489,6 +505,22 @@ router.post('/ecus', mustBeRobot, updateRobotMeta, async (req: Request, res) => 
         res.status(400).end();
     }
 
+    // this is the first version of the metadata
+    const version = 1;
+
+    // no initial targets
+    const targetsImages = {}
+
+    // read the keys for the director
+    const targetsKeyPair = await keyStorage.getKeyPair(getKeyStorageRepoKeyId(team_id, TUFRepo.director, TUFRole.targets));
+    const snapshotKeyPair = await keyStorage.getKeyPair(getKeyStorageRepoKeyId(team_id, TUFRepo.director, TUFRole.snapshot));
+    const timestampKeyPair = await keyStorage.getKeyPair(getKeyStorageRepoKeyId(team_id, TUFRepo.director, TUFRole.timestamp));
+
+    // generate the new metadata
+    const targetsMetadata = generateSignedTargets(config.TUF_TTL.DIRECTOR.TARGETS, version, targetsKeyPair, targetsImages);
+    const snapshotMetadata = generateSignedSnapshot(config.TUF_TTL.DIRECTOR.SNAPSHOT, version, snapshotKeyPair, targetsMetadata);
+    const timestampMetadata = generateSignedTimestamp(config.TUF_TTL.DIRECTOR.TIMESTAMP, version, timestampKeyPair, snapshotMetadata);
+
     const createEcusData = payload.ecus.map(ecu => ({
         id: ecu.ecu_serial,
         team_id,
@@ -497,9 +529,9 @@ router.post('/ecus', mustBeRobot, updateRobotMeta, async (req: Request, res) => 
         primary: ecu.ecu_serial === payload.primary_ecu_serial
     }));
 
-
     await prisma.$transaction(async tx => {
 
+        // store the public ecu key
         for (const ecu of payload.ecus) {
             
             // we dont store ecu private keys on the backend so private key is set to an empty string
@@ -509,16 +541,55 @@ router.post('/ecus', mustBeRobot, updateRobotMeta, async (req: Request, res) => 
             });
         }
 
+        // create the ecus
         await tx.ecu.createMany({
             data: createEcusData
         });
 
+        // update the robot to say the ecus have been registerd
         await tx.robot.update({
             where: {
                 id: robot_id,
             },
             data: {
                 ecus_registered: true
+            }
+        });
+
+        // create the tuf metadata
+        await tx.metadata.create({
+            data: {
+                team_id,
+                repo: TUFRepo.director,
+                role: TUFRole.targets,
+                robot_id,
+                version,
+                value: targetsMetadata as object,
+                expires_at: targetsMetadata.signed.expires
+            }
+        });
+
+        await tx.metadata.create({
+            data: {
+                team_id,
+                repo: TUFRepo.director,
+                role: TUFRole.snapshot,
+                robot_id,
+                version,
+                value: snapshotMetadata as object,
+                expires_at: snapshotMetadata.signed.expires
+            }
+        });
+
+        await tx.metadata.create({
+            data: {
+                team_id,
+                repo: TUFRepo.director,
+                role: TUFRole.timestamp,
+                robot_id,
+                version,
+                value: timestampMetadata as object,
+                expires_at: timestampMetadata.signed.expires
             }
         });
 
@@ -607,6 +678,7 @@ router.get('/:role.json', mustBeRobot, updateRobotMeta, async (req: Request, res
     // check it hasnt expired
     // TODO
 
+    logger.debug(`a robot has fetched ${role} metdata`);
     return res.status(200).send(mostRecentMetadata);
 
 });

@@ -3,7 +3,7 @@
 
 @BASE_URL=http://localhost:8001
 @API_VERSION=v0
-@TEAM_ID=d4a9ee79-5fe6-4939-8ecf-dd732d0019c7
+@TEAM_ID=ffeec0ff-1041-4445-b174-b844eff37435
 @IMAGE=9523db36-30f7-4c66-8236-4d7c3326872c
 @ROBOT_ID=1234
 @ORY_PROJECT_URL={{$dotenv %ORY_PROJECT_URL}}
@@ -221,8 +221,8 @@ x-session-token: {{SESSION_TOKEN}}
 air-team-id: {{TEAM_ID}}
 
 {
-    "ecu_id": "8b8a77337315378fbe40381b2c2658daec780e1a78b7d7b6feea8e2788098e7e",
-    "image_id": "9b46eec9-6482-44d2-8b6c-41297bf454bd"
+    "ecu_id": "4d2406cdacd6b6c0cc89340b8995cfe5ccf7a39b970bd6fc57820a89d3a43a00",
+    "image_id": "ota-ce-device-336fd3576177f3074188b444cb5c6f5147204a1f351d17b3ee87567c0ce333f9"
 }
 
 
@@ -282,7 +282,12 @@ GET {{BASE_URL}}/api/{{API_VERSION}}/image/{{TEAM_ID}}/images/021a31d187c51c86dd
 # -----------------------------------------
 
 ### tmp generate deltas
-POST {{BASE_URL}}/api/{{API_VERSION}}/robot/treehub/{{TEAM_ID}}/deltas HTTP/1.1
+POST {{BASE_URL}}/api/{{API_VERSION}}/robot/treehub/{{TEAM_ID}}/deltas?from=336fd3576177f3074188b444cb5c6f5147204a1f351d17b3ee87567c0ce333f9&to=35d4b1b202668be531aae6426de6cea7541ab308f2fc5b7a8f290985da36e750 HTTP/1.1
+
+
+### download delta
+GET {{BASE_URL}}/api/{{API_VERSION}}/robot/treehub/deltas/M2/_TV2F38wdBiLREy1xvUUcgSh81HRez7odWfAzjM_k-NdSxsgJmi+UxquZCbebOp1Qaswjy_Ft6jykJhdo251A/superblock
+air-team-id: {{TEAM_ID}}
 
 
 ### get ostree config

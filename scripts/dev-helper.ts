@@ -28,6 +28,8 @@ const createAllCerts: ICmd = {
 
         console.log('Creating root and gateway cert');
 
+        const CN: string = readlineSync.question('Enter the Common Name (CN): ');
+
         // generate key pair for root cert
         const rootCaKeyPair = generateKeyPair({ keyType: EKeyType.Rsa });
 
@@ -39,7 +41,7 @@ const createAllCerts: ICmd = {
 
         // opts for gateway cert
         const opts: ICertOpts = {
-            commonName: 'localhost',
+            commonName: CN,
             parentCert: rootCaCert,
             parentKeyPair: {
                 privateKey: rootCaKeyPair.privateKey,

@@ -14,7 +14,9 @@ import { IKeyPair, IKeyStorageProvider } from '@airbotics-types';
 export class FilesystemProvider implements IKeyStorageProvider {
 
     // keyid has the form: <team-id>/<repo>/<role>
-    // we save under: .keys/<team-id>-<repo>-<role>.json
+    // we save under: 
+    // .keys/<team-id>-<repo>-<role>-private.pem
+    // .keys/<team-id>-<repo>-<role>-public.pem
 
     private keysPath: string;
 
@@ -24,18 +26,26 @@ export class FilesystemProvider implements IKeyStorageProvider {
     }
 
     async putKeyPair(id: string, keypair: IKeyPair): Promise<void> {
-        const filePathKey = path.resolve(path.join(this.keysPath, `${id.replace(/\//g, '-')}.json`));
-        fs.writeFileSync(filePathKey, JSON.stringify(keypair), 'ascii');
+        const publicFilePathKey = path.resolve(path.join(this.keysPath, `${id.replace(/\//g, '-')}-public.pem`));
+        const privateFilePathKey = path.resolve(path.join(this.keysPath, `${id.replace(/\//g, '-')}-private.pem`));
+        fs.writeFileSync(publicFilePathKey, keypair.publicKey, 'ascii');
+        fs.writeFileSync(privateFilePathKey, keypair.privateKey, 'ascii');
     }
 
     async getKeyPair(id: string): Promise<IKeyPair> {
-        const filePathKey = path.resolve(path.join(this.keysPath, `${id.replace(/\//g, '-')}.json`));
-        return JSON.parse(fs.readFileSync(filePathKey, 'ascii')) as IKeyPair;
+        const publicFilePathKey = path.resolve(path.join(this.keysPath, `${id.replace(/\//g, '-')}-public.pem`));
+        const privateFilePathKey = path.resolve(path.join(this.keysPath, `${id.replace(/\//g, '-')}-private.pem`));
+        return {
+            publicKey: fs.readFileSync(publicFilePathKey, 'ascii'),
+            privateKey: fs.readFileSync(privateFilePathKey, 'ascii'),
+        };
     }
 
     async deleteKeyPair(id: string): Promise<void> {
-        const filePathKey = path.resolve(path.join(this.keysPath, `${id.replace(/\//g, '-')}.json`));
-        fs.rmSync(filePathKey);
+        const publicFilePathKey = path.resolve(path.join(this.keysPath, `${id.replace(/\//g, '-')}-public.pem`));
+        const privateFilePathKey = path.resolve(path.join(this.keysPath, `${id.replace(/\//g, '-')}-private.pem`));
+        fs.rmSync(publicFilePathKey);
+        fs.rmSync(privateFilePathKey);
     }
 
 }

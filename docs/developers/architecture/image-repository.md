@@ -32,8 +32,3 @@ This allows an ECU to download the content of an image that has been uploaded by
 3. Fetch TUF metadata
 
 Clients can fetch TUF metadata stored in the image repository.
-
-
-## Storing images
-
-Currently, images are uploaded and stored in blob storage. In time they will also be stored in treehub.

@@ -28,7 +28,8 @@ enum TUFRole {
     timestamp
 }
 
-enum DeltaGeneration {
+// status of static delta generation
+enum StaticDeltaStatus {
     underway
     failed
     succeeded
@@ -49,7 +50,7 @@ model Team {
 
     refs                Ref[]
     objects             Object[]
-    deltas              Delta[]
+    deltas              StaticDelta[]
     images              Image[]
     metadata            Metadata[]
     robots              Robot[]
@@ -98,6 +99,7 @@ model Image {
     team                Team            @relation(fields: [team_id], references: [id], onDelete: Cascade)
 
     tmp_ecu_images      TmpEcuImages[]
+    ecus                Ecu[]
 
     @@unique([team_id, id])
     @@map("images")
@@ -164,11 +166,13 @@ model Ecu {
     robot_id            String
     hwid                String                              // hardware type/id of this ecu
     primary             Boolean                             // whether this ecu is the primary, only one per robot is supported
+    image_id            String?                             // FK to whichever image is currently installed
     created_at          DateTime        @default(now())
     updated_at          DateTime        @updatedAt
 
     team                Team            @relation(fields: [team_id], references: [id], onDelete: Cascade)
     robot               Robot           @relation(fields: [team_id, robot_id], references: [team_id, id], onDelete: Cascade)
+    installed_image     Image?          @relation(fields: [team_id, image_id], references: [team_id, id], onDelete: Cascade)
 
     tmp_ecu_images      TmpEcuImages[]
 
@@ -309,29 +313,29 @@ model Object {
 
     team                Team            @relation(fields: [team_id], references: [id], onDelete: Cascade)
     refs                Ref[]
-    from_deltas         Delta[]         @relation(name: "DeltaFrom")
-    to_deltas           Delta[]         @relation(name: "DeltaTo")
+    from_deltas         StaticDelta[]   @relation(name: "DeltaFrom")
+    to_deltas           StaticDelta[]   @relation(name: "DeltaTo")
 
 
     @@id([team_id, object_id])
     @@map("objects")
 }
 
-// ostree deltas
-model Delta {
+// ostree static deltas
+model StaticDelta {
     from                String
     to                  String
     team_id             String
     created_at          DateTime        @default(now())
     updated_at          DateTime        @updatedAt
-    status              DeltaGeneration @default(underway)
+    status              StaticDeltaStatus @default(underway)
 
     from_delta          Object          @relation(name: "DeltaFrom", fields: [team_id, from], references: [team_id, object_id], onDelete: Cascade)
     to_delta            Object          @relation(name: "DeltaTo", fields: [team_id, to], references: [team_id, object_id], onDelete: Cascade)
     team                Team            @relation(fields: [team_id], references: [id], onDelete: Cascade)
 
     @@id([team_id, from, to])
-    @@map("deltas")
+    @@map("static_deltas")
 }
 
 

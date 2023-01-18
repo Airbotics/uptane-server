@@ -78,8 +78,8 @@ test('treehub - get object robot', async () => {
     expect(res.status).not.toEqual(404);
 });
 
-test('treehub - generate delta', async () => {
-    const res = await request(app).post('/api/v0/robot/treehub/b5491bbe-1c90-4567-bbc5-724327759d12/deltas');
+test('treehub - get static delta', async () => {
+    const res = await request(app).get('/api/v0/robot/treehub/deltas/M2/_TV2F38wdBiLREy1xvUUcgSh81HRez7odWfAzjM_k-NdSxsgJmi+UxquZCbebOp1Qaswjy_Ft6jykJhdo251A/superblock');
     expect(res.status).not.toEqual(404);
 });
 

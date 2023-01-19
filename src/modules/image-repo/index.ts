@@ -29,7 +29,7 @@ router.get('/:version.:role.json', mustBeRobot, updateRobotMeta, async (req: Req
         team_id
     } = req.robotGatewayPayload!;
 
-    const metadata = await prisma.metadata.findFirst({
+    const metadata = await prisma.tufMetadata.findFirst({
         where: {
             team_id,
             repo: TUFRepo.image,
@@ -61,7 +61,7 @@ router.get('/:role.json', mustBeRobot, updateRobotMeta, async (req: Request, res
         team_id
     } = req.robotGatewayPayload!;
 
-    const metadata = await prisma.metadata.findMany({
+    const metadata = await prisma.tufMetadata.findMany({
         where: {
             team_id,
             repo: TUFRepo.image,
@@ -166,7 +166,7 @@ router.put('/:team_id/api/v1/user_repo/targets', validate(targetsSchema, EValida
         });
 
         // create tuf metadata
-        await tx.metadata.create({
+        await tx.tufMetadata.create({
             data: {
                 team_id,
                 repo: TUFRepo.image,
@@ -177,7 +177,7 @@ router.put('/:team_id/api/v1/user_repo/targets', validate(targetsSchema, EValida
             }
         });
 
-        await tx.metadata.create({
+        await tx.tufMetadata.create({
             data: {
                 team_id,
                 repo: TUFRepo.image,
@@ -188,7 +188,7 @@ router.put('/:team_id/api/v1/user_repo/targets', validate(targetsSchema, EValida
             }
         });
 
-        await tx.metadata.create({
+        await tx.tufMetadata.create({
             data: {
                 team_id,
                 repo: TUFRepo.image,

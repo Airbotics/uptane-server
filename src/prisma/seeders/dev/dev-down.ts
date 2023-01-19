@@ -26,7 +26,7 @@ import prisma from '@airbotics-core/drivers/postgres';
     await prisma.image.deleteMany();
     await prisma.robot.deleteMany();
     await prisma.ecu.deleteMany();
-    await prisma.metadata.deleteMany();
+    await prisma.tufMetadata.deleteMany();
     await prisma.tmpEcuImages.deleteMany();
 
     console.log('dev seeder down success');

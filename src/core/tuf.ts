@@ -67,7 +67,7 @@ export const generateTufKey = (key: string, { isPublic }: IGenerateTufKeyOpts): 
  */
 export const getLatestMetadata = async (team_id: string, repo: TUFRepo, role: TUFRole, robot_id: string | null = null): Promise<any> => {
 
-    const latest = await prisma.metadata.findFirst({
+    const latest = await prisma.tufMetadata.findFirst({
         where: {
             team_id,
             repo,
@@ -93,7 +93,7 @@ export const getLatestMetadata = async (team_id: string, repo: TUFRepo, role: TU
  */
 export const getInitialMetadata = async (team_id: string, repo: TUFRepo, role: TUFRole, robot_id: string | null = null): Promise<any> => {
 
-    const initial = await prisma.metadata.findFirst({
+    const initial = await prisma.tufMetadata.findFirst({
         where: {
             team_id,
             repo,

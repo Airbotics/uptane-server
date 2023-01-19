@@ -84,7 +84,7 @@ export const createTeam = async (req: Request, res: Response, next: NextFunction
             });
 
             // image repo root.json
-            await tx.metadata.create({
+            await tx.tufMetadata.create({
                 data: {
                     team_id: team.id,
                     repo: TUFRepo.image,
@@ -96,7 +96,7 @@ export const createTeam = async (req: Request, res: Response, next: NextFunction
             });
 
             // image repo targets.json
-            await tx.metadata.create({
+            await tx.tufMetadata.create({
                 data: {
                     team_id: team.id,
                     repo: TUFRepo.image,
@@ -108,7 +108,7 @@ export const createTeam = async (req: Request, res: Response, next: NextFunction
             });
 
             // image repo snapshot.json
-            await tx.metadata.create({
+            await tx.tufMetadata.create({
                 data: {
                     team_id: team.id,
                     repo: TUFRepo.image,
@@ -120,7 +120,7 @@ export const createTeam = async (req: Request, res: Response, next: NextFunction
             });
 
             // image repo timestamp.json
-            await tx.metadata.create({
+            await tx.tufMetadata.create({
                 data: {
                     team_id: team.id,
                     repo: TUFRepo.image,
@@ -132,7 +132,7 @@ export const createTeam = async (req: Request, res: Response, next: NextFunction
             });
 
             // director repo root.json
-            await tx.metadata.create({
+            await tx.tufMetadata.create({
                 data: {
                     team_id: team.id,
                     repo: TUFRepo.director,

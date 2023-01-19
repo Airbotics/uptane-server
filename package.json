@@ -6,6 +6,7 @@
     "license": "AGPL-3.0",
     "scripts": {
         "start": "nodemon --config ./nodemon.json src/index.ts",
+        "studio": "npx prisma studio --schema ./src/prisma/schema.prisma",
         "lint": "eslint .",
         "build": "tsc && tsc-alias",
         "generate": "npx prisma generate --schema ./src/prisma/schema.prisma",

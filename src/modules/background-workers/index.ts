@@ -24,7 +24,7 @@ const processRootRoles = async () => {
         // lets process the root roles, we'll get the most recent root for every repo in every team.
         // there is probably a nice way to check expiry times in prisma but for now we'll just do it in
         // js since we won't have many roots. this is left as homework.
-        const mostRecentRoots = await prisma.metadata.findMany({
+        const mostRecentRoots = await prisma.tufMetadata.findMany({
             where: {
                 role: TUFRole.root,
             },
@@ -68,7 +68,7 @@ const processRootRoles = async () => {
                 snapshotKeyPair,
                 timestampKeyPair);
 
-            await prisma.metadata.create({
+            await prisma.tufMetadata.create({
                 data: {
                     team_id: root.team_id,
                     repo: root.repo,
@@ -98,7 +98,7 @@ const processTargetRoles = async () => {
 
     try {
 
-        const mostRecentTargets = await prisma.metadata.findMany({
+        const mostRecentTargets = await prisma.tufMetadata.findMany({
             where: {
                 role: TUFRole.targets,
             },
@@ -145,7 +145,7 @@ const processTargetRoles = async () => {
 
             // perform db writes in transaction
             await prisma.$transaction(async tx => {
-                await tx.metadata.create({
+                await tx.tufMetadata.create({
                     data: {
                         team_id: targets.team_id,
                         repo: targets.repo,
@@ -156,7 +156,7 @@ const processTargetRoles = async () => {
                     }
                 });
 
-                await tx.metadata.create({
+                await tx.tufMetadata.create({
                     data: {
                         team_id: targets.team_id,
                         repo: targets.repo,
@@ -167,7 +167,7 @@ const processTargetRoles = async () => {
                     }
                 });
 
-                await tx.metadata.create({
+                await tx.tufMetadata.create({
                     data: {
                         team_id: targets.team_id,
                         repo: targets.repo,
@@ -195,7 +195,7 @@ const processSnapshotRoles = async () => {
 
     try {
 
-        const mostRecentSnapshots = await prisma.metadata.findMany({
+        const mostRecentSnapshots = await prisma.tufMetadata.findMany({
             where: {
                 role: TUFRole.snapshot,
             },
@@ -280,7 +280,7 @@ const processTimestampRoles = async () => {
 
     try {
 
-        const mostRecentTimestamps = await prisma.metadata.findMany({
+        const mostRecentTimestamps = await prisma.tufMetadata.findMany({
             where: {
                 role: TUFRole.timestamp,
             },

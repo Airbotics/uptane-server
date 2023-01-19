@@ -52,7 +52,7 @@ model Team {
     objects             Object[]
     deltas              StaticDelta[]
     images              Image[]
-    metadata            Metadata[]
+    tuf_metadata        TufMetadata[]
     robots              Robot[]
     ecus                Ecu[]
     robot_manifests     RobotManifest[]
@@ -107,7 +107,7 @@ model Image {
 
 
 // tuf metadata
-model Metadata {
+model TufMetadata {
     id                  String          @id @default(uuid()) @unique
     team_id             String
     robot_id            String?
@@ -125,7 +125,7 @@ model Metadata {
     // @@unique([team_id, repo, role, version], where: {repo: TUFRepo.image})
     // @@unique([team_id, repo, role, version, robot_id], where: {repo: TUFRepo.director})
     //Keep an eye on issue here: https://github.com/prisma/prisma/issues/6974
-    @@map("metadata")
+    @@map("tuf_metadata")
 }
 
 
@@ -146,7 +146,7 @@ model Robot {
 
     ecus                Ecu[]
     robot_manifests     RobotManifest[]
-    metadata            Metadata[]
+    tuf_metadata        TufMetadata[]
     network_reports     NetworkReport[]
     packages_reports    InstalledPackagesReport[]
     hw_info_reports     HardwareInfoReport[]

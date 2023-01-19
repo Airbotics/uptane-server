@@ -325,7 +325,7 @@ const generateNewMetadata = async (team_id: string, robot_id: string, ecuSerials
     // perform db writes in transaction
     await prisma.$transaction(async tx => {
 
-        await tx.metadata.create({
+        await tx.tufMetadata.create({
             data: {
                 team_id,
                 repo: TUFRepo.director,
@@ -337,7 +337,7 @@ const generateNewMetadata = async (team_id: string, robot_id: string, ecuSerials
             }
         });
 
-        await tx.metadata.create({
+        await tx.tufMetadata.create({
             data: {
                 team_id,
                 repo: TUFRepo.director,
@@ -349,7 +349,7 @@ const generateNewMetadata = async (team_id: string, robot_id: string, ecuSerials
             }
         });
 
-        await tx.metadata.create({
+        await tx.tufMetadata.create({
             data: {
                 team_id,
                 repo: TUFRepo.director,
@@ -557,7 +557,7 @@ router.post('/ecus', mustBeRobot, updateRobotMeta, async (req: Request, res) => 
         });
 
         // create the tuf metadata
-        await tx.metadata.create({
+        await tx.tufMetadata.create({
             data: {
                 team_id,
                 repo: TUFRepo.director,
@@ -569,7 +569,7 @@ router.post('/ecus', mustBeRobot, updateRobotMeta, async (req: Request, res) => 
             }
         });
 
-        await tx.metadata.create({
+        await tx.tufMetadata.create({
             data: {
                 team_id,
                 repo: TUFRepo.director,
@@ -581,7 +581,7 @@ router.post('/ecus', mustBeRobot, updateRobotMeta, async (req: Request, res) => 
             }
         });
 
-        await tx.metadata.create({
+        await tx.tufMetadata.create({
             data: {
                 team_id,
                 repo: TUFRepo.director,
@@ -617,7 +617,7 @@ router.get('/:version.:role.json', mustBeRobot, updateRobotMeta, async (req: Req
     // since this is the director repo metadata is genereated per robot, apart from
     // the root which is the same for all. therefore if the role is root we don't
     // include the robot_id as a clause
-    const metadata = await prisma.metadata.findFirst({
+    const metadata = await prisma.tufMetadata.findFirst({
         where: {
             team_id,
             repo: TUFRepo.director,
@@ -656,7 +656,7 @@ router.get('/:role.json', mustBeRobot, updateRobotMeta, async (req: Request, res
     // since this is the director repo metadata is genereated per robot, apart from
     // the root which is the same for all. therefore if the role is root we don't
     // include the robot_id as a clause
-    const metadata = await prisma.metadata.findMany({
+    const metadata = await prisma.tufMetadata.findMany({
         where: {
             team_id,
             repo: TUFRepo.director,

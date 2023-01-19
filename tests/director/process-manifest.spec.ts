@@ -13,6 +13,7 @@ const mockedRobot: Robot & { ecus: Ecu[]; robot_manifests: RobotManifest[]; } = 
   team_id: mockedTeamID,
   last_seen_at: null,
   agent_version: null,
+  ecus_registered: true,
   created_at: new Date(),
   updated_at: new Date(),
   ecus: [],

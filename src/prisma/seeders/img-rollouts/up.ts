@@ -122,7 +122,7 @@ const createImageRepoMetadata = async () => {
     const timestampMetadata = generateSignedTimestamp(SEED_EXPIRES_AT, newTimestampVersion, timestampKeyPair, snapshotMetadata);
 
     //Store the metadata in the db
-    await prisma.metadata.createMany({
+    await prisma.tufMetadata.createMany({
         data: [
             {
                 team_id: SEED_TEAM_ID,

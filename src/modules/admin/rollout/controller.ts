@@ -3,6 +3,8 @@ import { BadResponse, SuccessJsonResponse } from '@airbotics-core/network/respon
 import { logger } from '@airbotics-core/logger';
 import prisma from '@airbotics-core/drivers/postgres';
 import { generateStaticDelta } from '@airbotics-core/generate-static-delta';
+import { airEvent } from '@airbotics-core/events';
+import { EEventAction, EEventActorType, EEventResource } from '@airbotics-core/consts';
 
 
 /**
@@ -12,12 +14,13 @@ import { generateStaticDelta } from '@airbotics-core/generate-static-delta';
  */
 export const createRollout = async (req: Request, res: Response) => {
 
+    const oryID = req.oryIdentity!.traits.id;
+    const teamID = req.headers['air-team-id']!;
+
     const {
         ecu_id,
         image_id
     } = req.body;
-
-    const teamID = req.headers['air-team-id']!;
 
     // check ecu exists
     const ecu = await prisma.ecu.findUnique({
@@ -54,6 +57,15 @@ export const createRollout = async (req: Request, res: Response) => {
             image_id,
             ecu_id
         }
+    });
+
+    airEvent.emit({
+        resource: EEventResource.Rollout,
+        action: EEventAction.Created,
+        actor_type: EEventActorType.User,
+        actor_id: oryID,
+        team_id: teamID,
+        meta: null
     });
 
     const santistedRollout = {

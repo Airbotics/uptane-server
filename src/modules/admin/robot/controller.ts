@@ -4,15 +4,17 @@ import { logger } from '@airbotics-core/logger';
 import prisma from '@airbotics-core/drivers/postgres';
 import { getKeyStorageEcuKeyId } from '@airbotics-core/utils';
 import { keyStorage } from '@airbotics-core/key-storage';
+import { airEvent } from '@airbotics-core/events';
+import { EEventAction, EEventActorType, EEventResource } from '@airbotics-core/consts';
 
 
 /**
  * Lists all robots in requesters team. 
  */
 export const listRobots = async (req: Request, res: Response, next: NextFunction) => {
-    
+
     const teamID = req.headers['air-team-id'];
-    
+
     // get robots
     const robots = await prisma.robot.findMany({
         where: {
@@ -22,7 +24,7 @@ export const listRobots = async (req: Request, res: Response, next: NextFunction
             created_at: 'desc'
         }
     });
-    
+
     const robotsSanitised = robots.map(robot => ({
         id: robot.id,
         created_at: robot.created_at,
@@ -98,6 +100,7 @@ export const getRobot = async (req: Request, res: Response, next: NextFunction) 
  */
 export const deleteRobot = async (req: Request, res: Response, next: NextFunction) => {
 
+    const oryID = req.oryIdentity!.traits.id;
     const teamID = req.headers['air-team-id']!;
     const robotID = req.params.robot_id;
 
@@ -117,9 +120,20 @@ export const deleteRobot = async (req: Request, res: Response, next: NextFunctio
         });
 
         // deleta ecu keys for this robot
-        for(const ecu of robot.ecus) {
+        for (const ecu of robot.ecus) {
             await keyStorage.deleteKeyPair(getKeyStorageEcuKeyId(teamID, ecu.id));
         }
+
+        airEvent.emit({
+            resource: EEventResource.Robot,
+            action: EEventAction.Deleted,
+            actor_type: EEventActorType.User,
+            actor_id: oryID,
+            team_id: teamID,
+            meta: {
+                id: robot.id
+            }
+        });
 
         logger.info('deleted a robot');
         return new NoContentResponse(res, 'The robot has been deleted')
@@ -191,5 +205,5 @@ export const listRobotGroups = async (req: Request, res: Response, next: NextFun
     } catch (error) {
         next(error);
     }
-    
+
 }

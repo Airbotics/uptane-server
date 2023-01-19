@@ -1,40 +1,32 @@
+import { EEventAction, EEventActorType, EEventResource } from '@airbotics-core/consts';
 import EventEmitter from 'events';
 
-interface AirAuditEvent {
-    actor_id: string;
-    team_id: string;
-    action: string;
+/**
+ * Notes:
+ * - If an action is done on an account then the team_id will be null.
+ * - If an action is done by the airbotics-bot then the actor_id will be null.
+ */
+interface AirEvent {
+    team_id: string | null; 
+    actor_type: EEventActorType;
+    actor_id: string | null;
+    resource: EEventResource;
+    action: EEventAction;
+    meta: object | null;
 }
 
-interface AirOtherEvent {
-    producer: string;
-    created_at: Date;
-}
+class AirEventEmitter {
 
-class AirEventEmitter<T> {
-
-    private topic: string;
     private emitter: EventEmitter = new EventEmitter();
 
-    constructor(topic: string) {
-        this.topic = topic;
+    public addListener(listener: (event: AirEvent) => void) {
+        this.emitter.addListener('default', listener)
     }
 
-    public addListener(listener: (event: T) => void ) {
-        this.emitter.addListener(this.topic, listener)
-    }
-    
-    public emit(val: T) {
-        this.emitter.emit(this.topic, val);
+    public emit(val: AirEvent) {
+        this.emitter.emit('default', val);
     }
 
 }
 
-export const auditEventEmitter = new AirEventEmitter<AirAuditEvent>('audit');
-export const otherEventEmitter = new AirEventEmitter<AirOtherEvent>('other');
-
-
-auditEventEmitter.addListener((event: AirAuditEvent) => {
-    //TODO: put this into log storage
-    console.log(event);
-})
+export const airEvent = new AirEventEmitter();

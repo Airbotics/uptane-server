@@ -74,3 +74,46 @@ export const ROOT_CERT_ORGANISATION = 'Airbotics Inc.';
 export const ROOT_CERT_LOCALITY = 'San Francisco';
 export const ROOT_CERT_STATE = 'CA';
 export const ROOT_CERT_COUNTRY = 'US';
+
+
+// event resources
+export const enum EEventResource {
+    Account = 'account',
+    Group = 'group',
+    ImageRepoRootRole = 'image_repo_root_role',
+    ImageRepoTargetsRole = 'image_repo_targets_role',
+    ProvisioningCredentials = 'provisioning_credentials',
+    Robot = 'robot',
+    Rollout = 'rollout',
+    Team = 'team',
+    Image = 'image'
+}
+
+/**
+ * Supported actions that can be taken on resources
+ * 
+ * Notes:
+ * - must be in past tense
+ * 
+ * TODO:
+ * - capture log out event
+ */
+export const enum EEventAction {
+    Created = 'created',
+    Verified = 'verified',
+    LoggedIn = 'logged_in',
+    DetailsUpdated = 'details_updated', // name, description, etc.
+    AccountRecoveredStarted = 'account_recovery_started',
+    AccountRecoveredFinished = 'account_revcovery_finished',
+    Deleted = 'deleted',
+    RobotAdded = 'robot_added',
+    RobotRemoved = 'robot_removed',
+    Signed = 'signed'
+}
+
+// types of actors that can make an event
+export const enum EEventActorType {
+    User = 'user',
+    AirboticsBot = 'airbotics-bot',
+    Robot = 'robot'
+}

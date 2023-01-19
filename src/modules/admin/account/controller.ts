@@ -4,6 +4,8 @@ import { SuccessMessageResponse, BadResponse } from '@airbotics-core/network/res
 import { ory } from '@airbotics-core/drivers/ory';
 import config from '@airbotics-config';
 import { logger } from '@airbotics-core/logger';
+import { airEvent } from '@airbotics-core/events';
+import { EEventAction, EEventActorType, EEventResource } from '@airbotics-core/consts';
 
 
 /**
@@ -40,6 +42,18 @@ export const updateAccount = async (req: Request, res: Response) => {
         };
 
         await ory.identities.updateIdentity(identityParms);
+
+        airEvent.emit({
+            resource: EEventResource.Account,
+            action: EEventAction.DetailsUpdated,
+            actor_type: EEventActorType.User,
+            actor_id: oryID,
+            team_id: null,
+            meta: {
+                first_name,
+                last_name
+            }
+        });
 
         logger.info('a user has updated their account details');
         return new SuccessMessageResponse(res, 'Account details were updated');

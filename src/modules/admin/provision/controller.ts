@@ -3,6 +3,9 @@ import archiver from 'archiver';
 import forge from 'node-forge';
 import { TUFRepo, TUFRole } from '@prisma/client';
 import {
+    EEventAction,
+    EEventActorType,
+    EEventResource,
     EKeyType,
     ROOT_BUCKET,
     ROOT_CA_CERT_OBJ_ID,
@@ -11,7 +14,7 @@ import {
 import { SuccessJsonResponse, NoContentResponse } from '@airbotics-core/network/responses';
 import { logger } from '@airbotics-core/logger';
 import prisma from '@airbotics-core/drivers/postgres';
-import { auditEventEmitter } from '@airbotics-core/events';
+import { airEvent } from '@airbotics-core/events';
 import { generateCertificate, generateKeyPair } from '@airbotics-core/crypto';
 import config from '@airbotics-config';
 import { generateTufKey, getInitialMetadata } from '@airbotics-core/tuf';
@@ -82,12 +85,22 @@ export const createProvisioningCredentials = async (req: Request, res: Response)
     archive.append(Buffer.from(forge.asn1.toDer(p12).getBytes(), 'binary'), { name: 'autoprov_credentials.p12' });
     archive.finalize();
 
-    auditEventEmitter.emit({ actor_id: oryID, team_id: teamID, action: 'create_provisioning_creds' });
 
     // add record of creation of credentials to db
-    await prisma.provisioningCredentials.create({
+    const provisioningCredentials = await prisma.provisioningCredentials.create({
         data: {
             team_id: teamID
+        }
+    });
+
+    airEvent.emit({
+        resource: EEventResource.ProvisioningCredentials,
+        action: EEventAction.Created,
+        actor_type: EEventActorType.User,
+        actor_id: oryID,
+        team_id: teamID,
+        meta: {
+            id: provisioningCredentials.id
         }
     });
 

@@ -9,15 +9,16 @@ import {
     EKeyType,
     ROOT_BUCKET,
     ROOT_CA_CERT_OBJ_ID,
-    ROOT_CA_KEY_ID
+    ROOT_CA_KEY_ID,
+    TUF_METADATA_INITIAL
 } from '@airbotics-core/consts';
 import { SuccessJsonResponse, NoContentResponse } from '@airbotics-core/network/responses';
 import { logger } from '@airbotics-core/logger';
-import prisma from '@airbotics-core/drivers/postgres';
+import { prisma } from '@airbotics-core/drivers';
 import { airEvent } from '@airbotics-core/events';
 import { generateCertificate, generateKeyPair } from '@airbotics-core/crypto';
 import config from '@airbotics-config';
-import { generateTufKey, getInitialMetadata } from '@airbotics-core/tuf';
+import { generateTufKey, getTufMetadata } from '@airbotics-core/tuf';
 import { blobStorage } from '@airbotics-core/blob-storage';
 import { keyStorage } from '@airbotics-core/key-storage';
 import { getKeyStorageRepoKeyId, toCanonical } from '@airbotics-core/utils';
@@ -56,7 +57,7 @@ export const createProvisioningCredentials = async (req: Request, res: Response)
     const p12 = forge.pkcs12.toPkcs12Asn1(forge.pki.privateKeyFromPem(provisioningKeyPair.privateKey), [provisioningCert, rootCaCert], null, { algorithm: 'aes256' });
 
     // get initial root metadata
-    const rootMetadata = await getInitialMetadata(teamID, TUFRepo.image, TUFRole.root);
+    const rootMetadata = await getTufMetadata(teamID, TUFRepo.image, TUFRole.root, TUF_METADATA_INITIAL);
 
     if (!rootMetadata) {
         logger.warn('could not create provisioning credentials because no root metadata for the team exists');

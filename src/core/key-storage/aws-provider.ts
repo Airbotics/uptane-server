@@ -1,6 +1,6 @@
 import { CreateSecretCommand, GetSecretValueCommand, DeleteSecretCommand } from '@aws-sdk/client-secrets-manager';
 import config from '@airbotics-config';
-import { secretsManagerClient } from '@airbotics-core/drivers/aws-secrets-manager';
+import { secretsManagerClient } from '@airbotics-core/drivers';
 import { IKeyPair, IKeyStorageProvider } from '@airbotics-types';
 
 

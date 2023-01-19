@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { BadResponse, SuccessJsonResponse } from '@airbotics-core/network/responses';
 import { logger } from '@airbotics-core/logger';
-import prisma from '@airbotics-core/drivers/postgres';
+import { prisma } from '@airbotics-core/drivers';
 import { generateStaticDelta } from '@airbotics-core/generate-static-delta';
 import { airEvent } from '@airbotics-core/events';
 import { EEventAction, EEventActorType, EEventResource } from '@airbotics-core/consts';
@@ -35,7 +35,7 @@ export const createRollout = async (req: Request, res: Response) => {
     }
 
     // if this ecu has an image already then we'll create a delta between it and the image we want to go to
-    if(ecu.image_id) {
+    if (ecu.image_id) {
         // TODO compute static delta
         // await generateStaticDelta(teamID, branch, from, to);
     }

@@ -1,17 +1,23 @@
 import fs from 'fs';
 import path from 'path';
 import config from '@airbotics-config';
-import prisma from '@airbotics-core/drivers/postgres';
+import { prisma } from '@airbotics-core/drivers';
 import { keyStorage } from '@airbotics-core/key-storage';
 import { generateHash } from '@airbotics-core/crypto/hashes';
 import { UploadStatus, TUFRole, TUFRepo, ImageFormat } from "@prisma/client";
-import { generateSignedRoot, generateSignedSnapshot, 
-    generateSignedTargets, generateSignedTimestamp } from '@airbotics-core/tuf';
-import { IKeyPair, ISignedRootTUF, ITargetsImages, 
-    ISignedTargetsTUF, ISignedSnapshotTUF, ITimestampTUF } from '@airbotics-types';
-import { SEED_EXPIRES_AT, SEED_TEAM_ID, 
+import {
+    generateSignedRoot, generateSignedSnapshot,
+    generateSignedTargets, generateSignedTimestamp
+} from '@airbotics-core/tuf';
+import {
+    IKeyPair, ISignedRootTUF, ITargetsImages,
+    ISignedTargetsTUF, ISignedSnapshotTUF, ITimestampTUF
+} from '@airbotics-types';
+import {
+    SEED_EXPIRES_AT, SEED_TEAM_ID,
     SEED_PRIMARY_ECU_ID, SEED_PRIMARY_IMAGE_ID,
-    SEED_ROBOT_ID, SEED_SECONDARY_ECU_ID, SEED_SECONDARY_IMAGE_ID } from '../consts';
+    SEED_ROBOT_ID, SEED_SECONDARY_ECU_ID, SEED_SECONDARY_IMAGE_ID
+} from '../consts';
 import { EHashDigest } from '@airbotics-core/consts';
 
 
@@ -69,7 +75,7 @@ const createImage = async () => {
     const primaryImage = 'primary';
     const secondaryImage = 'secondary';
 
-    
+
     await prisma.image.createMany({
         data: [
             {
@@ -78,7 +84,7 @@ const createImage = async () => {
                 team_id: SEED_TEAM_ID,
                 hwids: [],
                 size: Buffer.byteLength(primaryImage, "utf-8"),
-                sha256: generateHash(primaryImage, {hashDigest: EHashDigest.Sha256}),
+                sha256: generateHash(primaryImage, { hashDigest: EHashDigest.Sha256 }),
                 // sha512: generateHash(primaryImage, {algorithm: 'SHA512'}),
                 status: UploadStatus.uploaded,
                 format: ImageFormat.binary
@@ -89,7 +95,7 @@ const createImage = async () => {
                 team_id: SEED_TEAM_ID,
                 hwids: [],
                 size: Buffer.byteLength(secondaryImage, "utf-8"),
-                sha256: generateHash(secondaryImage, {hashDigest: EHashDigest.Sha256}),
+                sha256: generateHash(secondaryImage, { hashDigest: EHashDigest.Sha256 }),
                 // sha512: generateHash(secondaryImage, {algorithm: 'SHA512'}),
                 status: UploadStatus.uploaded,
                 format: ImageFormat.binary
@@ -164,7 +170,7 @@ const createImageRepoMetadata = async () => {
         snapshotKeyPair,
         timestampKeyPair
     );
-    
+
     //Generate target images
     const targetsImages: ITargetsImages = {
         [SEED_PRIMARY_IMAGE_ID]: {
@@ -189,7 +195,7 @@ const createImageRepoMetadata = async () => {
     const targetsMetadata: ISignedTargetsTUF = generateSignedTargets(SEED_EXPIRES_AT, 1, targetKeyPair, targetsImages);
     const snapshotMetadata: ISignedSnapshotTUF = generateSignedSnapshot(SEED_EXPIRES_AT, 1, snapshotKeyPair, targetsMetadata);
     const timestampMetadata: ITimestampTUF = generateSignedTimestamp(SEED_EXPIRES_AT, 1, timestampKeyPair, snapshotMetadata);
-    
+
     //Store the metadata in the db
     await prisma.tufMetadata.createMany({
         data: [
@@ -228,7 +234,7 @@ const createImageRepoMetadata = async () => {
 
         ]
     });
-    
+
     console.log('dev seeder created image repo metadata');
 
 }
@@ -297,9 +303,9 @@ const createTmpRollout = async () => {
 
     //check if the keys have been generated
     //This should probably check for all keys but just checks image root for now
-    const seedRootCertPath = path.join(__filename, '../../../../../',  config.KEYS_FS_STORAGE_DIR, `${SEED_TEAM_ID}-image-root-public.pem`)
+    const seedRootCertPath = path.join(__filename, '../../../../../', config.KEYS_FS_STORAGE_DIR, `${SEED_TEAM_ID}-image-root-public.pem`)
 
-    if(!fs.existsSync(seedRootCertPath)) {
+    if (!fs.existsSync(seedRootCertPath)) {
         console.log('This seeder requires certs to be generated first');
         console.log('Try running: \nnpx ts-node src/seeders/utils/gen-keys.ts\n');
         return;

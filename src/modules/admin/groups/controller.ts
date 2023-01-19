@@ -1,7 +1,7 @@
 import e, { Request, Response, NextFunction } from 'express';
 import { BadResponse, SuccessJsonResponse, NoContentResponse } from '@airbotics-core/network/responses';
 import { logger } from '@airbotics-core/logger';
-import prisma from '@airbotics-core/drivers/postgres';
+import { prisma } from '@airbotics-core/drivers';
 import { IGroup, IGroupRobot } from '@airbotics-types';
 import { airEvent } from '@airbotics-core/events';
 import { EEventAction, EEventActorType, EEventResource } from '@airbotics-core/consts';

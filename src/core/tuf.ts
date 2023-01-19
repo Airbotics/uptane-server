@@ -7,8 +7,8 @@ import {
     IKeyPair, IRootSignedTUF, ISignedRootTUF, ISnapshotSignedTUF, ISignedSnapshotTUF, ITargetsImages,
     ITargetsSignedTUF, ISignedTargetsTUF, ITimestampSignedTUF, ISignedTimestampTUF, ITufKey
 } from '@airbotics-types';
-import { prisma } from '@airbotics-core/drivers/postgres';
-import { EHashDigest, ETUFRole } from '@airbotics-core/consts';
+import { prisma } from '@airbotics-core/drivers';
+import { EHashDigest, ETUFRole, TUF_METADATA_INITIAL, TUF_METADATA_LATEST } from '@airbotics-core/consts';
 import { getTUFExpiry } from '@airbotics-core/time';
 
 
@@ -59,53 +59,64 @@ export const generateTufKey = (key: string, { isPublic }: IGenerateTufKeyOpts): 
 
 
 /**
- * Gets the latest metadata of a given role in a repo in a team.
+ * Fetches TUF metadata from the db.
  * 
  * Will return `null` if it does not exist.
  * 
- * This does not check if the team or repo exists.
- */
-export const getLatestMetadata = async (team_id: string, repo: TUFRepo, role: TUFRole, robot_id: string | null = null): Promise<any> => {
-
-    const latest = await prisma.tufMetadata.findFirst({
-        where: {
-            team_id,
-            repo,
-            role,
-            robot_id
-        },
-        orderBy: {
-            version: 'desc'
-        }
-    });
-
-    return latest ? latest.value : null;
-}
-
-
-
-/**
- * Gets the first/initial metadata of a given role in a repo in a team.
+ * `robot_id` should not be specificed if you're fetching from the image repo.
  * 
- * Will return `null` if it does not exist.
- * 
- * This does not check if the team or repo exists.
+ * `version` can either be:
+ * - a `number` specifying a specific version.
+ * - `TUF_METADATA_LATEST` (-1) to get the most recent / latest version.
+ * - `TUF_METADATA_INITIAL` (0) to get the first / initial version.
  */
-export const getInitialMetadata = async (team_id: string, repo: TUFRepo, role: TUFRole, robot_id: string | null = null): Promise<any> => {
+export const getTufMetadata = async (
+    team_id: string,
+    repo: TUFRepo,
+    role: TUFRole,
+    version: number,
+    robot_id: string | null = null): Promise<ISignedRootTUF | ISignedTargetsTUF | ISignedSnapshotTUF | ISignedTimestampTUF | null> => {
 
-    const initial = await prisma.tufMetadata.findFirst({
-        where: {
-            team_id,
-            repo,
-            role,
-            robot_id
-        },
-        orderBy: {
-            version: 'asc'
+    let metadataValue: any = null;
+
+    if (TUF_METADATA_LATEST) {
+
+        const metadata = await prisma.tufMetadata.findFirst({
+            where: {
+                team_id,
+                repo,
+                role,
+                robot_id
+            },
+            orderBy: {
+                version: 'desc'
+            }
+        });
+
+        if (metadata) {
+            metadataValue = metadata!.value;
         }
-    });
 
-    return initial ? initial.value : null;
+
+    } else {
+
+        const metadata = await prisma.tufMetadata.findFirst({
+            where: {
+                team_id,
+                repo,
+                role,
+                robot_id,
+                version
+            }
+        });
+        if (metadata) {
+            metadataValue = metadata!.value;
+        }
+
+    }
+
+    return metadataValue as ISignedRootTUF | ISignedTargetsTUF | ISignedSnapshotTUF | ISignedTimestampTUF | null;
+
 }
 
 
@@ -115,11 +126,9 @@ export const getInitialMetadata = async (team_id: string, repo: TUFRepo, role: T
  * 
  * Will return `0` if it does not exist. This gets the most recently created metadata and grabs its version, 
  * assumes the version column in the table is always in sync with what is stored in the metadata json field.
- * 
- * This does not check if the team or repo exists.
  */
 export const getLatestMetadataVersion = async (team_id: string, repo: TUFRepo, role: TUFRole, robot_id: string | null = null): Promise<number> => {
-    const latest = await getLatestMetadata(team_id, repo, role, robot_id);
+    const latest = await getTufMetadata(team_id, repo, role, TUF_METADATA_LATEST, robot_id);
     return latest ? latest.signed.version : 0;
 }
 

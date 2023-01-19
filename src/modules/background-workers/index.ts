@@ -1,6 +1,6 @@
 import { ManipulateType } from 'dayjs';
 import { TUFRepo, TUFRole } from '@prisma/client';
-import { prisma } from '@airbotics-core/drivers/postgres';
+import { prisma } from '@airbotics-core/drivers';
 import config from '@airbotics-config';
 import { logger } from '@airbotics-core/logger';
 import { dayjs } from '@airbotics-core/time';

@@ -9,6 +9,7 @@ import treehub from '@airbotics-modules/treehub';
 import imageRepo from '@airbotics-modules/image-repo';
 import directorRepo from '@airbotics-modules/director-repo';
 import robot from '@airbotics-modules/robot';
+import webhooks from '@airbotics-modules/webhooks';
 
 
 
@@ -33,6 +34,7 @@ app.get('/', (req, res) => {
 
 // mount modules
 app.use('/api/v0/admin', admin);
+app.use('/api/v0/webhooks', webhooks);
 app.use('/api/v0/robot', robot);
 app.use('/api/v0/robot/director', directorRepo);
 app.use('/api/v0/robot/repo', imageRepo);

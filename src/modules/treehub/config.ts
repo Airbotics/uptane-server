@@ -1,5 +1,5 @@
 import express, { Request, Response } from 'express';
-import { prisma } from '@airbotics-core/drivers/postgres';
+import { prisma } from '@airbotics-core/drivers';
 import { logger } from '@airbotics-core/logger';
 import { OSTREE_CONFIG } from '@airbotics-core/consts';
 import { mustBeRobot, updateRobotMeta } from '@airbotics-middlewares';

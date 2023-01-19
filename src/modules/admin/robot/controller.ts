@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { BadResponse, SuccessJsonResponse, NoContentResponse } from '@airbotics-core/network/responses';
 import { logger } from '@airbotics-core/logger';
-import prisma from '@airbotics-core/drivers/postgres';
+import { prisma } from '@airbotics-core/drivers';
 import { getKeyStorageEcuKeyId } from '@airbotics-core/utils';
 import { keyStorage } from '@airbotics-core/key-storage';
 import { airEvent } from '@airbotics-core/events';

@@ -24,6 +24,10 @@ export const enum ETUFRole {
     Timestamp = 'Timestamp'
 }
 
+// used to specify which version of the tuf metadata should be fetched
+export const TUF_METADATA_LATEST = -1;
+export const TUF_METADATA_INITIAL = 0;
+
 // hash digest lengths
 export const enum EHashDigest {
     Sha256 = 'SHA256',
@@ -46,6 +50,7 @@ export const enum OryTeamRelations {
 export const enum OryNamespaces {
     teams = 'teams'
 }
+
 // key types supported in TUF
 export const enum EKeyType {
     Rsa = 'RSA',
@@ -94,9 +99,6 @@ export const enum EEventResource {
  * 
  * Notes:
  * - must be in past tense
- * 
- * TODO:
- * - capture log out event
  */
 export const enum EEventAction {
     Created = 'created',

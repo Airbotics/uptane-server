@@ -1,11 +1,10 @@
 import { Request, Response, NextFunction } from 'express';
-import { ory } from '@airbotics-core/drivers/ory';
+import { ory, prisma } from '@airbotics-core/drivers';
 import { TUFRepo, TUFRole } from '@prisma/client';
 import { IdentityApiGetIdentityRequest, RelationshipApiGetRelationshipsRequest, RelationshipApiPatchRelationshipsRequest } from '@ory/client';
 import { EEventAction, EEventActorType, EEventResource, OryNamespaces, OryTeamRelations } from '@airbotics-core/consts';
 import { SuccessMessageResponse, BadResponse, SuccessJsonResponse, NoContentResponse } from '@airbotics-core/network/responses';
 import { logger } from '@airbotics-core/logger';
-import prisma from '@airbotics-core/drivers/postgres';
 import { ITeamDetail } from '@airbotics-types';
 import { airEvent } from '@airbotics-core/events';
 import { generateKeyPair } from '@airbotics-core/crypto';

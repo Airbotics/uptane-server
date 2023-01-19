@@ -7,12 +7,11 @@ import {
 } from '@ory/client';
 import config from '@airbotics-config';
 
-
 const oryConfig = new Configuration({
     basePath: config.ORY_PROJECT_URL,
     accessToken: config.ORY_ACCESS_TOKEN,
     baseOptions: {
-        timeout: 4000
+        timeout: config.ORY_TIMEOUT
     }
 });
 
@@ -22,4 +21,4 @@ export const ory = {
     frontend: new FrontendApi(oryConfig),
     permission: new PermissionApi(oryConfig),
     relations: new RelationshipApi(oryConfig)
-}
+};

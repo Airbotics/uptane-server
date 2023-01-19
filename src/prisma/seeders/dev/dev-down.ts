@@ -1,4 +1,4 @@
-import prisma from '@airbotics-core/drivers/postgres';
+import { prisma } from '@airbotics-core/drivers';
 
 
 /**
@@ -18,7 +18,7 @@ import prisma from '@airbotics-core/drivers/postgres';
  */
 
 
-( async () => {
+(async () => {
 
     console.log('running dev seeder down...');
 

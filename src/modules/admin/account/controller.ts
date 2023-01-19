@@ -1,7 +1,7 @@
 import { Request, Response } from 'express';
 import { IdentityApiUpdateIdentityRequest } from '@ory/client';
 import { SuccessMessageResponse, BadResponse } from '@airbotics-core/network/responses';
-import { ory } from '@airbotics-core/drivers/ory';
+import { ory } from '@airbotics-core/drivers';
 import config from '@airbotics-config';
 import { logger } from '@airbotics-core/logger';
 import { airEvent } from '@airbotics-core/events';

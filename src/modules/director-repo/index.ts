@@ -4,7 +4,7 @@ import { keyStorage } from '@airbotics-core/key-storage';
 import config from '@airbotics-config';
 import { logger } from '@airbotics-core/logger';
 import { verifySignature } from '@airbotics-core/crypto';
-import prisma from '@airbotics-core/drivers/postgres';
+import { prisma } from '@airbotics-core/drivers';
 import { robotManifestSchema } from './schemas';
 import { IRobotManifest, ITargetsImages, IEcuRegistrationPayload } from '@airbotics-types';
 import { getKeyStorageRepoKeyId, getKeyStorageEcuKeyId, toCanonical } from '@airbotics-core/utils';
@@ -420,7 +420,7 @@ router.put('/manifest', mustBeRobot, updateRobotMeta, async (req: Request, res) 
         // firstly record which images are installed on the ecus
         // TODO these should be done in a transaction
         // TODO only need to do this if the image id has actually changed
-        for(const ecuSerial in manifest.signed.ecu_version_manifests) {
+        for (const ecuSerial in manifest.signed.ecu_version_manifests) {
 
             await prisma.ecu.update({
                 where: {
@@ -500,7 +500,7 @@ router.post('/ecus', mustBeRobot, updateRobotMeta, async (req: Request, res) => 
         }
     });
 
-    if(robot!.ecus_registered) {
+    if (robot!.ecus_registered) {
         logger.warn('a robot is trying to register ecus more than once');
         res.status(400).end();
     }
@@ -533,7 +533,7 @@ router.post('/ecus', mustBeRobot, updateRobotMeta, async (req: Request, res) => 
 
         // store the public ecu key
         for (const ecu of payload.ecus) {
-            
+
             // we dont store ecu private keys on the backend so private key is set to an empty string
             await keyStorage.putKeyPair(getKeyStorageEcuKeyId(team_id, ecu.ecu_serial), {
                 publicKey: ecu.clientKey.keyval.public,

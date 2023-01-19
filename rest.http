@@ -21,13 +21,14 @@ Content-Type: application/json
 @actionURL = {{loginStart.response.body.ui.action}}
 
 
+
 ###
 # @name loginFinish
 POST {{actionURL}}
 Content-Type: application/json
 
 {
-    "identifier": "hello@airbotics.io",
+    "identifier": "{{$dotenv %ORY_DEV_IDENTIFIER}}",
     "password": "{{$dotenv %ORY_DEV_PWD}}",
     "method": "password"
 }

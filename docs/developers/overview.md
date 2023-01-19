@@ -57,6 +57,7 @@ AWS_SM_ENDPOINT         - aws secrets manager endpoint to connect to
 ORY_PROJECT_URL         - url of ory project to be used for auth
 ORY_ACCESS_TOKEN        - valid ory PAC for admin calls
 ORY_DEV_PWD             - valid password of ory developer identity
+ORY_DEV_IDENTIFIER      - valid ory developer identity
 ORY_SCHEMA_ID           - schema ID used by ory to manage identities
 ```
 

@@ -9,27 +9,27 @@ const router = express.Router();
 // create a group
 router.post('/groups',
     mustBeAuthenticated,
-    mustBeInTeam(OryTeamRelations.member),
+    mustBeInTeam(OryTeamRelations.admin),
     validate(createGroupSchema, EValidationSource.Body),
     controller.createGroup);
 
 // list groups
 router.get('/groups',
     mustBeAuthenticated,
-    mustBeInTeam(OryTeamRelations.member),
+    mustBeInTeam(OryTeamRelations.admin),
     controller.listGroups);
 
 // get group details   
 router.get('/groups/:group_id',
     mustBeAuthenticated,
-    mustBeInTeam(OryTeamRelations.member),
+    mustBeInTeam(OryTeamRelations.admin),
     validate(groupIdSchema, EValidationSource.Path),
     controller.getGroup);
 
 // update group details
 router.patch('/groups/:group_id',
     mustBeAuthenticated,
-    mustBeInTeam(OryTeamRelations.member),
+    mustBeInTeam(OryTeamRelations.admin),
     validate(groupIdSchema, EValidationSource.Path),
     validate(updateGoupSchema, EValidationSource.Body),
     controller.updateGroup);
@@ -44,14 +44,14 @@ router.delete('/groups/:group_id',
 // list robots in a group
 router.get('/groups/:group_id/robots',
     mustBeAuthenticated,
-    mustBeInTeam(OryTeamRelations.member),
+    mustBeInTeam(OryTeamRelations.admin),
     validate(groupIdSchema, EValidationSource.Path),
     controller.listRobotsInGroup);
 
 // add a robot to a group
 router.post('/groups/:group_id/robots',
     mustBeAuthenticated,
-    mustBeInTeam(OryTeamRelations.member),
+    mustBeInTeam(OryTeamRelations.admin),
     validate(groupIdSchema, EValidationSource.Path),
     validate(robotIdSchema, EValidationSource.Body),
     controller.addRobotToGroup);

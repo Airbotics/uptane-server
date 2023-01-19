@@ -1,7 +1,7 @@
 import express, { Request, Response } from 'express';
 import { UploadStatus } from '@prisma/client';
 import { logger } from '@airbotics-core/logger';
-import { prisma } from '@airbotics-core/drivers/postgres';
+import { prisma } from '@airbotics-core/drivers';
 import { blobStorage } from '@airbotics-core/blob-storage';
 import { mustBeRobot, updateRobotMeta } from '@airbotics-middlewares';
 

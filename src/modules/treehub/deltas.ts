@@ -1,6 +1,6 @@
 import express, { Request } from 'express';
 import { StaticDeltaStatus } from '@prisma/client';
-import { prisma } from '@airbotics-core/drivers/postgres';
+import { prisma } from '@airbotics-core/drivers';
 import { blobStorage } from '@airbotics-core/blob-storage'
 import { logger } from '@airbotics-core/logger';
 import { extractCommitsFromDelta } from '@airbotics-core/utils';

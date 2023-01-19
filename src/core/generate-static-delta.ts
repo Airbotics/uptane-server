@@ -7,50 +7,6 @@ import prisma from '@airbotics-core/drivers/postgres';
 import { blobStorage } from '@airbotics-core/blob-storage';
 
 
-// TODO reuse from treehub module
-const uploadSummary = async (team_id: string, size: number, summaryContent: Buffer | string) => {
-
-    const objectID = 'summary';
-
-    await prisma.$transaction(async tx => {
-
-        await tx.object.upsert({
-            create: {
-                team_id,
-                object_id: objectID,
-                size,
-                status: UploadStatus.uploading
-            },
-            update: {
-                size,
-                status: UploadStatus.uploading
-            },
-            where: {
-                team_id_object_id: {
-                    team_id,
-                    object_id: objectID
-                }
-            }
-        });
-
-        await blobStorage.putObject(team_id, 'treehub/summary', summaryContent);
-
-        await tx.object.update({
-            where: {
-                team_id_object_id: {
-                    team_id,
-                    object_id: objectID
-                }
-            },
-            data: {
-                status: UploadStatus.uploaded
-            }
-        });
-
-    });
-}
-
-
 /**
  * Generates an ostree delta between a `from` and a `to` commit.
  * 
@@ -208,10 +164,9 @@ export const generateStaticDelta = async (team_id: string, branch: string, from:
 
     // read summary and size from file
     const summaryContent = fs.readFileSync(`${repoName}/summary`, 'binary');
-    const size = Buffer.byteLength(summaryContent);
 
-    // upload summary
-    await uploadSummary(team_id, size, summaryContent);
+    // upload summary to blob storage
+    await blobStorage.putObject(team_id, 'treehub/summary', summaryContent);
 
     // clean the local repo
     rm('-r', repoName);

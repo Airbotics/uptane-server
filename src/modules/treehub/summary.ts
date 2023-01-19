@@ -1,5 +1,4 @@
 import express, { Request, Response } from 'express';
-import { UploadStatus } from '@prisma/client';
 import { logger } from '@airbotics-core/logger';
 import { prisma } from '@airbotics-core/drivers/postgres';
 import { blobStorage } from '@airbotics-core/blob-storage';
@@ -12,22 +11,6 @@ const downloadSummary = async (req: Request, res: Response) => {
 
     const team_id = req.params.team_id || req.robotGatewayPayload!.team_id;
 
-    const object_id = 'summary';
-
-    const summary = await prisma.object.findUnique({
-        where: {
-            team_id_object_id: {
-                team_id,
-                object_id
-            }
-        }
-    });
-
-    if (!summary) {
-        logger.warn('could not download ostree summary because it does not exist')
-        return res.status(404).end();
-    }
-
     try {
         const content = await blobStorage.getObject(team_id, 'treehub/summary');
 
@@ -35,21 +18,22 @@ const downloadSummary = async (req: Request, res: Response) => {
         return res.status(200).send(content);
 
     } catch (error) {
-        // db and blob storage should be in sync
-        // if an object exists in db but not blob storage something has gone wrong, bail on this request
-        return res.status(500).end();
+        return res.status(404).end();
     }
 
 }
 
 
-
-// upload summary
+/**
+ * Upload a summary.
+ * 
+ * TODO
+ * - check size in header matches size of request body.
+ * - restrict allowable mime-types
+ */
 router.put('/:team_id/summary', express.raw({ type: '*/*' }), async (req: Request, res: Response) => {
 
     const teamID = req.params.team_id;
-    const objectID = 'summary';
-    const bucketId = teamID + '/' + objectID;
     const content = req.body;
 
     const size = parseInt(req.get('content-length')!);
@@ -71,42 +55,7 @@ router.put('/:team_id/summary', express.raw({ type: '*/*' }), async (req: Reques
         return res.status(400).send('could not upload ostree summary');
     }
 
-    await prisma.$transaction(async tx => {
-
-        await tx.object.upsert({
-            create: {
-                team_id: teamID,
-                object_id: objectID,
-                size,
-                status: UploadStatus.uploading
-            },
-            update: {
-                size,
-                status: UploadStatus.uploading
-            },
-            where: {
-                team_id_object_id: {
-                    team_id: teamID,
-                    object_id: objectID
-                }
-            }
-        });
-
-        await blobStorage.putObject(teamID, 'treehub/summary', content);
-
-        await tx.object.update({
-            where: {
-                team_id_object_id: {
-                    team_id: teamID,
-                    object_id: objectID
-                }
-            },
-            data: {
-                status: UploadStatus.uploaded
-            }
-        });
-
-    });
+    await blobStorage.putObject(teamID, 'treehub/summary', content);
 
     logger.info('uploaded ostree summary');
     return res.status(200).end();

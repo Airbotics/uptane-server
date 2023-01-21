@@ -64,6 +64,7 @@ model Team {
     creds               ProvisioningCredentials[]
     groups              Group[]
     robot_groups        RobotGroup[]
+    rollouts            Rollout[]
 
     @@map("teams")
 }
@@ -153,6 +154,7 @@ model Robot {
     akt_config_reports  AktualizrConfigReport[]
     events              RobotEvent[]
     groups              RobotGroup[]
+    rollouts            RolloutRobot[]
 
     @@unique([team_id, id])
     @@map("robots")
@@ -384,4 +386,94 @@ model RobotGroup {
 
     @@id([team_id, robot_id, group_id])
     @@map("robot_groups")
+}
+
+
+// ---------------- ROLLOUTS ---------------- //
+
+
+enum RolloutStatus {
+    prepared
+    launched
+    finished
+    cancelled
+}
+
+
+model Rollout {
+    id                  String          @id @default(uuid()) @unique
+    team_id             String
+    name                String
+    description         String
+    status              RolloutStatus?  
+
+    created_at          DateTime        @default(now())
+    updated_at          DateTime        @default(now())
+
+    team                Team            @relation(fields: [team_id], references: [id], onDelete: Cascade)
+
+    cancelled           RolloutsCancelled[]
+    robots              RolloutRobot[]
+    targets             RolloutTarget[]
+
+    @@unique([id, team_id])
+    @@map("rollouts")
+}
+
+
+model RolloutsCancelled {
+    rollout_id          String          @unique
+    status              String
+
+    created_at          DateTime        @default(now())
+    updated_at          DateTime        @default(now())
+
+    rollout             Rollout         @relation(fields: [rollout_id], references: [id], onDelete: Cascade)
+
+
+    @@map("rollouts_cancelled")
+}
+ 
+
+
+
+model RolloutTarget {
+    rollout_id          String
+    hw_id               String
+    image_id            String
+
+    created_at          DateTime        @default(now())
+
+    rollout             Rollout         @relation(fields: [rollout_id], references: [id], onDelete: Cascade)
+    
+    @@unique([rollout_id, hw_id, image_id])
+    @@map("rollout_targets")
+}
+
+
+enum RolloutRobotStatus {
+    pending
+    rejected
+    scheduled
+    accepted
+    successful
+    cancelled
+    failed
+}
+
+
+model RolloutRobot {
+    rollout_id          String
+    robot_id            String
+    status              RolloutRobotStatus @default(pending) 
+    result_desc         String
+
+    created_at          DateTime        @default(now())
+    updated_at          DateTime        @default(now())
+
+    rollout             Rollout         @relation(fields: [rollout_id], references: [id], onDelete: Cascade)
+    robot               Robot           @relation(fields: [robot_id], references: [id], onDelete: Cascade)
+    
+    @@unique([rollout_id, robot_id])
+    @@map("rollout_robots")
 }

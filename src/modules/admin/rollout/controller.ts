@@ -32,7 +32,7 @@ export const createRollout = async (req: Request, res: Response) => {
     }
 
     // if this ecu has an image already then we'll create a delta between it and the image we want to go to
-    if(ecu.image_id) {
+    if (ecu.image_id) {
         // TODO compute static delta
         // await generateStaticDelta(teamID, branch, from, to);
     }
@@ -88,4 +88,23 @@ export const listRollouts = async (req: Request, res: Response) => {
 export const getRollout = async (req: Request, res: Response) => {
     logger.info('a user has gotten details of a rollout');
     return new SuccessJsonResponse(res, {});
+}
+
+
+export const createRolloutb = async (req: Request, res: Response) => {
+
+    const {
+        name,
+        description, 
+        hwid_img_map,
+        targeted_devices
+    } = req.body;
+
+    const teamID = req.headers['air-team-id']!;
+
+    const targetsType = targeted_devices.type;
+
+    await prisma
+
+
 }

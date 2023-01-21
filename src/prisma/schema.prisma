@@ -393,7 +393,7 @@ model RobotGroup {
 
 
 enum RolloutStatus {
-    prepared
+    pending
     launched
     finished
     cancelled
@@ -405,7 +405,7 @@ model Rollout {
     team_id             String
     name                String
     description         String
-    status              RolloutStatus?  
+    status              RolloutStatus? 
 
     created_at          DateTime        @default(now())
     updated_at          DateTime        @default(now())
@@ -466,7 +466,7 @@ model RolloutRobot {
     rollout_id          String
     robot_id            String
     status              RolloutRobotStatus @default(pending) 
-    result_desc         String
+    result_desc         String?
 
     created_at          DateTime        @default(now())
     updated_at          DateTime        @default(now())

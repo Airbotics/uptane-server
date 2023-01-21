@@ -74,3 +74,10 @@ export const ROOT_CERT_ORGANISATION = 'Airbotics Inc.';
 export const ROOT_CERT_LOCALITY = 'San Francisco';
 export const ROOT_CERT_STATE = 'CA';
 export const ROOT_CERT_COUNTRY = 'US';
+
+
+export const enum RolloutTargetType {
+    group = 'group',
+    hw_id_match = 'hw_id_match',
+    selected_bots = 'selected_bots',
+}

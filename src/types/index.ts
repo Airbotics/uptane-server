@@ -1,4 +1,4 @@
-import { EKeyType, ESignatureScheme, ETUFRole } from '@airbotics-core/consts';
+import { EKeyType, ESignatureScheme, ETUFRole, RolloutTargetType } from '@airbotics-core/consts';
 
 export interface IBlobStorageProvider {
     createBucket(bucketId: string): Promise<void>;
@@ -246,4 +246,17 @@ export interface IGroupRobot {
         id: string;
         hwid: string;
     }[]
+}
+
+
+
+export interface ICreateRolloutBody {
+    name: string;
+    description: string;
+	hwid_img_map: { hw_id: string, img_id: string }[],
+	targeted_devices: {
+		type: RolloutTargetType,
+		group_id: string | null,
+		selected_bot_ids: string [] | null
+	}
 }

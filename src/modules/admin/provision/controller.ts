@@ -42,7 +42,7 @@ export const createProvisioningCredentials = async (req: Request, res: Response)
 
     // load root ca and key, used to sign provisioning cert
     const rootCaKeyPair = await keyStorage.getKeyPair(ROOT_CA_KEY_ID);
-    const rootCaCertStr = await blobStorage.getObject(ROOT_BUCKET, ROOT_CA_CERT_OBJ_ID) as string;
+    const rootCaCertStr = await blobStorage.getObject(ROOT_BUCKET, teamID, ROOT_CA_CERT_OBJ_ID) as string;
     const rootCaCert = forge.pki.certificateFromPem(rootCaCertStr);
 
     // generate provisioning cert using root ca as parent

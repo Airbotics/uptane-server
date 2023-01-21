@@ -13,8 +13,6 @@ import { TREEHUB_BUCKET } from './consts';
  */
 export const generateStaticDelta = async (team_id: string, branch: string, from: string, to: string) => {
 
-    const refName = `/heads/${branch}`;
-
     // name of temporary repo directory
     const repoName = randomUUID();
 
@@ -82,7 +80,7 @@ export const generateStaticDelta = async (team_id: string, branch: string, from:
         where: {
             team_id_name: {
                 team_id,
-                name: refName
+                name: branch
             }
         }
     })

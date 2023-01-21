@@ -28,12 +28,12 @@ export class BlobStorageProvider implements IBlobStorageProvider {
         return this.strategy.putObject(bucketId, teamId, objectId, content);
     }
 
-    async getObject(bucketId: string, teamId: string,objectId: string): Promise<Buffer | string> {
+    async getObject(bucketId: string, teamId: string, objectId: string): Promise<Buffer | string> {
         return this.strategy.getObject(bucketId, teamId, objectId);
     }
 
-    async deleteObject(bucketId: string, teamId: string,objectId: string): Promise<boolean> {
-        return this.strategy.deleteObject(bucketId,teamId, objectId);
+    async deleteObject(bucketId: string, teamId: string, objectId: string): Promise<boolean> {
+        return this.strategy.deleteObject(bucketId, teamId, objectId);
     }
 
     async deleteTeamObjects(bucketId: string, teamId: string): Promise<boolean> {

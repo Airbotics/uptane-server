@@ -286,7 +286,7 @@ model RobotManifest {
 
 // ostree references
 model Ref {
-    name                String                                  // `/heads/main` or similar
+    name                String
     commit              String                                  // commit hash
     object_id           String                                  // object it points to
     team_id             String

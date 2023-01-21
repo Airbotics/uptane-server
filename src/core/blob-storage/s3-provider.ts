@@ -13,57 +13,64 @@ import { logger } from '@airbotics-core/logger';
  * AWS s3 blob storage provider.
  * 
  * Stores blobs on s3.
+ * 
+ * Note: this doesn't delete files from nested paths neatly. It deletes the files but keeps the directories.
  */
 export class s3BlobProvider implements IBlobStorageProvider {
 
-    async putObject(bucketId: string, teamId: string, objectId: string, content: Buffer | string): Promise<void> {
+    async putObject(bucketId: string, teamId: string, objectId: string, content: Buffer | string): Promise<boolean> {
+        
         const params = {
             Bucket: bucketId,
-            Key: objectId,
+            Key: `${teamId}/${objectId}`,
             Body: content
         };
 
         const res = await s3Client.send(new PutObjectCommand(params));
 
-        if (res['$metadata'].httpStatusCode !== 200) {
+        if (res.$metadata.httpStatusCode !== 200) {
             logger.error('could not upload blob to s3');
             new Error('an unknown error occurred.');
         }
+
+        return res.$metadata.httpStatusCode === 200;
     }
 
     async getObject(bucketId: string, teamId: string, objectId: string): Promise<Buffer | string> {
         const params = {
             Bucket: bucketId,
-            Key: objectId
+            Key: `${teamId}/${objectId}`
         };
 
         const res = await s3Client.send(new GetObjectCommand(params));
 
-        if (res['$metadata'].httpStatusCode !== 200) {
+        if (res.$metadata.httpStatusCode !== 200) {
             logger.error('could not get blob from s3');
             new Error('an unknown error occurred.');
         }
         // TODO 
-        //@ts-ignore
+        // @ts-ignore
         return res.Body;
     }
 
-    async deleteObject(bucketId: string, teamId: string, objectId: string): Promise<void> {
+    async deleteObject(bucketId: string, teamId: string, objectId: string): Promise<boolean> {
         const params = {
             Bucket: bucketId,
-            Key: objectId
+            Key: `${teamId}/${objectId}`
         };
 
         const res = await s3Client.send(new DeleteObjectCommand(params));
 
-        if (res['$metadata'].httpStatusCode !== 200) {
+        if (res.$metadata.httpStatusCode !== 204) {
             logger.error('could not delete blob from s3');
             new Error('an unknown error occurred.');
         }
+
+        return res.$metadata.httpStatusCode === 204;
     }
 
     // TODO: this may fail if there are greater that 1000 objects returned by the list objects command
-    async deleteTeamObjects(bucketId: string, teamId: string): Promise<void> {
+    async deleteTeamObjects(bucketId: string, teamId: string): Promise<boolean> {
 
         const params = {
             Bucket: bucketId,
@@ -75,7 +82,7 @@ export class s3BlobProvider implements IBlobStorageProvider {
         let objects = data.Contents;
 
         if (!objects) {
-            return;
+            return true;
         }
 
         for (let i = 0; i < objects.length; i++) {
@@ -87,6 +94,8 @@ export class s3BlobProvider implements IBlobStorageProvider {
             await s3Client.send(new DeleteObjectCommand(deleteParams));
 
         }
+
+        return true;
     }
 
 }

@@ -25,11 +25,12 @@ export class FilesystemProvider implements IKeyStorageProvider {
         fs.mkdirSync(this.keysPath, { recursive: true });
     }
 
-    async putKeyPair(id: string, keypair: IKeyPair): Promise<void> {
+    async putKeyPair(id: string, keypair: IKeyPair): Promise<boolean> {
         const publicFilePathKey = path.resolve(path.join(this.keysPath, `${id.replace(/\//g, '-')}-public.pem`));
         const privateFilePathKey = path.resolve(path.join(this.keysPath, `${id.replace(/\//g, '-')}-private.pem`));
         fs.writeFileSync(publicFilePathKey, keypair.publicKey, 'ascii');
         fs.writeFileSync(privateFilePathKey, keypair.privateKey, 'ascii');
+        return true;
     }
 
     async getKeyPair(id: string): Promise<IKeyPair> {
@@ -41,11 +42,12 @@ export class FilesystemProvider implements IKeyStorageProvider {
         };
     }
 
-    async deleteKeyPair(id: string): Promise<void> {
+    async deleteKeyPair(id: string): Promise<boolean> {
         const publicFilePathKey = path.resolve(path.join(this.keysPath, `${id.replace(/\//g, '-')}-public.pem`));
         const privateFilePathKey = path.resolve(path.join(this.keysPath, `${id.replace(/\//g, '-')}-private.pem`));
         fs.rmSync(publicFilePathKey);
         fs.rmSync(privateFilePathKey);
+        return true;
     }
 
 }

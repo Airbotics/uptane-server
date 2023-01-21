@@ -24,7 +24,7 @@ export class KeyStorageProvider implements IKeyStorageProvider {
         }
     }
 
-    async putKeyPair(id: string, keypair: IKeyPair): Promise<void> {
+    async putKeyPair(id: string, keypair: IKeyPair): Promise<boolean> {
         return this.strategy.putKeyPair(id, keypair);
     }
 
@@ -32,7 +32,7 @@ export class KeyStorageProvider implements IKeyStorageProvider {
         return this.strategy.getKeyPair(id);
     }
 
-    async deleteKeyPair(id: string): Promise<void> {
+    async deleteKeyPair(id: string): Promise<boolean> {
         return this.strategy.deleteKeyPair(id);
     }
 

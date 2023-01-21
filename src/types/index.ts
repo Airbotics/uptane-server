@@ -8,9 +8,9 @@ export interface IBlobStorageProvider {
 }
 
 export interface IKeyStorageProvider {
-    putKeyPair(id: string, keypair: IKeyPair): Promise<void>;
+    putKeyPair(id: string, keypair: IKeyPair): Promise<boolean>;
     getKeyPair(id: string): Promise<IKeyPair>;
-    deleteKeyPair(id: string): Promise<void>;
+    deleteKeyPair(id: string): Promise<boolean>;
 }
 
 

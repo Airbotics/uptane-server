@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { ory, prisma } from '@airbotics-core/drivers';
 import { TUFRepo, TUFRole } from '@prisma/client';
 import { IdentityApiGetIdentityRequest, RelationshipApiGetRelationshipsRequest, RelationshipApiPatchRelationshipsRequest } from '@ory/client';
-import { EEventAction, EEventActorType, EEventResource, OryNamespaces, OryTeamRelations } from '@airbotics-core/consts';
+import { EEventAction, EEventActorType, EEventResource, OryNamespaces, OryTeamRelations, TREEHUB_BUCKET } from '@airbotics-core/consts';
 import { SuccessMessageResponse, BadResponse, SuccessJsonResponse, NoContentResponse } from '@airbotics-core/network/responses';
 import { logger } from '@airbotics-core/logger';
 import { ITeamDetail } from '@airbotics-types';
@@ -19,15 +19,13 @@ import { getKeyStorageEcuKeyId, getKeyStorageRepoKeyId } from '@airbotics-core/u
 /**
  * Creates a new team
  * 
- * @description Performs the following:
- * 1. Create the team in our db
- * 2. Creates bucket in blob storage to hold its blobs
- * 3. Generates online TUF keys
- * 4. Creates initial image and director root.json metadata files and saves them to the db.
- * 5. Creates targets, snapshot and timestamp.json metadata files for the image repo
- * 6 Create two new relation tuples in ory
- *  a) one to say that ory_id (requester) is the admin of the new team
- *  b) one to say any admins of the new team are also members of that team
+ * - Create the team in our db
+ * - Generates online TUF keys
+ * - Creates initial image and director root.json metadata files and saves them to the db.
+ * - Creates targets, snapshot and timestamp.json metadata files for the image repo
+ * - Create two new relation tuples in ory
+ *  - one to say that ory_id (requester) is the admin of the new team
+ *  - one to say any admins of the new team are also members of that team
  */
 export const createTeam = async (req: Request, res: Response, next: NextFunction) => {
 
@@ -141,9 +139,6 @@ export const createTeam = async (req: Request, res: Response, next: NextFunction
                     expires_at: directorRepoRoot.signed.expires
                 }
             });
-
-            // create bucket in blob storage
-            await blobStorage.createBucket(team.id);
 
             // store image repo key pairs
             await keyStorage.putKeyPair(getKeyStorageRepoKeyId(team.id, TUFRepo.image, TUFRole.root), {
@@ -414,7 +409,7 @@ export const updateTeam = async (req: Request, res: Response, next: NextFunction
  * Delete a team
  * 
  * - Deletes team in db, this cascades to all resources.
- * - Deletes bucket and all objects in blob storage.
+ * - Deletes all objects in blob storage.
  * - Deletes keys, images and treehub objects associated with this team.
  * 
  * TODO
@@ -452,8 +447,8 @@ export const deleteTeam = async (req: Request, res: Response, next: NextFunction
             await keyStorage.deleteKeyPair(getKeyStorageEcuKeyId(teamID, ecu.id));
         }
 
-        // deletes bucket in blob storage
-        await blobStorage.deleteBucket(teamID);
+        // delete all objects beginning with their team id in the treehub bucket
+        await blobStorage.deleteTeamObjects(TREEHUB_BUCKET, teamID);
 
         // delete tuf keys
         await keyStorage.deleteKeyPair(getKeyStorageRepoKeyId(teamID, TUFRepo.image, TUFRole.root));

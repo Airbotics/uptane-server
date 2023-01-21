@@ -20,7 +20,7 @@ const config = {
     ROBOT_GATEWAY_ORIGIN: 'https://localhost:8003',                             // origin of the robot gateway
 
     // blob storage
-    BLOB_STORAGE_PROVIDER: EBlobStorageProvider.Fs,                             // blob storage provider to use
+    BLOB_STORAGE_PROVIDER: EBlobStorageProvider.Filesystem,                     // blob storage provider to use
     BLOB_FS_STORAGE_DIR: './.blobs',                                            // where ostree blobs are stored when filesystem provider is being used
 
     // key storage and management

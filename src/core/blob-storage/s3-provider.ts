@@ -1,8 +1,5 @@
 import {
-    paginateListObjectsV2,
-    ListObjectsV2CommandInput,
-    CreateBucketCommand,
-    DeleteBucketCommand,
+    ListObjectsCommand,
     DeleteObjectCommand,
     GetObjectCommand,
     PutObjectCommand
@@ -13,66 +10,13 @@ import { logger } from '@airbotics-core/logger';
 
 
 /**
- * Helper function to delete all objects in a bucket
- */
-const deleteAllObjects = async (params: ListObjectsV2CommandInput) => {
-
-    for await (const data of paginateListObjectsV2({ client: s3Client }, params)) {
-        if (data.Contents) {
-            for (const obj of data.Contents) {
-                const bucketParams = {
-                    Bucket: params.Bucket,
-                    Key: obj.Key
-                };
-                await s3Client.send(new DeleteObjectCommand(bucketParams));
-            }
-        }
-    }
-
-};
-
-
-/**
  * AWS s3 blob storage provider.
  * 
  * Stores blobs on s3.
  */
 export class s3BlobProvider implements IBlobStorageProvider {
 
-    async createBucket(bucketId: string): Promise<void> {
-        const params = {
-            Bucket: bucketId
-        };
-
-        const res = await s3Client.send(new CreateBucketCommand(params));
-
-        if (res['$metadata'].httpStatusCode !== 200) {
-            logger.error('could not create bucket in s3');
-            new Error('an unknown error occurred.');
-        }
-    }
-
-    async deleteBucket(bucketId: string): Promise<void> {
-
-        const params = {
-            Bucket: bucketId
-        };
-
-        // s3 doesn't allow us to delete a bucket that has objects in it
-        // so our first step is to empty the bucket of objects
-        await deleteAllObjects(params);
-
-
-        // now that the bucket is empty we can delete it
-        const res = await s3Client.send(new DeleteBucketCommand(params));
-
-        if (res['$metadata'].httpStatusCode !== 200) {
-            logger.error('could not delete bucket in s3');
-            new Error('an unknown error occurred.');
-        }
-    }
-
-    async putObject(bucketId: string, objectId: string, content: Buffer | string): Promise<void> {
+    async putObject(bucketId: string, teamId: string, objectId: string, content: Buffer | string): Promise<void> {
         const params = {
             Bucket: bucketId,
             Key: objectId,
@@ -87,7 +31,7 @@ export class s3BlobProvider implements IBlobStorageProvider {
         }
     }
 
-    async getObject(bucketId: string, objectId: string): Promise<Buffer | string> {
+    async getObject(bucketId: string, teamId: string, objectId: string): Promise<Buffer | string> {
         const params = {
             Bucket: bucketId,
             Key: objectId
@@ -104,7 +48,7 @@ export class s3BlobProvider implements IBlobStorageProvider {
         return res.Body;
     }
 
-    async deleteObject(bucketId: string, objectId: string): Promise<void> {
+    async deleteObject(bucketId: string, teamId: string, objectId: string): Promise<void> {
         const params = {
             Bucket: bucketId,
             Key: objectId
@@ -115,6 +59,33 @@ export class s3BlobProvider implements IBlobStorageProvider {
         if (res['$metadata'].httpStatusCode !== 200) {
             logger.error('could not delete blob from s3');
             new Error('an unknown error occurred.');
+        }
+    }
+
+    // TODO: this may fail if there are greater that 1000 objects returned by the list objects command
+    async deleteTeamObjects(bucketId: string, teamId: string): Promise<void> {
+
+        const params = {
+            Bucket: bucketId,
+            Prefix: teamId
+        };
+
+        const data = await s3Client.send(new ListObjectsCommand(params));
+
+        let objects = data.Contents;
+
+        if (!objects) {
+            return;
+        }
+
+        for (let i = 0; i < objects.length; i++) {
+
+            const deleteParams = {
+                Bucket: params.Bucket,
+                Key: objects[i].Key,
+            };
+            await s3Client.send(new DeleteObjectCommand(deleteParams));
+
         }
     }
 

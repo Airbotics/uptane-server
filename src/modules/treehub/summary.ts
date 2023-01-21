@@ -3,6 +3,7 @@ import { logger } from '@airbotics-core/logger';
 import { prisma } from '@airbotics-core/drivers';
 import { blobStorage } from '@airbotics-core/blob-storage';
 import { mustBeRobot, updateRobotMeta } from '@airbotics-middlewares';
+import { TREEHUB_BUCKET } from '@airbotics-core/consts';
 
 const router = express.Router();
 
@@ -12,7 +13,7 @@ const downloadSummary = async (req: Request, res: Response) => {
     const team_id = req.params.team_id || req.robotGatewayPayload!.team_id;
 
     try {
-        const content = await blobStorage.getObject(team_id, 'treehub/summary');
+        const content = await blobStorage.getObject(TREEHUB_BUCKET, team_id, 'summary');
 
         res.set('content-type', 'application/octet-stream');
         return res.status(200).send(content);
@@ -55,7 +56,7 @@ router.put('/:team_id/summary', express.raw({ type: '*/*' }), async (req: Reques
         return res.status(400).send('could not upload ostree summary');
     }
 
-    await blobStorage.putObject(teamID, 'treehub/summary', content);
+    await blobStorage.putObject(TREEHUB_BUCKET,  teamID, 'summary', content);
 
     logger.info('uploaded ostree summary');
     return res.status(200).end();

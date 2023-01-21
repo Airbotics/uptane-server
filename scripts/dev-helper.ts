@@ -53,7 +53,6 @@ const createAllCerts: ICmd = {
         const gatewayCert = generateCertificate(gatewayKeyPair, opts);
 
         // store everything
-        await blobStorage.createBucket(ROOT_BUCKET);
         await blobStorage.putObject(ROOT_BUCKET, ROOT_CA_CERT_OBJ_ID, forge.pki.certificateToPem(rootCaCert));
         await blobStorage.putObject(ROOT_BUCKET, GATEWAY_CERT_OBJ_ID, forge.pki.certificateToPem(gatewayCert));
         await keyStorage.putKeyPair(ROOT_CA_KEY_ID, {
@@ -74,8 +73,6 @@ const deleteAllCerts: ICmd = {
 
         console.log('Deleting root and gateway cert');
 
-        await blobStorage.deleteBucket(ROOT_BUCKET);
-
         await keyStorage.deleteKeyPair(ROOT_CA_KEY_ID);
         await keyStorage.deleteKeyPair(GATEWAY_KEY_ID);
 
@@ -90,11 +87,12 @@ const commands = [
 
 const main = async () => {
 
-    const index = readlineSync.keyInSelect(commands.map(command => command.prompt), 'Howdy, what can I help with?');
+
+    const index = readlineSync.keyInSelect(commands.map(command => command.prompt), 'Howdy, what can I help with?\nPlease ensure the infra is provisioned before running this.');
 
     // user isn't interested
     if (index === -1) {
-        console.log('So long');
+        console.log('Thanks for your time');
         process.exit(0);
     }
 

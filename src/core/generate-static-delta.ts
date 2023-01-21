@@ -5,6 +5,7 @@ import { asyncExec, ls, pwd, rm, test } from 'async-shelljs';
 import { StaticDeltaStatus, UploadStatus } from '@prisma/client';
 import {prisma} from '@airbotics-core/drivers';
 import { blobStorage } from '@airbotics-core/blob-storage';
+import { TREEHUB_BUCKET } from './consts';
 
 
 /**
@@ -146,8 +147,8 @@ export const generateStaticDelta = async (team_id: string, branch: string, from:
 
                     const fileName = path.join(repoName, prefix.name, suffix.name, file.name);
                     const deltaContent = fs.readFileSync(fileName, 'binary');
-                    const blobObjectId = `treehub/deltas/${prefix.name}/${suffix.name}/${file.name}`;
-                    await blobStorage.putObject('ffeec0ff-1041-4445-b174-b844eff37435', blobObjectId, deltaContent);
+                    const blobObjectId = `deltas/${prefix.name}/${suffix.name}/${file.name}`;
+                    await blobStorage.putObject(TREEHUB_BUCKET, team_id, blobObjectId, deltaContent);
 
                 }
             }
@@ -160,7 +161,7 @@ export const generateStaticDelta = async (team_id: string, branch: string, from:
         const summaryContent = fs.readFileSync(`${repoName}/summary`, 'binary');
 
         // upload summary to blob storage
-        await blobStorage.putObject(team_id, 'treehub/summary', summaryContent);
+        await blobStorage.putObject(TREEHUB_BUCKET, team_id, 'summary', summaryContent);
 
         // clean the local repo
         rm('-r', repoName);

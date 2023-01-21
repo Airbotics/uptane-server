@@ -20,7 +20,7 @@ class AirEventEmitter {
     private emitter: EventEmitter = new EventEmitter();
 
     public addListener(listener: (event: AirEvent) => void) {
-        this.emitter.addListener('default', listener)
+        this.emitter.addListener('default', listener);
     }
 
     public emit(val: AirEvent) {

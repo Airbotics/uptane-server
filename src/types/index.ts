@@ -1,11 +1,10 @@
 import { EKeyType, ESignatureScheme, ETUFRole } from '@airbotics-core/consts';
 
 export interface IBlobStorageProvider {
-    createBucket(bucketId: string): Promise<void>;
-    deleteBucket(bucketId: string): Promise<void>;
-    putObject(bucketId: string, objectId: string, content: Buffer | string): Promise<void>;
-    getObject(bucketId: string, objectId: string): Promise<Buffer | string>;
-    deleteObject(bucketId: string, objectId: string): Promise<void>;
+    putObject(bucketId: string, teamId: string, objectId: string, content: Buffer | string): Promise<void>;
+    getObject(bucketId: string, teamId: string, objectId: string): Promise<Buffer | string>;
+    deleteObject(bucketId: string, teamId: string, objectId: string): Promise<void>;
+    deleteTeamObjects(bucketId: string, teamId: string): Promise<void>;
 }
 
 export interface IKeyStorageProvider {

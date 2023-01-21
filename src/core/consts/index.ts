@@ -1,6 +1,6 @@
 // supported providers for blob storage
 export const enum EBlobStorageProvider {
-    Fs = 'fs',
+    Filesystem = 'fs',
     S3 = 's3'
 }
 
@@ -66,7 +66,8 @@ export const enum ESignatureScheme {
     // EcdsaSha2Nistp256 = 'ecdsa-sha2-nistp256'            // not implemented
 }
 
-// root bucket consts
+// infra consts
+export const TREEHUB_BUCKET = 'airbotics-treehub';
 export const ROOT_BUCKET = 'root';                           // for storing various infra objects
 export const ROOT_CA_CERT_OBJ_ID = 'root-ca-cert';
 export const ROOT_CA_KEY_ID = 'root-ca-keypair';

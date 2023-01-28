@@ -119,7 +119,7 @@ export const createRolloutReal = async (req: Request, res: Response) => {
         data: hwid_img_map.map(elem => ({
             rollout_id: rollout.id,
             hw_id: elem.hw_id,
-            image_id: elem.hw_id
+            image_id: elem.img_id
             
         }))
     });
@@ -173,5 +173,21 @@ export const createRolloutReal = async (req: Request, res: Response) => {
 
     logger.info('created rollout');
     return new SuccessJsonResponse(res, rollout);
+
+}
+
+export const processRollouts = async (req: Request, res: Response) => {
+
+    const robotsToProcess = await prisma.rolloutRobot.groupBy({
+        by: ['rollout_id']
+    })
+
+    /*
+select campaign_id
+from device_updates
+group by campaign_id
+having group_concat(distinct status) = 'requested';
+
+    */
 
 }

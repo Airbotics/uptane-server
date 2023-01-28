@@ -101,6 +101,7 @@ model Image {
 
     tmp_ecu_images      TmpEcuImages[]
     ecus                Ecu[]
+    rollout_image       RolloutHardwareImage[]
 
     @@unique([team_id, id])
     @@map("images")
@@ -393,7 +394,7 @@ model RobotGroup {
 
 
 enum RolloutStatus {
-    pending
+    preparing
     launched
     finished
     cancelled
@@ -405,7 +406,7 @@ model Rollout {
     team_id             String
     name                String
     description         String
-    status              RolloutStatus? 
+    status              RolloutStatus   @default(preparing)
 
     created_at          DateTime        @default(now())
     updated_at          DateTime        @default(now())
@@ -414,7 +415,7 @@ model Rollout {
 
     cancelled           RolloutsCancelled[]
     robots              RolloutRobot[]
-    targets             RolloutTarget[]
+    hw_imgs             RolloutHardwareImage[]
 
     @@unique([id, team_id])
     @@map("rollouts")
@@ -435,44 +436,45 @@ model RolloutsCancelled {
 }
  
 
-
-
-model RolloutTarget {
+model RolloutHardwareImage {
+    id                  String          @id @default(uuid()) @unique
     rollout_id          String
     hw_id               String
-    image_id            String
+    image_id            String?
 
     created_at          DateTime        @default(now())
 
+    image               Image?          @relation(fields: [image_id], references: [id], onDelete: SetNull)
     rollout             Rollout         @relation(fields: [rollout_id], references: [id], onDelete: Cascade)
     
     @@unique([rollout_id, hw_id, image_id])
-    @@map("rollout_targets")
+    @@map("rollout_hardware_images")
 }
 
 
 enum RolloutRobotStatus {
-    pending
-    rejected
-    scheduled
-    accepted
-    successful
-    cancelled
-    failed
+    pending             // rollout created but worker hasn’t got around to processing
+    skipped             // worker determined update is n/a for bot
+    scheduled           // worker has created the latest targets.json in the director repo
+    accepted            // robot has acknowledged the update
+    successful          // robot has successfully pulled the update
+    cancelled           // the rollout was cancelled
+    failed              // robot tried and failed to pull the update
 }
 
 
 model RolloutRobot {
+    id                  String              @id @default(uuid()) @unique
     rollout_id          String
-    robot_id            String
-    status              RolloutRobotStatus @default(pending) 
+    robot_id            String?
+    status              RolloutRobotStatus  @default(pending) 
     result_desc         String?
 
-    created_at          DateTime        @default(now())
-    updated_at          DateTime        @default(now())
+    created_at          DateTime            @default(now())
+    updated_at          DateTime            @default(now())
 
-    rollout             Rollout         @relation(fields: [rollout_id], references: [id], onDelete: Cascade)
-    robot               Robot           @relation(fields: [robot_id], references: [id], onDelete: Cascade)
+    rollout             Rollout             @relation(fields: [rollout_id], references: [id], onDelete: Cascade)
+    robot               Robot?              @relation(fields: [robot_id], references: [id], onDelete: SetNull)
     
     @@unique([rollout_id, robot_id])
     @@map("rollout_robots")

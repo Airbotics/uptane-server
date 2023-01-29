@@ -4,7 +4,6 @@ import { generateSignature, verifySignature } from './signatures';
 import {
     generateCertificate,
     generateCertificateSigningRequest,
-    issueClientCertificate,
     getClientCertificate,
     getRootCertificate,
     ICertOpts
@@ -16,7 +15,6 @@ export {
     generateSignature,
     verifySignature,
     generateCertificateSigningRequest,
-    issueClientCertificate,
     getClientCertificate,
     getRootCertificate,
     generateCertificate,

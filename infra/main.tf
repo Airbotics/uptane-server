@@ -16,8 +16,6 @@ terraform {
 
 }
 
-# tags = 
-
 variable "tags" {
     default = {
         Terraform               = "true"

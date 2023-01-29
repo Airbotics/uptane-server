@@ -14,6 +14,16 @@ enum UploadStatus {
     uploaded
 }
 
+// status of provisioning credential
+// NOTE issuing will always be the state until a user tries to download it
+// then it will turn to downloaded, but it may be ready to be downloaded 
+// some time before that
+enum ProvisioningCredentialsStatus {
+    issuing
+    downloaded
+    revoked
+}
+
 // type of tuf repo
 enum TUFRepo {
     director
@@ -41,7 +51,7 @@ enum ImageFormat {
     binary                                                      // this is not supported for now
 }
 
-// team to contain all resources (metadata, ecus, manifests, images, etc.) related to the same project
+// a team of users, a team is the owner of all resources
 model Team {
     id                  String          @id @default(uuid()) @unique
     name                String
@@ -70,10 +80,13 @@ model Team {
 
 
 // provisioning credentials
-// TODO add in the account downloaded it
+// TODO add in the account that downloaded/revoked it
+// TODO add in revoked_at timestamp
 model ProvisioningCredentials {
     id                  String          @id @default(uuid()) @unique
     team_id             String
+    arn                 String                                  // we save the arn so we can revoke it
+    status              ProvisioningCredentialsStatus   @default(issuing)
     created_at          DateTime        @default(now())
 
     team                Team            @relation(fields: [team_id], references: [id], onDelete: Cascade)

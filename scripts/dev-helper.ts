@@ -53,8 +53,8 @@ const createAllCerts: ICmd = {
         const gatewayCert = generateCertificate(gatewayKeyPair, opts);
 
         // store everything
-        await blobStorage.putObject(ROOT_BUCKET, ROOT_CA_CERT_OBJ_ID, forge.pki.certificateToPem(rootCaCert));
-        await blobStorage.putObject(ROOT_BUCKET, GATEWAY_CERT_OBJ_ID, forge.pki.certificateToPem(gatewayCert));
+        await blobStorage.putObject(ROOT_BUCKET, '', ROOT_CA_CERT_OBJ_ID, forge.pki.certificateToPem(rootCaCert));
+        await blobStorage.putObject(ROOT_BUCKET, '', GATEWAY_CERT_OBJ_ID, forge.pki.certificateToPem(gatewayCert));
         await keyStorage.putKeyPair(ROOT_CA_KEY_ID, {
             publicKey: rootCaKeyPair.publicKey, 
             privateKey: rootCaKeyPair.privateKey

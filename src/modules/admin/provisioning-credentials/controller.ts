@@ -1,25 +1,21 @@
-import { Request, Response, NextFunction } from 'express';
+import { Request, Response } from 'express';
 import archiver from 'archiver';
 import forge from 'node-forge';
-import { TUFRepo, TUFRole } from '@prisma/client';
+import { ProvisioningCredentialsStatus, TUFRepo, TUFRole } from '@prisma/client';
 import {
     EEventAction,
     EEventActorType,
     EEventResource,
     EKeyType,
-    ROOT_BUCKET,
-    ROOT_CA_CERT_OBJ_ID,
-    ROOT_CA_KEY_ID,
     TUF_METADATA_INITIAL
 } from '@airbotics-core/consts';
-import { SuccessJsonResponse, NoContentResponse } from '@airbotics-core/network/responses';
+import { SuccessJsonResponse } from '@airbotics-core/network/responses';
 import { logger } from '@airbotics-core/logger';
 import { prisma } from '@airbotics-core/drivers';
 import { airEvent } from '@airbotics-core/events';
-import { generateCertificate, generateKeyPair } from '@airbotics-core/crypto';
+import { generateKeyPair, generateCertificateSigningRequest, getClientCertificate, getRootCertificate } from '@airbotics-core/crypto';
 import config from '@airbotics-config';
 import { generateTufKey, getTufMetadata } from '@airbotics-core/tuf';
-import { blobStorage } from '@airbotics-core/blob-storage';
 import { keyStorage } from '@airbotics-core/key-storage';
 import { getKeyStorageRepoKeyId, toCanonical } from '@airbotics-core/utils';
 
@@ -27,10 +23,13 @@ import { getKeyStorageRepoKeyId, toCanonical } from '@airbotics-core/utils';
 /**
  * Create provisioning credentials.
  * 
+ * Note:
+ * - because issuing a cert from acm pca takes some amount of seconds, this endpoint could be slow.. at least 5 secs. This can be optimised or refactored
+ * 
  * TODO
- * - catch archive on error event
  * - potentially store public key of provisioning crednetials in db
- * - record credentials creation in db to enable revocation, expiry, auditing, etc.
+ * - save arn in db
+ * - catch archive on error event
  */
 export const createProvisioningCredentials = async (req: Request, res: Response) => {
 
@@ -40,21 +39,28 @@ export const createProvisioningCredentials = async (req: Request, res: Response)
     // create provisioning key
     const provisioningKeyPair = generateKeyPair({ keyType: EKeyType.Rsa });
 
-    // load root ca and key, used to sign provisioning cert
-    const rootCaKeyPair = await keyStorage.getKeyPair(ROOT_CA_KEY_ID);
-    const rootCaCertStr = await blobStorage.getObject(ROOT_BUCKET, teamID, ROOT_CA_CERT_OBJ_ID) as string;
-    const rootCaCert = forge.pki.certificateFromPem(rootCaCertStr);
+    const csr = await generateCertificateSigningRequest(provisioningKeyPair, teamID);
 
-    // generate provisioning cert using root ca as parent
-    const opts = {
-        commonName: teamID,
-        parentCert: rootCaCert,
-        parentKeyPair: rootCaKeyPair
-    };
-    const provisioningCert = generateCertificate(provisioningKeyPair, opts);
+    // get the provisioning cert from acm
+    // NOTE this takes a while
+    const clientCert = await getClientCertificate(csr);
+
+    if (!clientCert) {
+        return res.status(500).end();
+    }
+
+    // get the root cert from acm
+    const rootCACertSr = await getRootCertificate();
+
+    if (!rootCACertSr) {
+        return res.status(500).end();
+    }
 
     // bundle into pcks12, no encryption password set
-    const p12 = forge.pkcs12.toPkcs12Asn1(forge.pki.privateKeyFromPem(provisioningKeyPair.privateKey), [provisioningCert, rootCaCert], null, { algorithm: 'aes256' });
+    const p12 = forge.pkcs12.toPkcs12Asn1(forge.pki.privateKeyFromPem(provisioningKeyPair.privateKey),
+        [forge.pki.certificateFromPem(clientCert.cert), forge.pki.certificateFromPem(rootCACertSr)],
+        null,
+        { algorithm: 'aes256' });
 
     // get initial root metadata
     const rootMetadata = await getTufMetadata(teamID, TUFRepo.image, TUFRole.root, TUF_METADATA_INITIAL);
@@ -64,11 +70,13 @@ export const createProvisioningCredentials = async (req: Request, res: Response)
         return res.status(400).send('could not create provisioning credentials');
     }
 
+
     const targetsKeyPair = await keyStorage.getKeyPair(getKeyStorageRepoKeyId(teamID, TUFRepo.image, TUFRole.targets));
     const targetsTufKeyPublic = generateTufKey(targetsKeyPair.publicKey, { isPublic: true });
     const targetsTufKeyPrivate = generateTufKey(targetsKeyPair.privateKey, { isPublic: false });
 
     // create credentials.zip
+    // TODO include auth
     const treehub = {
         no_auth: true,
         ostree: {
@@ -86,11 +94,12 @@ export const createProvisioningCredentials = async (req: Request, res: Response)
     archive.append(Buffer.from(forge.asn1.toDer(p12).getBytes(), 'binary'), { name: 'autoprov_credentials.p12' });
     archive.finalize();
 
-
     // add record of creation of credentials to db
     const provisioningCredentials = await prisma.provisioningCredentials.create({
         data: {
-            team_id: teamID
+            team_id: teamID,
+            status: ProvisioningCredentialsStatus.downloaded,
+            arn: clientCert.arn
         }
     });
 
@@ -105,13 +114,14 @@ export const createProvisioningCredentials = async (req: Request, res: Response)
         }
     });
 
+
     logger.info('provisioning credentials have been created');
 
     res.set('content-type', 'application/zip');
     res.status(200);
     archive.pipe(res);
-}
 
+}
 
 
 /**
@@ -132,6 +142,7 @@ export const listProvisioningCredentials = async (req: Request, res: Response) =
 
     const credentialsSanitised = provisioningCredentials.map(cred => ({
         id: cred.id,
+        status: cred.status,
         created_at: cred.created_at
     }));
 

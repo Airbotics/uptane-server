@@ -1,8 +1,7 @@
-import { S3Client } from '@aws-sdk/client-s3';
+import { ACMPCAClient } from '@aws-sdk/client-acm-pca';
 import config from '@airbotics-config';
 
-export const s3Client = new S3Client({
+export const acmPcaClient = new ACMPCAClient({
     region: config.AWS_REGION,
     ...(config.NODE_ENV != 'production' && { endpoint: config.AWS_LOCAL_ENDPOINT }),
-    forcePathStyle: true
 });

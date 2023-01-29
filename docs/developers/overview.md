@@ -52,8 +52,8 @@ POSTGRES_CONN_STR       - connection string for postgres
 AWS_REGION              - aws region to use
 AWS_ACCESS_KEY_ID       - aws access key id
 AWS_SECRET_ACCESS_KEY   - aws secret acess key
-AWS_S3_ENDPOINT         - aws s3 endpoint to connect to
-AWS_SM_ENDPOINT         - aws secrets manager endpoint to connect to
+AWS_LOCAL_ENDPOINT      - local aws endpoint
+AWS_ACM_PCA_ROOT_CA_ARN - arn of aws acm pca root ca
 ORY_PROJECT_URL         - url of ory project to be used for auth
 ORY_ACCESS_TOKEN        - valid ory PAC for admin calls
 ORY_DEV_PWD             - valid password of ory developer identity

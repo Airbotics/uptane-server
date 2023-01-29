@@ -3,7 +3,7 @@ import forge from 'node-forge';
 import { keyStorage } from '@airbotics-core/key-storage';
 import { blobStorage } from '@airbotics-core/blob-storage';
 import { logger } from '@airbotics-core/logger';
-import { generateCertificate, generateKeyPair } from '@airbotics-core/crypto';
+import { generateCertificate, generateCertificateSigningRequest, generateKeyPair, getClientCertificate, getRootCertificate } from '@airbotics-core/crypto';
 import { prisma } from '@airbotics-core/drivers';
 import {
     EKeyType,
@@ -29,6 +29,7 @@ const router = express.Router();
  * 
  * TODO:
  * - handle ttl
+ * - return {"code": "device_already_registered"} if already registered
  */
 router.post('/devices', async (req: Request, res) => {
 
@@ -58,21 +59,27 @@ router.post('/devices', async (req: Request, res) => {
 
     const robotKeyPair = generateKeyPair({ keyType: EKeyType.Rsa });
 
-    // load root ca and key, used to sign provisioning cert
-    const rootCaKeyPair = await keyStorage.getKeyPair(ROOT_CA_KEY_ID);
-    const rootCaCertStr = await blobStorage.getObject(ROOT_BUCKET, team_id, ROOT_CA_CERT_OBJ_ID) as string;
-    const rootCaCert = forge.pki.certificateFromPem(rootCaCertStr);
+    const csr = await generateCertificateSigningRequest(robotKeyPair, team_id);
 
-    // generate provisioning cert using root ca as parent
-    const opts = {
-        commonName: deviceId,
-        parentCert: rootCaCert,
-        parentKeyPair: rootCaKeyPair
-    };
-    const robotCert = generateCertificate(robotKeyPair, opts);
+    const robotCert = await getClientCertificate(csr);
+
+    if (!robotCert) {
+        return res.status(500).end();
+    }
+
+    const rootCACertSr = await getRootCertificate();
+
+    if (!rootCACertSr) {
+        return res.status(500).end();
+    }
 
     // bundle into pcks12, no encryption password set
-    const p12 = forge.pkcs12.toPkcs12Asn1(forge.pki.privateKeyFromPem(robotKeyPair.privateKey), [robotCert, rootCaCert], null, { algorithm: 'aes256' });
+    const p12 = forge.pkcs12.toPkcs12Asn1(forge.pki.privateKeyFromPem(robotKeyPair.privateKey), 
+    [forge.pki.certificateFromPem(robotCert.cert), forge.pki.certificateFromPem(rootCACertSr)], 
+    null, 
+    { algorithm: 'aes256' });
+
+    // TODO store robot arn so we can revoke it
 
     logger.info('robot has provisioned')
     return res.status(200).send(Buffer.from(forge.asn1.toDer(p12).getBytes(), 'binary'));

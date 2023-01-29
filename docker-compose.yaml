@@ -42,10 +42,10 @@ services:
             - DEBUG=1
             - LOCALSTACK_API_KEY=${LOCALSTACK_API_KEY- }
             - DOCKER_HOST=unix:///var/run/docker.sock
+            - LAMBDA_REMOVE_CONTAINERS=true
+            - LAMBDA_EXECUTOR=docker-reuse
+            - LAMBDA_REMOTE_DOCKER=false
             # - AWS_DEFAULT_REGION=eu-west-1
-            # - LAMBDA_REMOVE_CONTAINERS=true
-            # - LAMBDA_EXECUTOR=docker-reuse
-            # - LAMBDA_REMOTE_DOCKER=false
         ports: 
             - 4566:4566
             - 4510-4559:4510-4559

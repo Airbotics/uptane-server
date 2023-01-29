@@ -131,6 +131,24 @@ router.put('/:team_id/api/v1/user_repo/targets', validate(targetsSchema, EValida
     const snapshotMetadata = generateSignedSnapshot(config.TUF_TTL.IMAGE.SNAPSHOT, newSnapshotVersion, snapshotKeyPair, clientTargetsMetadata);
     const timestampMetadata = generateSignedTimestamp(config.TUF_TTL.IMAGE.TIMESTAMP, newTimestampVersion, timestampKeyPair, snapshotMetadata);
 
+    // ostree
+    // target version is supposed to be equal to ostree commit hash
+    // const object = await prisma.object.findUnique({
+    //     where: {
+    //         team_id_object_id: {
+    //             team_id,
+    //             object_id: `${clientTargetsMetadata.signed.version}.commit`
+    //         } 
+    //     }
+    // });
+
+    // if(!object) {
+    //     return res.status(400).end();
+    // }
+
+    
+
+
     // perform db writes in transaction
     await prisma.$transaction(async tx => {
 

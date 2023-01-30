@@ -35,7 +35,7 @@ export const updateAccountSchema = Joi.object({
 export const createGroupSchema = Joi.object({
     name: nameField.required(),
     description: nameField,
-    robotIDs: Joi.array().items(robotIdField.required()).min(1).max(100)
+    robot_ids: Joi.array().items(robotIdField.required()).min(1).max(100)
 });
 
 export const updateGoupSchema = Joi.object({

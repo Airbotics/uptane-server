@@ -92,7 +92,7 @@ export const mustBeAuthenticated = async (req: Request, res: Response, next: Nex
         // if(orySession.identity.verifiable_addresses && !orySession.identity.verifiable_addresses[0].verified) {
         //     return new BadResponse(res, 'Please verify your email first!');
         // }
-
+        
         req.oryIdentity = {
             session_id: orySession.id,
             traits: {
@@ -110,6 +110,8 @@ export const mustBeAuthenticated = async (req: Request, res: Response, next: Nex
         next();
 
     } catch (error) {
+        console.log(error);
+        
         logger.warn('An unauthenticated user is trying to access a protected endpoint');
         return new UnauthorizedResponse(res);
     }

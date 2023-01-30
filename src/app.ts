@@ -42,7 +42,7 @@ app.use('/api/v0/robot/treehub', treehub);
 // optionally mount a background worker in this process, if it has been configured
 if(config.USE_NODE_SCHEDULER) {
     // schedule.scheduleJob(config.WORKER_CRON, backgroundWorker);
-    schedule.scheduleJob(config.ROLLOUT_WORKER_CRON, rolloutWorker);
+    // schedule.scheduleJob(config.ROLLOUT_WORKER_CRON, rolloutWorker);
 }
 
 // handle 404

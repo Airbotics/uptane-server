@@ -260,3 +260,10 @@ export interface ICreateRolloutBody {
 		selected_bot_ids: string [] | null
 	}
 }
+
+
+export interface ICreateGroupBody {
+    name: string;
+    description: string; 
+    robot_ids: string[];
+}

@@ -71,7 +71,7 @@ model Team {
     hw_info_reports     HardwareInfoReport[]
     akt_config_reports  AktualizrConfigReport[]
     robot_events        RobotEvent[]
-    creds               ProvisioningCredentials[]
+    provisioning_creds  ProvisioningCredentials[]
     groups              Group[]
     robot_groups        RobotGroup[]
 
@@ -85,7 +85,7 @@ model Team {
 model ProvisioningCredentials {
     id                  String          @id @default(uuid()) @unique
     team_id             String
-    arn                 String                                  // we save the arn so we can revoke it
+    cert_serial         String                                  // serial no. of the cert so we can revoke it
     status              ProvisioningCredentialsStatus   @default(issuing)
     created_at          DateTime        @default(now())
 
@@ -146,6 +146,7 @@ model TufMetadata {
 // these are called vehicles in the Update spec
 // TODO
 // - add provisioned field denoting whether it is provisioned
+// - add a list of certificates
 model Robot {
     id                  String          @id @default(uuid()) @unique
     team_id             String
@@ -154,6 +155,7 @@ model Robot {
     ecus_registered     Boolean         @default(false)     // whether the ecus have been registered, they can only do this once
     created_at          DateTime        @default(now())
     updated_at          DateTime        @updatedAt
+    cert_serial         String                              // serial no. of the cert so we can revoke it
 
     team                Team            @relation(fields: [team_id], references: [id], onDelete: Cascade)
 

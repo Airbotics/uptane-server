@@ -13,7 +13,7 @@ import { SuccessJsonResponse } from '@airbotics-core/network/responses';
 import { logger } from '@airbotics-core/logger';
 import { prisma } from '@airbotics-core/drivers';
 import { airEvent } from '@airbotics-core/events';
-import { generateKeyPair, generateCertificateSigningRequest, getClientCertificate, getRootCertificate } from '@airbotics-core/crypto';
+import { generateKeyPair, certificateStorage } from '@airbotics-core/crypto';
 import config from '@airbotics-config';
 import { generateTufKey, getTufMetadata } from '@airbotics-core/tuf';
 import { keyStorage } from '@airbotics-core/key-storage';
@@ -39,18 +39,16 @@ export const createProvisioningCredentials = async (req: Request, res: Response)
     // create provisioning key
     const provisioningKeyPair = generateKeyPair({ keyType: EKeyType.Rsa });
 
-    const csr = await generateCertificateSigningRequest(provisioningKeyPair, teamID);
+    // get the provisioning cert
+    // NOTE this takes a while if fetching from acm pca
+    const provisioningCert = await certificateStorage.createCertificate(provisioningKeyPair, teamID);
 
-    // get the provisioning cert from acm
-    // NOTE this takes a while
-    const clientCert = await getClientCertificate(csr);
-
-    if (!clientCert) {
+    if (!provisioningCert) {
         return res.status(500).end();
     }
 
-    // get the root cert from acm
-    const rootCACertSr = await getRootCertificate();
+    // get the root cert from storage
+    const rootCACertSr = await certificateStorage.getRootCertificate();
 
     if (!rootCACertSr) {
         return res.status(500).end();
@@ -58,7 +56,7 @@ export const createProvisioningCredentials = async (req: Request, res: Response)
 
     // bundle into pcks12, no encryption password set
     const p12 = forge.pkcs12.toPkcs12Asn1(forge.pki.privateKeyFromPem(provisioningKeyPair.privateKey),
-        [forge.pki.certificateFromPem(clientCert.cert), forge.pki.certificateFromPem(rootCACertSr)],
+        [forge.pki.certificateFromPem(provisioningCert.cert), forge.pki.certificateFromPem(rootCACertSr)],
         null,
         { algorithm: 'aes256' });
 
@@ -99,7 +97,7 @@ export const createProvisioningCredentials = async (req: Request, res: Response)
         data: {
             team_id: teamID,
             status: ProvisioningCredentialsStatus.downloaded,
-            arn: clientCert.arn
+            cert_serial: provisioningCert.serial
         }
     });
 

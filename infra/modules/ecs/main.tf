@@ -1,24 +1,32 @@
 variable tags { }
 
-variable "cluster_name" {
-    default                 = "airbotics-cluster"
-}
-
 variable "private_subnet_ids" { }
 
+variable "cluster_name" {
+    default                     = "airbotics-cluster"
+}
+
 variable "task_definition_name" {
-    default                 = "airbotics-task"
+    default                     = "airbotics-task"
 }
 
 variable "task_service_name" {
-    default                 = "airbotics-service"
+    default                     = "airbotics-service"
 }
-
 
 resource "aws_ecs_cluster" "backend" {
-    name                    = var.cluster_name
-    tags                    = var.tags
+    name                        = var.cluster_name
+    tags                        = var.tags
 }
+
+# env variables:
+# PORT=8001
+# NODE_ENV="development"
+# POSTGRES_CONN_STR
+# AWS_ACM_PCA_ROOT_CA_ARN
+# ORY_PROJECT_URL
+# ORY_ACCESS_TOKEN=
+# ORY_SCHEMA_ID
 
 
 resource "aws_ecs_task_definition" "backend" {
@@ -28,7 +36,6 @@ resource "aws_ecs_task_definition" "backend" {
     requires_compatibilities    = ["FARGATE"]
     cpu                         = 256
     memory                      = 512
-    # task_role_arn
 
     container_definitions = jsonencode([{
         name                    = "httpd-container"
@@ -42,20 +49,20 @@ resource "aws_ecs_task_definition" "backend" {
         # environment = var.container_environment
     }])
 
-    tags                    = var.tags
+    tags                        = var.tags
 }
 
 
 resource "aws_ecs_service" "backend" {
-    name                  = var.task_service_name
-    cluster               = aws_ecs_cluster.backend.id
-    task_definition       = aws_ecs_task_definition.backend.arn
-    desired_count         = 1
-    launch_type           = "FARGATE"
+    name                        = var.task_service_name
+    cluster                     = aws_ecs_cluster.backend.id
+    task_definition             = aws_ecs_task_definition.backend.arn
+    desired_count               = 1
+    launch_type                 = "FARGATE"
 
     network_configuration {
-        subnets           = var.private_subnet_ids
+        subnets                 = var.private_subnet_ids
     }
 
-    tags                    = var.tags
+    tags                        = var.tags
 }

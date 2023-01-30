@@ -10,6 +10,12 @@ export const enum EKeyStorageProvider {
     AWS = 'aws'
 }
 
+// supported providers for certificate storage
+export const enum ECertificateStorageProvider {
+    ACMPCA = 'acm',
+    Forge = 'forge'
+}
+
 // default ostree config
 export const OSTREE_CONFIG = `[core]
 repo_version=1
@@ -68,14 +74,13 @@ export const enum ESignatureScheme {
 
 // infra consts
 export const TREEHUB_BUCKET = 'airbotics-treehub';
-export const ROOT_BUCKET = 'root';                           // for storing various infra objects
-export const ROOT_CA_CERT_OBJ_ID = 'root-ca-cert';
-export const ROOT_CA_KEY_ID = 'root-ca-keypair';
-export const GATEWAY_CERT_OBJ_ID = 'gateway-cert';
-export const GATEWAY_KEY_ID = 'gateway-keypair';
+export const DEV_CERTS_BUCKET = 'certs';
+export const DEV_ROOT_CA_CERT_OBJ_ID = 'root-ca-cert';
+export const DEV_ROOT_CA_KEY_ID = 'root-ca-key';
+export const DEV_GATEWAY_CERT_OBJ_ID = 'gateway-cert';
+export const DEV_GATEWAY_KEY_ID = 'gateway-key';
 
 // root cert fields
-export const ROOT_CERT_COMMON_NAME = 'airbotics-root';
 export const ROOT_CERT_ORGANISATION = 'Airbotics Inc.';
 export const ROOT_CERT_LOCALITY = 'San Francisco';
 export const ROOT_CERT_STATE = 'CA';

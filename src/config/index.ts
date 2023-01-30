@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-import { EBlobStorageProvider, EKeyStorageProvider, EKeyType, ESignatureScheme } from '@airbotics-core/consts';
+import { EBlobStorageProvider, ECertificateStorageProvider, EKeyStorageProvider, EKeyType, ESignatureScheme } from '@airbotics-core/consts';
 
 dotenv.config();
 
@@ -26,6 +26,9 @@ const config = {
     // key storage and management
     KEY_STORAGE_PROVIDER: EKeyStorageProvider.Filesystem,                       // key storage provider to use
     KEYS_FS_STORAGE_DIR: './.keys',                                             // where private keys are stored when filesystem provider is being used
+
+    // certificate storage and management
+    CERTIFICATE_STORAGE_PROVIDER: ECertificateStorageProvider.Forge,            // key storage provider to use
 
     // tuf
     TUF_KEY_TYPE: EKeyType.Rsa,                                                 // key type to use for TUF
@@ -67,7 +70,7 @@ const config = {
 
     // manifest processing
     PRIMARY_ECU_VALID_FOR_SECS: process.env.SECONDARY_ECU_VALID_FOR_SECS || 3600,
-    SECONDARY_ECU_VALID_FOR_SECS: process.env. SECONDARY_ECU_VALID_FOR_SECS || 43200,
+    SECONDARY_ECU_VALID_FOR_SECS: process.env.SECONDARY_ECU_VALID_FOR_SECS || 43200,
 
     // logs
     LOGS_DIR: '.logs',                                                          // local log directory

@@ -1,16 +1,10 @@
 import express, { Request } from 'express';
 import forge from 'node-forge';
 import { keyStorage } from '@airbotics-core/key-storage';
-import { blobStorage } from '@airbotics-core/blob-storage';
 import { logger } from '@airbotics-core/logger';
-import { generateCertificate, generateCertificateSigningRequest, generateKeyPair, getClientCertificate, getRootCertificate } from '@airbotics-core/crypto';
+import { generateKeyPair, certificateStorage } from '@airbotics-core/crypto';
 import { prisma } from '@airbotics-core/drivers';
-import {
-    EKeyType,
-    ROOT_BUCKET,
-    ROOT_CA_CERT_OBJ_ID,
-    ROOT_CA_KEY_ID
-} from '@airbotics-core/consts';
+import { EKeyType } from '@airbotics-core/consts';
 import { mustBeRobot, updateRobotMeta } from '@airbotics-middlewares';
 import { IRobotEvent } from '@airbotics-types';
 
@@ -29,7 +23,7 @@ const router = express.Router();
  * 
  * TODO:
  * - handle ttl
- * - return {"code": "device_already_registered"} if already registered
+ * - fill out cert_serial
  */
 router.post('/devices', async (req: Request, res) => {
 
@@ -40,46 +34,53 @@ router.post('/devices', async (req: Request, res) => {
 
     const team_id = req.header('air-client-id')!;
 
-    try {
-        await prisma.robot.create({
-            data: {
+    // check robot is not already provisioned
+    const robot = await prisma.robot.findUnique({
+        where: {
+            team_id_id: {
                 team_id,
                 id: deviceId
             }
-        });
-
-    } catch (error) {
-        if (error.code === 'P2002') {
-            logger.warn('could not provision robot because it is already provisioned');
-            return res.status(400).json({ code: 'device_already_registered' });
         }
-        throw error;
+    })
+
+    if (robot) {
+        logger.warn('could not provision robot because it is already provisioned');
+        return res.status(400).json({ code: 'device_already_registered' });
     }
 
-
+    // generate key pair for the cert, this will be thrown away
     const robotKeyPair = generateKeyPair({ keyType: EKeyType.Rsa });
 
-    const csr = await generateCertificateSigningRequest(robotKeyPair, team_id);
-
-    const robotCert = await getClientCertificate(csr);
+    // this could take a while if we use acm pca
+    const robotCert = await certificateStorage.createCertificate(robotKeyPair, deviceId);
 
     if (!robotCert) {
         return res.status(500).end();
     }
 
-    const rootCACertSr = await getRootCertificate();
+    // get root cert
+    const rootCACert = await certificateStorage.getRootCertificate();
 
-    if (!rootCACertSr) {
+    if (!rootCACert) {
         return res.status(500).end();
     }
 
     // bundle into pcks12, no encryption password set
-    const p12 = forge.pkcs12.toPkcs12Asn1(forge.pki.privateKeyFromPem(robotKeyPair.privateKey), 
-    [forge.pki.certificateFromPem(robotCert.cert), forge.pki.certificateFromPem(rootCACertSr)], 
-    null, 
-    { algorithm: 'aes256' });
+    const p12 = forge.pkcs12.toPkcs12Asn1(forge.pki.privateKeyFromPem(robotKeyPair.privateKey),
+        [forge.pki.certificateFromPem(robotCert.cert), forge.pki.certificateFromPem(rootCACert)],
+        null,
+        { algorithm: 'aes256' });
 
-    // TODO store robot arn so we can revoke it
+
+    // create robot storing cert serial
+    await prisma.robot.create({
+        data: {
+            team_id,
+            id: deviceId,
+            cert_serial: robotCert.serial
+        }
+    });
 
     logger.info('robot has provisioned')
     return res.status(200).send(Buffer.from(forge.asn1.toDer(p12).getBytes(), 'binary'));

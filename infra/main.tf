@@ -32,12 +32,12 @@ provider "aws" {
 }
 
 
-# module "network" {
-#     source                  = "./modules/network"
-#     az_count                = "3"
-#     vpc_cidr_block          = "172.16.0.0/16"
-#     tags                    = var.tags
-# }
+module "network" {
+    source                  = "./modules/network"
+    az_count                = "3"
+    vpc_cidr_block          = "172.16.0.0/16"
+    tags                    = var.tags
+}
 
 # module "s3" {
 #     source                  = "./modules/s3"
@@ -45,12 +45,12 @@ provider "aws" {
 #     tags                    = var.tags
 # }
 
-module "ecr" {
-    source                  = "./modules/ecr"
-    num_images_to_retain    = 10
-    repository_name         = "backend-repository"
-    tags                    = var.tags
-}
+# module "ecr" {
+#     source                  = "./modules/ecr"
+#     num_images_to_retain    = 10
+#     repository_name         = "backend-repository"
+#     tags                    = var.tags
+# }
 
 # module "rds" {
 #     source                  = "./modules/rds"
@@ -60,20 +60,18 @@ module "ecr" {
 #     master_password         = "test-db-password"
 #     private_subnet_ids      = module.network.private_subnet_ids
 #     tags                    = var.tags
-
 #     depends_on              = [ module.network ]
 # }
 
-# module "ecs" {
-#     source                  = "./modules/ecs"
-#     cluster_name            = "airbotics-cluster"
-#     task_definition_name    = "airbotics-task"
-#     task_service_name       = "airbotics-service"
-#     private_subnet_ids      = module.network.private_subnet_ids
-#     tags                    = var.tags
-
-#     depends_on              = [ module.network ]
-# }
+module "ecs" {
+    source                  = "./modules/ecs"
+    cluster_name            = "airbotics-cluster"
+    task_definition_name    = "airbotics-task"
+    task_service_name       = "airbotics-service"
+    private_subnet_ids      = module.network.private_subnet_ids
+    tags                    = var.tags
+    depends_on              = [ module.network ]
+}
 
 # module "acm-pca" {
 #     source                  = "./modules/acm-pca"

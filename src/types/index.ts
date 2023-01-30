@@ -1,5 +1,8 @@
 import { EKeyType, ESignatureScheme, ETUFRole } from '@airbotics-core/consts';
 
+/**
+ * Provider interfaces
+ */
 export interface IBlobStorageProvider {
     putObject(bucketId: string, teamId: string, objectId: string, content: Buffer | string): Promise<boolean>;
     getObject(bucketId: string, teamId: string, objectId: string): Promise<Buffer | string>;
@@ -13,6 +16,12 @@ export interface IKeyStorageProvider {
     deleteKeyPair(id: string): Promise<boolean>;
 }
 
+export interface ICertificateStorageProvider {
+    getRootCertificate(): Promise<string | null>;
+    createCertificate(keyPair: IKeyPair, commonName: string): Promise<ICertificate | null>;
+    revokeCertificate(serial: string, reason: string): Promise<boolean>;
+}
+
 
 /**
  * Crypto
@@ -20,6 +29,11 @@ export interface IKeyStorageProvider {
 export interface IKeyPair {
     publicKey: string;
     privateKey: string;
+}
+
+export interface ICertificate {
+    cert: string;
+    serial: string;
 }
 
 

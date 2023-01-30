@@ -6,6 +6,7 @@ import { getKeyStorageEcuKeyId } from '@airbotics-core/utils';
 import { keyStorage } from '@airbotics-core/key-storage';
 import { airEvent } from '@airbotics-core/events';
 import { EEventAction, EEventActorType, EEventResource } from '@airbotics-core/consts';
+import { certificateStorage } from '@airbotics-core/crypto';
 
 
 /**
@@ -96,7 +97,7 @@ export const getRobot = async (req: Request, res: Response, next: NextFunction) 
 
 
 /**
- * Delete a robot
+ * Delete a robot.
  */
 export const deleteRobot = async (req: Request, res: Response, next: NextFunction) => {
 
@@ -119,10 +120,13 @@ export const deleteRobot = async (req: Request, res: Response, next: NextFunctio
             }
         });
 
-        // deleta ecu keys for this robot
+        // delete ecu keys for this robot
         for (const ecu of robot.ecus) {
             await keyStorage.deleteKeyPair(getKeyStorageEcuKeyId(teamID, ecu.id));
         }
+
+        // revoke certificate
+        await certificateStorage.revokeCertificate(robot.cert_serial, 'Robot was deleted');
 
         airEvent.emit({
             resource: EEventResource.Robot,

@@ -1,10 +1,10 @@
 variable tags { }
 
+variable "private_subnet_ids" { }
+
 variable "cluster_identifier" {
     default                 = "airbotics-rds"
 }
-
-variable "private_subnet_ids" { }
 
 variable "db_name" {
     sensitive               = true

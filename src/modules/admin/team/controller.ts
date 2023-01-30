@@ -7,7 +7,7 @@ import { SuccessMessageResponse, BadResponse, SuccessJsonResponse, NoContentResp
 import { logger } from '@airbotics-core/logger';
 import { ITeamDetail } from '@airbotics-types';
 import { airEvent } from '@airbotics-core/events';
-import { generateKeyPair } from '@airbotics-core/crypto';
+import { certificateStorage, generateKeyPair } from '@airbotics-core/crypto';
 import config from '@airbotics-config';
 import { generateSignedRoot, generateSignedSnapshot, generateSignedTargets, generateSignedTimestamp } from '@airbotics-core/tuf';
 import { blobStorage } from '@airbotics-core/blob-storage';
@@ -245,6 +245,8 @@ export const createTeam = async (req: Request, res: Response, next: NextFunction
  * 2. Queries our db for auxilary info about teams
  * 3. Return a sanitised list of teams requester
  * 
+ * TODO
+ * - return role and joined at from ory
  */
 export const listTeams = async (req: Request, res: Response, next: NextFunction) => {
 
@@ -275,6 +277,8 @@ export const listTeams = async (req: Request, res: Response, next: NextFunction)
         const sanitisedTeams: ITeamDetail[] = teams.map(team => ({
             id: team.id,
             name: team.name,
+            role: 'Admin', // TODO
+            joined_at: '', // TODO
             created_at: team.created_at
         }));
 
@@ -414,6 +418,7 @@ export const updateTeam = async (req: Request, res: Response, next: NextFunction
  * 
  * TODO
  * - remove team members in ory
+ * - revoke all robot and provisioning certificates
  */
 export const deleteTeam = async (req: Request, res: Response, next: NextFunction) => {
 
@@ -438,13 +443,25 @@ export const deleteTeam = async (req: Request, res: Response, next: NextFunction
                 id: teamID
             },
             include: {
-                ecus: true
+                ecus: true,
+                provisioning_creds: true,
+                robots: true
             }
         });
 
         // delete ecu keys
-        for(const ecu of team.ecus) {
+        for (const ecu of team.ecus) {
             await keyStorage.deleteKeyPair(getKeyStorageEcuKeyId(teamID, ecu.id));
+        }
+
+        // revoke any certs used for provisioning credentials
+        for (const cred of team.provisioning_creds) {
+            await certificateStorage.revokeCertificate(cred.cert_serial, 'Team was deleted');
+        }
+
+        // revoke all certs used for robots
+        for (const robot of team.robots) {
+            await certificateStorage.revokeCertificate(robot.cert_serial, 'Team was deleted');
         }
 
         // delete all objects beginning with their team id in the treehub bucket

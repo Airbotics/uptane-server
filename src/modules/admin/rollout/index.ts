@@ -14,11 +14,20 @@ router.post('/rollouts',
     validate(createRolloutSchema, EValidationSource.Body),
     controller.createRollout);
 
+
 // list rollouts
 router.get('/rollouts',
     mustBeAuthenticated,
     mustBeInTeam(OryTeamRelations.admin),
     controller.listRollouts);
+
+
+//launch a rollout
+router.post('/rollouts/:rollout_id/launch',
+    mustBeAuthenticated,
+    mustBeInTeam(OryTeamRelations.admin),
+    controller.launchRollout);
+
 
 // get rollout detail
 router.get('/rollouts/:rollout_id',
@@ -26,5 +35,6 @@ router.get('/rollouts/:rollout_id',
     mustBeInTeam(OryTeamRelations.admin),
     validate(rolloutIdSchema, EValidationSource.Path),
     controller.getRollout);
+    
 
 export default router;

@@ -61,7 +61,7 @@ export const processRollouts = async () => {
             }
         });
 
-        logger.debug(`${allTeams.length} rollouts to process for team: ${team.id}`);
+        logger.debug(`${unprocessedRollouts.length} rollouts to process for team: ${team.id}`);
 
         for (const rollout of unprocessedRollouts) {
 

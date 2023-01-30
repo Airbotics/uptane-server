@@ -99,7 +99,6 @@ model Image {
 
     team                Team            @relation(fields: [team_id], references: [id], onDelete: Cascade)
 
-    tmp_ecu_images      TmpEcuImages[]
     ecus                Ecu[]
     rollout_image       RolloutHardwareImage[]
 
@@ -176,9 +175,6 @@ model Ecu {
     team                Team            @relation(fields: [team_id], references: [id], onDelete: Cascade)
     robot               Robot           @relation(fields: [team_id, robot_id], references: [team_id, id], onDelete: Cascade)
     installed_image     Image?          @relation(fields: [team_id, image_id], references: [team_id, id], onDelete: Cascade)
-
-    tmp_ecu_images      TmpEcuImages[]
-
 
     @@unique([team_id, id])
     @@map("ecus")
@@ -341,22 +337,6 @@ model StaticDelta {
     @@map("static_deltas")
 }
 
-
-
-// TODO this is a temporary table
-model TmpEcuImages {
-    ecu_id              String
-    image_id            String
-    created_at          DateTime        @default(now())
-    updated_at          DateTime        @updatedAt
-    acknowledged        Boolean         @default(false)
-
-    ecu                 Ecu             @relation(fields: [ecu_id], references: [id], onDelete: Cascade)
-    image               Image           @relation(fields: [image_id], references: [id], onDelete: Cascade)
-
-    @@unique([ecu_id, image_id])
-    @@map("tmp_ecu_images")
-}
 
 // groups that a robot can be in
 model Group {

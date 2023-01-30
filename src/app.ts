@@ -9,7 +9,7 @@ import treehub from '@airbotics-modules/treehub';
 import imageRepo from '@airbotics-modules/image-repo';
 import directorRepo from '@airbotics-modules/director-repo';
 import robot from '@airbotics-modules/robot';
-
+import rolloutWorker from '@airbotics-modules/background-workers/rollouts';
 
 
 const app = express();
@@ -40,9 +40,10 @@ app.use('/api/v0/robot/treehub', treehub);
 
 
 // optionally mount a background worker in this process, if it has been configured
-// if(config.USE_NODE_SCHEDULER) {
-//     schedule.scheduleJob(config.WORKER_CRON, backgroundWorker);
-// }
+if(config.USE_NODE_SCHEDULER) {
+    // schedule.scheduleJob(config.WORKER_CRON, backgroundWorker);
+    schedule.scheduleJob(config.ROLLOUT_WORKER_CRON, rolloutWorker);
+}
 
 // handle 404
 app.use((req: Request, res: Response, next: NextFunction) => {

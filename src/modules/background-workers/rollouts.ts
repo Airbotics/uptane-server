@@ -230,7 +230,6 @@ const generateNewMetadata = async (team_id: string, robot_id: string, affectedEc
 }
 
 
-
 const main = async () => {
 
     logger.info('rollouts processing started...');

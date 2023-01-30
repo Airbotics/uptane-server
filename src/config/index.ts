@@ -61,7 +61,8 @@ const config = {
     ORY_SCHEMA_ID: process.env.ORY_SCHEMA_ID,                                   // scehma ID for ory
 
     // background worker
-    WORKER_CRON: '0 * * * *',                                                   // cron to run background worker, i.e. every hour
+    BACKGROUND_WORKER_CRON: '0 * * * *',                                        // cron to run background worker, i.e. every hour
+    ROLLOUT_WORKER_CRON: '*/10 * * * * *',                                      // cron to run rollout worker, i.e every 10 seconds
     USE_NODE_SCHEDULER: true,                                                   // whether to use the nodejs scheduler to run workers, for development
 
     // manifest processing

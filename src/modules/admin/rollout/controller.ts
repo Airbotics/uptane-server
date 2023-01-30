@@ -115,7 +115,7 @@ export const createRolloutReal = async (req: Request, res: Response) => {
     });
 
     //Add the hw_id to image_id map for the rollout
-    await prisma.rolloutTarget.createMany({
+    await prisma.rolloutHardwareImage.createMany({
         data: hwid_img_map.map(elem => ({
             rollout_id: rollout.id,
             hw_id: elem.hw_id,

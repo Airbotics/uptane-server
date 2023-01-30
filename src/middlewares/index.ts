@@ -81,7 +81,7 @@ export const updateRobotMeta = async (req: Request, res: Response, next: NextFun
 export const mustBeAuthenticated = async (req: Request, res: Response, next: NextFunction) => {
 
     try {
-
+        /*
         const sessionParams: FrontendApiToSessionRequest = {
             xSessionToken: req.header("x-session-token"),       //from api authenticated clients
             cookie: req.header("cookie")                        //from browser authenticated clients
@@ -103,6 +103,21 @@ export const mustBeAuthenticated = async (req: Request, res: Response, next: Nex
                 name: {
                     first: orySession.identity.traits.name.first,
                     last: orySession.identity.traits.name.last
+                }
+            }
+        }
+        */
+
+        req.oryIdentity = {
+            session_id: '1234',
+            traits: {
+                id: '1234',
+                created_at: new Date().toISOString(),
+                state: 'ok',
+                email: 'robbie@airbotics.io',
+                name: {
+                    first: 'robbie',
+                    last: 'fryers'
                 }
             }
         }

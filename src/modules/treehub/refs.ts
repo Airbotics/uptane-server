@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
 import { logger } from '@airbotics-core/logger';
-import { prisma } from '@airbotics-core/drivers/postgres';
+import { prisma } from '@airbotics-core/drivers';
 import { mustBeRobot, updateRobotMeta } from '@airbotics-middlewares';
 
 const router = express.Router();
@@ -10,10 +10,7 @@ const router = express.Router();
 const getRef = async (req: Request, res: Response) => {
 
     const team_id = req.params.team_id || req.robotGatewayPayload!.team_id;
-
-    // this evaluates to something like 'heads/main' so we prepend it with a forward slash
-    let name = req.params.name;
-    name = '/' + name;
+    const name = req.params.name;
 
     const ref = await prisma.ref.findUnique({
         where: {
@@ -35,16 +32,12 @@ const getRef = async (req: Request, res: Response) => {
 }
 
 
-
 // create a ref
-router.post('/:team_id/refs/:name(*)', express.text({ type: '*/*' }), async (req: Request, res: Response) => {
+router.post('/:team_id/refs/heads/:name', express.text({ type: '*/*' }), async (req: Request, res: Response) => {
 
     // const teamID = req.headers['air-team-id']!;
     const team_id = req.params.team_id;
-
-    // this evaluates to something like 'heads/main' so we prepend it with a forward slash
-    let name = req.params.name;
-    name = '/' + name;
+    const name = req.params.name;
 
     const commit = req.body;
 
@@ -97,10 +90,10 @@ router.post('/:team_id/refs/:name(*)', express.text({ type: '*/*' }), async (req
 });
 
 // get a ref
-router.get('/:team_id/refs/:name(*)', getRef);
+router.get('/:team_id/refs/heads/:name', getRef);
 
 // get a ref
-router.get('/refs/:name(*)', mustBeRobot, updateRobotMeta, getRef);
+router.get('/refs/heads/:name', mustBeRobot, updateRobotMeta, getRef);
 
 
 export default router;

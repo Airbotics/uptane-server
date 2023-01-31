@@ -51,3 +51,8 @@ export const extractCommitsFromDelta = (prefix: string, suffix: string): {from: 
     }
 
 }
+
+/**
+ * Waits some milliseconds. Not pretty..
+ */
+export const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));

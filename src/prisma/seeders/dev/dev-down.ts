@@ -1,4 +1,4 @@
-import prisma from '@airbotics-core/drivers/postgres';
+import { prisma } from '@airbotics-core/drivers';
 
 
 /**
@@ -18,7 +18,7 @@ import prisma from '@airbotics-core/drivers/postgres';
  */
 
 
-( async () => {
+(async () => {
 
     console.log('running dev seeder down...');
 
@@ -26,7 +26,7 @@ import prisma from '@airbotics-core/drivers/postgres';
     await prisma.image.deleteMany();
     await prisma.robot.deleteMany();
     await prisma.ecu.deleteMany();
-    await prisma.metadata.deleteMany();
+    await prisma.tufMetadata.deleteMany();
     await prisma.tmpEcuImages.deleteMany();
 
     console.log('dev seeder down success');

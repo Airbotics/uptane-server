@@ -1,17 +1,16 @@
 import express, { Request } from 'express';
-import { TUFRepo, TUFRole, Prisma, UploadStatus, ImageFormat } from '@prisma/client';
+import { TUFRepo, TUFRole, UploadStatus, ImageFormat } from '@prisma/client';
 import config from '@airbotics-config';
-import { blobStorage } from '@airbotics-core/blob-storage';
-import { prisma } from '@airbotics-core/drivers/postgres';
+import { prisma } from '@airbotics-core/drivers';
 import { logger } from '@airbotics-core/logger';
 import { mustBeRobot, updateRobotMeta, validate } from '@airbotics-middlewares';
-import { generateHash, generateSignature, verifySignature } from '@airbotics-core/crypto';
+import { generateHash, verifySignature } from '@airbotics-core/crypto';
 import { getKeyStorageRepoKeyId, toCanonical } from '@airbotics-core/utils';
-import { EHashDigest, EKeyType, ESignatureScheme, EValidationSource } from '@airbotics-core/consts';
+import { EHashDigest, ESignatureScheme, EValidationSource, TUF_METADATA_LATEST } from '@airbotics-core/consts';
 import { dayjs } from '@airbotics-core/time';
 import { ISignedTargetsTUF } from '@airbotics-types';
 import { keyStorage } from '@airbotics-core/key-storage';
-import { generateSignedSnapshot, generateSignedTimestamp, getLatestMetadata, getLatestMetadataVersion } from '@airbotics-core/tuf';
+import { generateSignedSnapshot, generateSignedTimestamp, getTufMetadata, getLatestMetadataVersion } from '@airbotics-core/tuf';
 import { targetsSchema } from './schemas';
 
 
@@ -19,70 +18,53 @@ const router = express.Router();
 
 
 /**
- * Fetch versioned role metadata in a team.
+ * Fetch a specific version of the root tuf metadata.
+ * 
+ * TODO:
+ * - handle if it is outdated.
  */
-router.get('/:version.:role.json', mustBeRobot, updateRobotMeta, async (req: Request, res) => {
+router.get('/:version.root.json', mustBeRobot, updateRobotMeta, async (req: Request, res) => {
 
     const version = Number(req.params.version);
-    const role = req.params.role;
-    const {
-        team_id
-    } = req.robotGatewayPayload!;
+    const { team_id } = req.robotGatewayPayload!;
 
-    const metadata = await prisma.metadata.findFirst({
-        where: {
-            team_id,
-            repo: TUFRepo.image,
-            role: role as TUFRole,
-            version
-        }
-    });
+    const metadata = await getTufMetadata(team_id, TUFRepo.image, TUFRole.root, version);
 
     if (!metadata) {
-        logger.warn(`could not download ${role} metadata because it does not exist`);
+        logger.warn('a robot is trying to get a tuf metadata role that does not exist')
         return res.status(404).end();
     }
 
-    // check it hasnt expired
-    // TODO
+    const checkSum = generateHash(toCanonical(metadata as object), { hashDigest: EHashDigest.Sha256 });
 
-    return res.status(200).send(metadata.value);
+    res.set('x-ats-role-checksum', checkSum);
+    return res.status(200).send(metadata);
 
 });
 
 
 /**
- * Fetch latest metadata in a team.
+ * Fetch the latest version of the some tuf metadata role.
+ * 
+ * TODO:
+ * - handle if it is outdated.
  */
 router.get('/:role.json', mustBeRobot, updateRobotMeta, async (req: Request, res) => {
 
-    const role = req.params.role;
-    const {
-        team_id
-    } = req.robotGatewayPayload!;
+    const role = req.params.role as TUFRole;
+    const { team_id } = req.robotGatewayPayload!;
 
-    const metadata = await prisma.metadata.findMany({
-        where: {
-            team_id,
-            repo: TUFRepo.image,
-            role: req.params.role as TUFRole
-        },
-        orderBy: {
-            created_at: 'desc'
-        }
-    });
+    const metadata = await getTufMetadata(team_id, TUFRepo.image, role, TUF_METADATA_LATEST);
 
-    if (metadata.length === 0) {
-        logger.warn(`could not download ${role} metadata because it does not exist`);
+    if (!metadata) {
+        logger.warn('a robot is trying to get a tuf metadata role that does not exist')
         return res.status(404).end();
     }
 
-    const mostRecentMetadata = metadata[0].value as Prisma.JsonObject;
+    const checkSum = generateHash(toCanonical(metadata as object), { hashDigest: EHashDigest.Sha256 });
 
-    // check it hasnt expired
-    // TODO
-
-    return res.status(200).send(mostRecentMetadata);
+    res.set('x-ats-role-checksum', checkSum);
+    return res.status(200).send(metadata);
 
 });
 
@@ -149,6 +131,24 @@ router.put('/:team_id/api/v1/user_repo/targets', validate(targetsSchema, EValida
     const snapshotMetadata = generateSignedSnapshot(config.TUF_TTL.IMAGE.SNAPSHOT, newSnapshotVersion, snapshotKeyPair, clientTargetsMetadata);
     const timestampMetadata = generateSignedTimestamp(config.TUF_TTL.IMAGE.TIMESTAMP, newTimestampVersion, timestampKeyPair, snapshotMetadata);
 
+    // ostree
+    // target version is supposed to be equal to ostree commit hash
+    // const object = await prisma.object.findUnique({
+    //     where: {
+    //         team_id_object_id: {
+    //             team_id,
+    //             object_id: `${clientTargetsMetadata.signed.version}.commit`
+    //         } 
+    //     }
+    // });
+
+    // if(!object) {
+    //     return res.status(400).end();
+    // }
+
+    
+
+
     // perform db writes in transaction
     await prisma.$transaction(async tx => {
 
@@ -166,7 +166,7 @@ router.put('/:team_id/api/v1/user_repo/targets', validate(targetsSchema, EValida
         });
 
         // create tuf metadata
-        await tx.metadata.create({
+        await tx.tufMetadata.create({
             data: {
                 team_id,
                 repo: TUFRepo.image,
@@ -177,7 +177,7 @@ router.put('/:team_id/api/v1/user_repo/targets', validate(targetsSchema, EValida
             }
         });
 
-        await tx.metadata.create({
+        await tx.tufMetadata.create({
             data: {
                 team_id,
                 repo: TUFRepo.image,
@@ -188,7 +188,7 @@ router.put('/:team_id/api/v1/user_repo/targets', validate(targetsSchema, EValida
             }
         });
 
-        await tx.metadata.create({
+        await tx.tufMetadata.create({
             data: {
                 team_id,
                 repo: TUFRepo.image,
@@ -218,7 +218,7 @@ router.get('/:team_id/api/v1/user_repo/targets.json', async (req, res) => {
 
     const teamID = req.params.team_id;
 
-    const latest = await getLatestMetadata(teamID, TUFRepo.image, TUFRole.targets);
+    const latest = await getTufMetadata(teamID, TUFRepo.image, TUFRole.targets, TUF_METADATA_LATEST);
 
     if (!latest) {
         logger.warn('trying to download latest targets metadata for image but it does not exist');

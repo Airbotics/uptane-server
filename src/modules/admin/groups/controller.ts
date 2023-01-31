@@ -3,7 +3,8 @@ import { BadResponse, SuccessJsonResponse, NoContentResponse } from '@airbotics-
 import { logger } from '@airbotics-core/logger';
 import prisma from '@airbotics-core/drivers/postgres';
 import { ICreateGroupBody, IGroup, IGroupRobot } from '@airbotics-types';
-import { auditEventEmitter } from '@airbotics-core/events';
+import { airEvent } from '@airbotics-core/events';
+import { EEventAction, EEventActorType, EEventResource } from '@airbotics-core/consts';
 
 
 
@@ -47,11 +48,19 @@ export const createGroup = async (req: Request, res: Response, next: NextFunctio
             created_at: group.created_at
         }
 
-        auditEventEmitter.emit({
+        airEvent.emit({
+            resource: EEventResource.Group,
+            action: EEventAction.Created,
+            actor_type: EEventActorType.User,
             actor_id: oryId,
-            action: 'create_group',
-            team_id: teamId
-        })
+            team_id: teamId,
+            meta: {
+                id: group.id,
+                name,
+                description,
+                robot_ids: robot_ids
+            }
+        });
 
         logger.info('A user has created a new group.');
 
@@ -190,11 +199,18 @@ export const updateGroup = async (req: Request, res: Response, next: NextFunctio
             }
         });
 
-        auditEventEmitter.emit({
+        airEvent.emit({
+            resource: EEventResource.Group,
+            action: EEventAction.DetailsUpdated,
+            actor_type: EEventActorType.User,
             actor_id: oryID,
-            action: 'update_group',
-            team_id: teamID
-        })
+            team_id: teamID,
+            meta: {
+                id: updatedGroup.id,
+                name,
+                description
+            }
+        });
 
         const sanitisedgroup: IGroup = {
             id: updatedGroup.id,
@@ -257,11 +273,16 @@ export const deleteGroup = async (req: Request, res: Response, next: NextFunctio
             }
         });
 
-        auditEventEmitter.emit({
+        airEvent.emit({
+            resource: EEventResource.Group,
+            action: EEventAction.Deleted,
+            actor_type: EEventActorType.User,
             actor_id: oryID,
-            action: 'delete_group',
-            team_id: teamID
-        })
+            team_id: teamID,
+            meta: {
+                id: group.id,
+            }
+        });
 
         logger.info('A user has deleted a group for one of their teams.');
         return new NoContentResponse(res, 'That group has been deleted.');
@@ -409,10 +430,16 @@ export const addRobotToGroup = async (req: Request, res: Response, next: NextFun
             }
         });
 
-        auditEventEmitter.emit({
+        airEvent.emit({
+            resource: EEventResource.Group,
+            action: EEventAction.RobotAdded,
+            actor_type: EEventActorType.User,
             actor_id: oryID,
-            action: 'add_group_robot',
-            team_id: teamID
+            team_id: teamID,
+            meta: {
+                group_id: group.id,
+                robot_id
+            }
         });
 
         const sanitisedGroupRobot: IGroupRobot = {
@@ -493,11 +520,17 @@ export const removeRobotFromGroup = async (req: Request, res: Response, next: Ne
             }
         });
 
-        auditEventEmitter.emit({
+        airEvent.emit({
+            resource: EEventResource.Group,
+            action: EEventAction.RobotRemoved,
+            actor_type: EEventActorType.User,
             actor_id: oryID,
-            action: 'remove_group_robot',
-            team_id: teamID
-        })
+            team_id: teamID,
+            meta: {
+                group_id: group.id,
+                robot_id
+            }
+        });
 
         return new NoContentResponse(res, 'The robot has been removed from the group');
 

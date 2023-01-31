@@ -7,20 +7,20 @@ We like to use AWS Secrets Manager for protecting secrets. We tend to use [local
 
 **Create a secret**
 ```
-aws secretsmanager --endpoint-url http://localhost:4566 create-secret --name my-secret --secret-string '{"lorem":"ipsum"}'
+aws --endpoint-url http://localhost:4566 secretsmanager create-secret --name my-secret --secret-string '{"lorem":"ipsum"}'
 ```
 
 **List secrets**
 ```
-aws secretsmanager --endpoint-url http://localhost:4566 list-secrets
+aws --endpoint-url http://localhost:4566 secretsmanager list-secrets
 ```
 
 **Get secret**
 ```
-aws secretsmanager --endpoint-url http://localhost:4566 get-secret-value --secret-id my-secret
+aws --endpoint-url http://localhost:4566 secretsmanager get-secret-value --secret-id my-secret
 ```
 
 **Force delete secret**
 ```
-aws secretsmanager --endpoint-url http://localhost:4566 delete-secret --force-delete-without-recovery --secret-id my-secret
+aws --endpoint-url http://localhost:4566 secretsmanager delete-secret --force-delete-without-recovery --secret-id my-secret
 ```

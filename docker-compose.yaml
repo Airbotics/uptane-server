@@ -18,7 +18,7 @@ services:
         image: nginx:alpine
         container_name: gateway
         volumes:
-            - ./nginx/nginx.conf:/etc/nginx/conf.d/default.conf
+            - ./res/nginx.conf:/etc/nginx/conf.d/default.conf
             - .blobs/root/root-ca-cert:/etc/ssl/airbotics-root-ca-cert.pem
             - .blobs/root/gateway-cert:/etc/ssl/airbotics-gateway-cert.pem
             - .keys/gateway-private.pem:/etc/ssl/airbotics-gateway-key.pem
@@ -35,15 +35,22 @@ services:
         ports:
             - 5432:5432
     aws:
-        image: localstack/localstack:latest
-        container_name: s3
+        image: localstack/localstack-pro:latest
+        container_name: aws
         environment: 
-            - AWS_DEFAULT_REGION=eu-west-1
-            - EDGE_PORT=4566
-            - SERVICES=s3,secretsmanager
+            - SERVICES=s3,secretsmanager,acm,lambda,apigateway,rds,ecr,acm
+            - DEBUG=1
+            - LOCALSTACK_API_KEY=${LOCALSTACK_API_KEY- }
+            - DOCKER_HOST=unix:///var/run/docker.sock
+            - LAMBDA_REMOVE_CONTAINERS=true
+            - LAMBDA_EXECUTOR=docker-reuse
+            - LAMBDA_REMOTE_DOCKER=false
+            # - AWS_DEFAULT_REGION=eu-west-1
         ports: 
-            - '4566-4583:4566-4583'
+            - 4566:4566
+            - 4510-4559:4510-4559
         volumes: 
             - localstack:/var/lib/localstack
+            - /var/run/docker.sock:/var/run/docker.sock
 volumes:
     localstack:

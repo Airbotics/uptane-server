@@ -14,6 +14,16 @@ enum UploadStatus {
     uploaded
 }
 
+// status of provisioning credential
+// NOTE issuing will always be the state until a user tries to download it
+// then it will turn to downloaded, but it may be ready to be downloaded 
+// some time before that
+enum ProvisioningCredentialsStatus {
+    issuing
+    downloaded
+    revoked
+}
+
 // type of tuf repo
 enum TUFRepo {
     director
@@ -41,7 +51,7 @@ enum ImageFormat {
     binary                                                      // this is not supported for now
 }
 
-// team to contain all resources (metadata, ecus, manifests, images, etc.) related to the same project
+// a team of users, a team is the owner of all resources
 model Team {
     id                  String          @id @default(uuid()) @unique
     name                String
@@ -52,7 +62,7 @@ model Team {
     objects             Object[]
     deltas              StaticDelta[]
     images              Image[]
-    metadata            Metadata[]
+    tuf_metadata        TufMetadata[]
     robots              Robot[]
     ecus                Ecu[]
     robot_manifests     RobotManifest[]
@@ -61,7 +71,7 @@ model Team {
     hw_info_reports     HardwareInfoReport[]
     akt_config_reports  AktualizrConfigReport[]
     robot_events        RobotEvent[]
-    creds               ProvisioningCredentials[]
+    provisioning_creds  ProvisioningCredentials[]
     groups              Group[]
     robot_groups        RobotGroup[]
     rollouts            Rollout[]
@@ -71,10 +81,13 @@ model Team {
 
 
 // provisioning credentials
-// TODO add in the account downloaded it
+// TODO add in the account that downloaded/revoked it
+// TODO add in revoked_at timestamp
 model ProvisioningCredentials {
     id                  String          @id @default(uuid()) @unique
     team_id             String
+    cert_serial         String                                  // serial no. of the cert so we can revoke it
+    status              ProvisioningCredentialsStatus   @default(issuing)
     created_at          DateTime        @default(now())
 
     team                Team            @relation(fields: [team_id], references: [id], onDelete: Cascade)
@@ -108,7 +121,7 @@ model Image {
 
 
 // tuf metadata
-model Metadata {
+model TufMetadata {
     id                  String          @id @default(uuid()) @unique
     team_id             String
     robot_id            String?
@@ -126,7 +139,7 @@ model Metadata {
     // @@unique([team_id, repo, role, version], where: {repo: TUFRepo.image})
     // @@unique([team_id, repo, role, version, robot_id], where: {repo: TUFRepo.director})
     //Keep an eye on issue here: https://github.com/prisma/prisma/issues/6974
-    @@map("metadata")
+    @@map("tuf_metadata")
 }
 
 
@@ -134,6 +147,7 @@ model Metadata {
 // these are called vehicles in the Update spec
 // TODO
 // - add provisioned field denoting whether it is provisioned
+// - add a list of certificates
 model Robot {
     id                  String          @id @default(uuid()) @unique
     team_id             String
@@ -142,12 +156,13 @@ model Robot {
     ecus_registered     Boolean         @default(false)     // whether the ecus have been registered, they can only do this once
     created_at          DateTime        @default(now())
     updated_at          DateTime        @updatedAt
+    cert_serial         String                              // serial no. of the cert so we can revoke it
 
     team                Team            @relation(fields: [team_id], references: [id], onDelete: Cascade)
 
     ecus                Ecu[]
     robot_manifests     RobotManifest[]
-    metadata            Metadata[]
+    tuf_metadata        TufMetadata[]
     network_reports     NetworkReport[]
     packages_reports    InstalledPackagesReport[]
     hw_info_reports     HardwareInfoReport[]
@@ -285,7 +300,7 @@ model RobotManifest {
 
 // ostree references
 model Ref {
-    name                String                                  // `/heads/main` or similar
+    name                String
     commit              String                                  // commit hash
     object_id           String                                  // object it points to
     team_id             String

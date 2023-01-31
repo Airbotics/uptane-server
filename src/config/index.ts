@@ -1,5 +1,5 @@
 import dotenv from 'dotenv';
-import { EBlobStorageProvider, EKeyStorageProvider, EKeyType, ESignatureScheme } from '@airbotics-core/consts';
+import { EBlobStorageProvider, ECertificateStorageProvider, EKeyStorageProvider, EKeyType, ESignatureScheme } from '@airbotics-core/consts';
 
 dotenv.config();
 
@@ -20,12 +20,15 @@ const config = {
     ROBOT_GATEWAY_ORIGIN: 'https://localhost:8003',                             // origin of the robot gateway
 
     // blob storage
-    BLOB_STORAGE_PROVIDER: EBlobStorageProvider.Fs,                             // blob storage provider to use
+    BLOB_STORAGE_PROVIDER: EBlobStorageProvider.Filesystem,                     // blob storage provider to use
     BLOB_FS_STORAGE_DIR: './.blobs',                                            // where ostree blobs are stored when filesystem provider is being used
 
     // key storage and management
     KEY_STORAGE_PROVIDER: EKeyStorageProvider.Filesystem,                       // key storage provider to use
     KEYS_FS_STORAGE_DIR: './.keys',                                             // where private keys are stored when filesystem provider is being used
+
+    // certificate storage and management
+    CERTIFICATE_STORAGE_PROVIDER: ECertificateStorageProvider.Forge,            // key storage provider to use
 
     // tuf
     TUF_KEY_TYPE: EKeyType.Rsa,                                                 // key type to use for TUF
@@ -52,13 +55,14 @@ const config = {
     AWS_REGION: process.env.AWS_REGION,                                         // aws region to use
     AWS_ACCESS_KEY_ID: process.env.AWS_ACCESS_KEY_ID,                           // aws access key id
     AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY,                   // aws secret acess key
-    AWS_S3_ENDPOINT: process.env.AWS_S3_ENDPOINT,                               // aws s3 endpoint to connect to
-    AWS_SM_ENDPOINT: process.env.AWS_SM_ENDPOINT,                               // aws secrets manager endpoint to connect to
+    AWS_LOCAL_ENDPOINT: process.env.AWS_LOCAL_ENDPOINT,                         // local aws endpoint
+    AWS_ACM_PCA_ROOT_CA_ARN: process.env.AWS_ACM_PCA_ROOT_CA_ARN,               // arn of aws acm pca root ca
 
     // ory
     ORY_ACCESS_TOKEN: process.env.ORY_ACCESS_TOKEN,                             // Access token for ory
     ORY_PROJECT_URL: process.env.ORY_PROJECT_URL,                               // Project url for ory
     ORY_SCHEMA_ID: process.env.ORY_SCHEMA_ID,                                   // scehma ID for ory
+    ORY_TIMEOUT: 4000,                                                          // timeout in ms
 
     // background worker
     BACKGROUND_WORKER_CRON: '0 * * * *',                                        // cron to run background worker, i.e. every hour
@@ -67,7 +71,7 @@ const config = {
 
     // manifest processing
     PRIMARY_ECU_VALID_FOR_SECS: process.env.SECONDARY_ECU_VALID_FOR_SECS || 3600,
-    SECONDARY_ECU_VALID_FOR_SECS: process.env. SECONDARY_ECU_VALID_FOR_SECS || 43200,
+    SECONDARY_ECU_VALID_FOR_SECS: process.env.SECONDARY_ECU_VALID_FOR_SECS || 43200,
 
     // logs
     LOGS_DIR: '.logs',                                                          // local log directory

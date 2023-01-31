@@ -9,13 +9,13 @@ const router = express.Router();
 // list images
 router.get('/images',
     mustBeAuthenticated,
-    mustBeInTeam(OryTeamRelations.member),
+    mustBeInTeam(OryTeamRelations.admin),
     controller.listImages);
 
 // get single image
 router.get('/images/:image_id',
     mustBeAuthenticated,
-    mustBeInTeam(OryTeamRelations.member),
+    mustBeInTeam(OryTeamRelations.admin),
     validate(imageIdSchema, EValidationSource.Path),
     controller.getImage);
 

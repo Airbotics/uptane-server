@@ -1,155 +1,101 @@
 import {
-    paginateListObjectsV2,
-    ListObjectsV2CommandInput,
-    CreateBucketCommand,
-    DeleteBucketCommand,
+    ListObjectsCommand,
     DeleteObjectCommand,
     GetObjectCommand,
     PutObjectCommand
 } from '@aws-sdk/client-s3';
-import { s3 } from '@airbotics-core/drivers/s3';
+import { s3Client } from '@airbotics-core/drivers';
 import { IBlobStorageProvider } from '@airbotics-types';
 import { logger } from '@airbotics-core/logger';
-
-
-/**
- * Helper function to delete all objects in a bucket
- */
-const deleteAllObjects = async (params: ListObjectsV2CommandInput) => {
-
-    for await (const data of paginateListObjectsV2({ client: s3 }, params)) {
-        if (data.Contents) {
-            for (const obj of data.Contents) {
-                const bucketParams = {
-                    Bucket: params.Bucket,
-                    Key: obj.Key
-                };
-                await s3.send(new DeleteObjectCommand(bucketParams));
-            }
-        }
-    }
-
-};
 
 
 /**
  * AWS s3 blob storage provider.
  * 
  * Stores blobs on s3.
+ * 
+ * Note: this doesn't delete files from nested paths neatly. It deletes the files but keeps the directories.
  */
 export class s3BlobProvider implements IBlobStorageProvider {
 
-    async createBucket(bucketId: string): Promise<void> {
-        const params = {
-            Bucket: bucketId
-        };
-
-        const res = await s3.send(new CreateBucketCommand(params));
-
-        if (res['$metadata'].httpStatusCode !== 200) {
-            logger.error('could not create bucket in s3');
-            new Error('an unknown error occurred.');
-        }
-    }
-
-    async deleteBucket(bucketId: string): Promise<void> {
-
-        const params = {
-            Bucket: bucketId
-        };
-
-        // s3 doesn't allow us to delete a bucket that has objects in it
-        // so our first step is to empty the bucket of objects
-        await deleteAllObjects(params);
-
-
-        // now that the bucket is empty we can delete it
-        const res = await s3.send(new DeleteBucketCommand(params));
-
-        if (res['$metadata'].httpStatusCode !== 200) {
-            logger.error('could not delete bucket in s3');
-            new Error('an unknown error occurred.');
-        }
-    }
-
-    async putObject(bucketId: string, objectId: string, content: Buffer | string): Promise<void> {
+    async putObject(bucketId: string, teamId: string, objectId: string, content: Buffer | string): Promise<boolean> {
+        
         const params = {
             Bucket: bucketId,
-            Key: objectId,
+            Key: `${teamId}/${objectId}`,
             Body: content
         };
 
-        const res = await s3.send(new PutObjectCommand(params));
+        const res = await s3Client.send(new PutObjectCommand(params));
 
-        if (res['$metadata'].httpStatusCode !== 200) {
+        if (res.$metadata.httpStatusCode !== 200) {
             logger.error('could not upload blob to s3');
             new Error('an unknown error occurred.');
         }
+
+        return res.$metadata.httpStatusCode === 200;
     }
 
-    async getObject(bucketId: string, objectId: string): Promise<Buffer | string> {
+    async getObject(bucketId: string, teamId: string, objectId: string): Promise<Buffer | string> {
         const params = {
             Bucket: bucketId,
-            Key: objectId
+            Key: `${teamId}/${objectId}`
         };
 
-        const res = await s3.send(new GetObjectCommand(params));
+        const res = await s3Client.send(new GetObjectCommand(params));
 
-        if (res['$metadata'].httpStatusCode !== 200) {
+        if (res.$metadata.httpStatusCode !== 200) {
             logger.error('could not get blob from s3');
             new Error('an unknown error occurred.');
         }
         // TODO 
-        //@ts-ignore
+        // @ts-ignore
         return res.Body;
     }
 
-    async deleteObject(bucketId: string, objectId: string): Promise<void> {
+    async deleteObject(bucketId: string, teamId: string, objectId: string): Promise<boolean> {
         const params = {
             Bucket: bucketId,
-            Key: objectId
+            Key: `${teamId}/${objectId}`
         };
 
-        const res = await s3.send(new DeleteObjectCommand(params));
+        const res = await s3Client.send(new DeleteObjectCommand(params));
 
-        if (res['$metadata'].httpStatusCode !== 200) {
+        if (res.$metadata.httpStatusCode !== 204) {
             logger.error('could not delete blob from s3');
             new Error('an unknown error occurred.');
         }
+
+        return res.$metadata.httpStatusCode === 204;
+    }
+
+    // TODO: this may fail if there are greater that 1000 objects returned by the list objects command
+    async deleteTeamObjects(bucketId: string, teamId: string): Promise<boolean> {
+
+        const params = {
+            Bucket: bucketId,
+            Prefix: teamId
+        };
+
+        const data = await s3Client.send(new ListObjectsCommand(params));
+
+        let objects = data.Contents;
+
+        if (!objects) {
+            return true;
+        }
+
+        for (let i = 0; i < objects.length; i++) {
+
+            const deleteParams = {
+                Bucket: params.Bucket,
+                Key: objects[i].Key,
+            };
+            await s3Client.send(new DeleteObjectCommand(deleteParams));
+
+        }
+
+        return true;
     }
 
 }
-
-
-
-// const mapKeys = Array.from({ length: map.num_versions }, (_, i) => ({ Key: `${map.id}/${i}.pgm` }));
-
-// const params = {
-//     Bucket: config.get('MAPS_BUCKET_NAME'),
-//     Delete: {
-//         Objects: mapKeys,
-//         Quiet: true
-//     }
-// };
-
-// const s3Rsponse = await s3Driver.send(new DeleteObjectsCommand(params));
-
-// if (s3Rsponse['$metadata'].httpStatusCode !== 200) {
-//     logger.error('Error occured deleting map data from s3.');
-//     throw new Error('An unknown error occurred.');
-// }
-
-// const objectKey = `${map.id}/${map.num_versions}.pgm`;
-
-// const params = {
-//     Bucket: config.get('MAPS_BUCKET_NAME'),
-//     Key: objectKey,
-//     Body: req.body as Readable
-// };
-
-// const s3Response = await s3Driver.send(new PutObjectCommand(params));
-
-// if (s3Response['$metadata'].httpStatusCode !== 200) {
-//     logger.error('Error occured uploading map to s3.');
-//     return next(new Error('An unknown error occurred.'));
-// }

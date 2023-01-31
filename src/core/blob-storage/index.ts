@@ -5,14 +5,14 @@ import { FsBlobProvider } from './fs-provider';
 import { s3BlobProvider } from './s3-provider';
 
 
-class BlobStorageProvider implements IBlobStorageProvider {
+export class BlobStorageProvider implements IBlobStorageProvider {
 
     private strategy: IBlobStorageProvider;
 
     constructor(provider: EBlobStorageProvider) {
         switch (provider) {
 
-            case EBlobStorageProvider.Fs:
+            case EBlobStorageProvider.Filesystem:
             default:
                 this.strategy = new FsBlobProvider();
                 break;
@@ -24,24 +24,20 @@ class BlobStorageProvider implements IBlobStorageProvider {
         }
     }
 
-    async createBucket(bucketId: string): Promise<void> {
-        return this.strategy.createBucket(bucketId);
+    async putObject(bucketId: string, teamId: string, objectId: string, content: Buffer | string): Promise<boolean> {
+        return this.strategy.putObject(bucketId, teamId, objectId, content);
     }
 
-    async deleteBucket(bucketId: string): Promise<void> {
-        return this.strategy.deleteBucket(bucketId);
+    async getObject(bucketId: string, teamId: string, objectId: string): Promise<Buffer | string> {
+        return this.strategy.getObject(bucketId, teamId, objectId);
     }
 
-    async putObject(bucketId: string, objectId: string, content: Buffer | string): Promise<void> {
-        return this.strategy.putObject(bucketId, objectId, content);
+    async deleteObject(bucketId: string, teamId: string, objectId: string): Promise<boolean> {
+        return this.strategy.deleteObject(bucketId, teamId, objectId);
     }
 
-    async getObject(bucketId: string, objectId: string): Promise<Buffer | string> {
-        return this.strategy.getObject(bucketId, objectId);
-    }
-
-    async deleteObject(bucketId: string, objectId: string): Promise<void> {
-        return this.strategy.deleteObject(bucketId, objectId);
+    async deleteTeamObjects(bucketId: string, teamId: string): Promise<boolean> {
+        return this.strategy.deleteTeamObjects(bucketId, teamId);
     }
 
 }

@@ -71,7 +71,7 @@ router.post('/team/invites/confirm/:invite_id',
 //leave a team
 router.put('/team/leave',
     mustBeAuthenticated,
-    mustBeInTeam(OryTeamRelations.member),
+    mustBeInTeam(OryTeamRelations.admin),
     controller.createTeam);
 */
 

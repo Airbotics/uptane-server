@@ -18,3 +18,5 @@ lerna-debug.log
 __pycache__
 scripts/mock-uptane/db/
 scripts/mock-uptane/primary-fs/
+infra/.terraform*
+infra/terraform*

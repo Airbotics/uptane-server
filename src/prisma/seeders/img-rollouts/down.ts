@@ -1,4 +1,4 @@
-import prisma from '@airbotics-core/drivers/postgres';
+import { prisma } from '@airbotics-core/drivers';
 import { SEED_PRIMARY_IMAGE_ID, SEED_SECONDARY_IMAGE_ID } from '../consts';
 
 
@@ -13,7 +13,7 @@ import { SEED_PRIMARY_IMAGE_ID, SEED_SECONDARY_IMAGE_ID } from '../consts';
  */
 
 
-( async () => {
+(async () => {
 
     console.log('running img-rollouts seeder down...');
 
@@ -25,7 +25,7 @@ import { SEED_PRIMARY_IMAGE_ID, SEED_SECONDARY_IMAGE_ID } from '../consts';
         }
     });
 
-    await prisma.metadata.deleteMany({
+    await prisma.tufMetadata.deleteMany({
         where: {
             version: { not: 1 }
         }

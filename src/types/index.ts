@@ -1,17 +1,25 @@
 import { EKeyType, ESignatureScheme, ETUFRole, RolloutTargetType } from '@airbotics-core/consts';
 
+/**
+ * Provider interfaces
+ */
 export interface IBlobStorageProvider {
-    createBucket(bucketId: string): Promise<void>;
-    deleteBucket(bucketId: string): Promise<void>;
-    putObject(bucketId: string, objectId: string, content: Buffer | string): Promise<void>;
-    getObject(bucketId: string, objectId: string): Promise<Buffer | string>;
-    deleteObject(bucketId: string, objectId: string): Promise<void>;
+    putObject(bucketId: string, teamId: string, objectId: string, content: Buffer | string): Promise<boolean>;
+    getObject(bucketId: string, teamId: string, objectId: string): Promise<Buffer | string>;
+    deleteObject(bucketId: string, teamId: string, objectId: string): Promise<boolean>;
+    deleteTeamObjects(bucketId: string, teamId: string): Promise<boolean>;
 }
 
 export interface IKeyStorageProvider {
-    putKeyPair(id: string, keypair: IKeyPair): Promise<void>;
+    putKeyPair(id: string, keypair: IKeyPair): Promise<boolean>;
     getKeyPair(id: string): Promise<IKeyPair>;
-    deleteKeyPair(id: string): Promise<void>;
+    deleteKeyPair(id: string): Promise<boolean>;
+}
+
+export interface ICertificateStorageProvider {
+    getRootCertificate(): Promise<string | null>;
+    createCertificate(keyPair: IKeyPair, commonName: string): Promise<ICertificate | null>;
+    revokeCertificate(serial: string, reason: string): Promise<boolean>;
 }
 
 
@@ -21,6 +29,11 @@ export interface IKeyStorageProvider {
 export interface IKeyPair {
     publicKey: string;
     privateKey: string;
+}
+
+export interface ICertificate {
+    cert: string;
+    serial: string;
 }
 
 

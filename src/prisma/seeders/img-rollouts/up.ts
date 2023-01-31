@@ -1,10 +1,10 @@
-import prisma from '@airbotics-core/drivers/postgres';
+import { prisma } from '@airbotics-core/drivers';
 import { keyStorage } from '@airbotics-core/key-storage';
 import { generateHash } from '@airbotics-core/crypto/hashes';
 import { UploadStatus, TUFRole, TUFRepo, ImageFormat } from "@prisma/client";
 import {
     generateSignedSnapshot, generateSignedTargets, generateSignedTimestamp,
-    getLatestMetadata, getLatestMetadataVersion
+    getTufMetadata, getLatestMetadataVersion
 } from '@airbotics-core/tuf';
 import { IKeyPair, ITargetsImages, ISignedTargetsTUF } from '@airbotics-types';
 import { generateSlug } from 'random-word-slugs';
@@ -12,7 +12,7 @@ import {
     SEED_EXPIRES_AT, SEED_TEAM_ID,
     SEED_PRIMARY_ECU_ID, SEED_SECONDARY_ECU_ID
 } from '../consts';
-import { EHashDigest } from '@airbotics-core/consts';
+import { EHashDigest, TUF_METADATA_LATEST } from '@airbotics-core/consts';
 
 
 
@@ -76,7 +76,7 @@ const createImages = async () => {
 
 
 const createImageRepoMetadata = async () => {
-    
+
 
     const targetKeyPair = await keyStorage.getKeyPair(`${SEED_TEAM_ID}-image-targets-public`);
     const snapshotKeyPair = await keyStorage.getKeyPair(`${SEED_TEAM_ID}-image-snapshot-public`);
@@ -92,7 +92,8 @@ const createImageRepoMetadata = async () => {
     //To construct the new targets metadata, we need to grab the latest version so we can
     //append the new targets to the previous list.
 
-    const latestTargets = await getLatestMetadata(SEED_TEAM_ID, TUFRepo.image, TUFRole.targets);
+    const latestTargets = await getTufMetadata(SEED_TEAM_ID, TUFRepo.image, TUFRole.targets, TUF_METADATA_LATEST);
+    //@ts-ignore
     const targetsImages: ITargetsImages = latestTargets ? latestTargets.signed.targets : {};
 
 
@@ -122,7 +123,7 @@ const createImageRepoMetadata = async () => {
     const timestampMetadata = generateSignedTimestamp(SEED_EXPIRES_AT, newTimestampVersion, timestampKeyPair, snapshotMetadata);
 
     //Store the metadata in the db
-    await prisma.metadata.createMany({
+    await prisma.tufMetadata.createMany({
         data: [
             {
                 team_id: SEED_TEAM_ID,

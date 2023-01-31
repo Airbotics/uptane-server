@@ -7,37 +7,31 @@ import config from '@airbotics-config';
  * Local filesytem blob storage provider.
  * 
  * Stores blobs on local filesystem in `config.BLOB_FS_STORAGE_DIR` directory.
- * 
- * WARNING: This should not be used in production unless you like breaking things.
  */
 export class FsBlobProvider implements IBlobStorageProvider {
 
-    async createBucket(bucketId: string): Promise<void> {
-        const filePath = path.resolve(path.join(config.BLOB_FS_STORAGE_DIR, bucketId));
-        if (!fs.existsSync(filePath)){
-            fs.mkdirSync(filePath, { recursive: true });
-        }
-    }
-
-    async deleteBucket(bucketId: string): Promise<void> {
-        const filePath = path.resolve(path.join(config.BLOB_FS_STORAGE_DIR, bucketId));
-        fs.rmdirSync(filePath, { recursive: true });
-    }
-
-    async putObject(bucketId: string, objectId: string, content: Buffer | string): Promise<void> {
-        const filePath = path.resolve(path.join(config.BLOB_FS_STORAGE_DIR, bucketId, objectId));
+    async putObject(bucketId: string, teamId: string, objectId: string, content: Buffer | string): Promise<boolean> {
+        const filePath = path.resolve(path.join(config.BLOB_FS_STORAGE_DIR, bucketId, teamId, objectId));
         fs.mkdirSync(path.dirname(filePath), { recursive: true });
         fs.writeFileSync(filePath, content);
+        return true;
     }
     
-    async getObject(bucketId: string, objectId: string): Promise<Buffer | string> {
-        const filePath = path.resolve(path.join(config.BLOB_FS_STORAGE_DIR, bucketId, objectId));
+    async getObject(bucketId: string, teamId: string, objectId: string): Promise<Buffer | string> {
+        const filePath = path.resolve(path.join(config.BLOB_FS_STORAGE_DIR, bucketId, teamId, objectId));
         return fs.readFileSync(filePath);
     }
 
-    async deleteObject(bucketId: string, objectId: string): Promise<void> {
-        const filePath = path.resolve(path.join(config.BLOB_FS_STORAGE_DIR, bucketId, objectId));
-        return fs.unlinkSync(filePath);
+    async deleteObject(bucketId: string, teamId: string, objectId: string): Promise<boolean> {
+        const filePath = path.resolve(path.join(config.BLOB_FS_STORAGE_DIR, bucketId, teamId, objectId));
+        fs.unlinkSync(filePath);
+        return true;
+    }
+
+    async deleteTeamObjects(bucketId: string, teamId: string): Promise<boolean> {
+        const filePath = path.resolve(path.join(config.BLOB_FS_STORAGE_DIR, bucketId, teamId));
+        fs.rmdirSync(filePath, { recursive: true });
+        return true;
     }
 
 }

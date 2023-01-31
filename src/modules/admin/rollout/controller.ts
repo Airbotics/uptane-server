@@ -4,8 +4,11 @@ import { logger } from '@airbotics-core/logger';
 import { Rollout, RolloutStatus } from '@prisma/client';
 import { ICreateRolloutBody } from 'src/types';
 import { RolloutTargetType } from '@airbotics-core/consts';
-import { prisma } from '../../../core/drivers/postgres';
 import { SuccessMessageResponse } from '../../../core/network/responses';
+import { prisma } from '@airbotics-core/drivers';
+import { generateStaticDelta } from '@airbotics-core/generate-static-delta';
+import { airEvent } from '@airbotics-core/events';
+import { EEventAction, EEventActorType, EEventResource } from '@airbotics-core/consts';
 
 
 /**
@@ -27,6 +30,8 @@ export const createRollout = async (req: Request, res: Response) => {
     const body: ICreateRolloutBody = req.body;
 
     const teamId = req.headers['air-team-id']!;
+    const oryId = req.oryIdentity!.traits.id;
+
 
     const createdRollout: Rollout = await prisma.$transaction(async tx => {
 
@@ -100,6 +105,16 @@ export const createRollout = async (req: Request, res: Response) => {
         return rollout;
 
     });
+
+    airEvent.emit({
+        resource: EEventResource.Rollout,
+        action: EEventAction.Created,
+        actor_type: EEventActorType.User,
+        actor_id: oryId,
+        team_id: teamId,
+        meta: null
+    });
+
 
     logger.info('created rollout');
 

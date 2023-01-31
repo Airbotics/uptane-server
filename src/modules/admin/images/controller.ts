@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { BadResponse, SuccessJsonResponse } from '@airbotics-core/network/responses';
 import { logger } from '@airbotics-core/logger';
-import prisma from '@airbotics-core/drivers/postgres';
+import { prisma } from '@airbotics-core/drivers';
 
 
 /**
@@ -22,10 +22,10 @@ export const listImages = async (req: Request, res: Response) => {
 
     const imagesSanitised = images.map(image => ({
         id: image.id,
+        name: image.name,
         size: image.size,
         sha256: image.sha256,
         hwids: image.hwids,
-        status: image.status,
         format: image.format,
         created_at: image.created_at,
         updated_at: image.updated_at
@@ -61,10 +61,10 @@ export const getImage = async (req: Request, res: Response) => {
 
     const imageSanitised = {
         id: image.id,
+        name: image.name,
         size: image.size,
         sha256: image.sha256,
         hwids: image.hwids,
-        status: image.status,
         format: image.format,
         created_at: image.created_at,
         updated_at: image.updated_at

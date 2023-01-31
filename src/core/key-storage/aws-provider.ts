@@ -1,6 +1,6 @@
 import { CreateSecretCommand, GetSecretValueCommand, DeleteSecretCommand } from '@aws-sdk/client-secrets-manager';
 import config from '@airbotics-config';
-import { secretsManagerClient } from '@airbotics-core/drivers/aws-secrets-manager';
+import { secretsManagerClient } from '@airbotics-core/drivers';
 import { IKeyPair, IKeyStorageProvider } from '@airbotics-types';
 
 
@@ -9,7 +9,7 @@ import { IKeyPair, IKeyStorageProvider } from '@airbotics-types';
  */
 export class AWSSecretsManagerProvider implements IKeyStorageProvider {
 
-    async putKeyPair(id: string, keypair: IKeyPair): Promise<void> {
+    async putKeyPair(id: string, keypair: IKeyPair): Promise<boolean> {
 
         const command = new CreateSecretCommand({
             Name: id,
@@ -22,6 +22,8 @@ export class AWSSecretsManagerProvider implements IKeyStorageProvider {
             throw new Error();
         }
 
+        return response.$metadata.httpStatusCode === 200;
+        
     }
 
     async getKeyPair(id: string): Promise<IKeyPair> {
@@ -39,7 +41,7 @@ export class AWSSecretsManagerProvider implements IKeyStorageProvider {
         return JSON.parse(response.SecretString!);
     }
 
-    async deleteKeyPair(id: string): Promise<void> {
+    async deleteKeyPair(id: string): Promise<boolean> {
 
         const command = new DeleteSecretCommand({
             ForceDeleteWithoutRecovery: true,
@@ -52,6 +54,7 @@ export class AWSSecretsManagerProvider implements IKeyStorageProvider {
             throw new Error();
         }
 
+        return response.$metadata.httpStatusCode === 200;
     }
 
 }

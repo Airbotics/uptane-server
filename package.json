@@ -6,6 +6,7 @@
     "license": "AGPL-3.0",
     "scripts": {
         "start": "nodemon --config ./nodemon.json src/index.ts",
+        "studio": "npx prisma studio --schema ./src/prisma/schema.prisma",
         "lint": "eslint .",
         "build": "tsc && tsc-alias",
         "generate": "npx prisma generate --schema ./src/prisma/schema.prisma",
@@ -13,6 +14,7 @@
         "test": "jest -i --detectOpenHandles"
     },
     "dependencies": {
+        "@aws-sdk/client-acm-pca": "^3.254.0",
         "@aws-sdk/client-s3": "^3.213.0",
         "@aws-sdk/client-secrets-manager": "^3.250.0",
         "@joi/date": "^2.1.0",

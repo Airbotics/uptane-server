@@ -1,8 +1,8 @@
 import { Request, Response, NextFunction } from 'express';
 import Joi from 'joi';
 import { FrontendApiToSessionRequest, PermissionApiCheckPermissionRequest } from '@ory/client';
-import prisma from '@airbotics-core/drivers/postgres';
-import { ory } from '@airbotics-core/drivers/ory';
+import {prisma} from '@airbotics-core/drivers';
+import { ory } from '@airbotics-core/drivers';
 import { BadResponse, ForbiddenResponse, UnauthorizedResponse, ValidationResponse } from '@airbotics-core/network/responses';
 import { OryTeamRelations, EValidationSource } from '@airbotics-core/consts';
 import { logger } from '@airbotics-core/logger';

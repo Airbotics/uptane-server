@@ -1,16 +1,15 @@
 import { Request, Response, NextFunction } from 'express';
-import { ory } from '@airbotics-core/drivers/ory';
+import { ory, prisma } from '@airbotics-core/drivers';
+import { TUFRepo, TUFRole } from '@prisma/client';
 import { IdentityApiGetIdentityRequest, RelationshipApiGetRelationshipsRequest, RelationshipApiPatchRelationshipsRequest } from '@ory/client';
-import { OryNamespaces, OryTeamRelations } from '@airbotics-core/consts';
+import { EEventAction, EEventActorType, EEventResource, OryNamespaces, OryTeamRelations, TREEHUB_BUCKET } from '@airbotics-core/consts';
 import { SuccessMessageResponse, BadResponse, SuccessJsonResponse, NoContentResponse } from '@airbotics-core/network/responses';
 import { logger } from '@airbotics-core/logger';
-import prisma from '@airbotics-core/drivers/postgres';
 import { ITeamDetail } from '@airbotics-types';
-import { auditEventEmitter } from '@airbotics-core/events';
-import { generateKeyPair } from '@airbotics-core/crypto';
+import { airEvent } from '@airbotics-core/events';
+import { certificateStorage, generateKeyPair } from '@airbotics-core/crypto';
 import config from '@airbotics-config';
 import { generateSignedRoot, generateSignedSnapshot, generateSignedTargets, generateSignedTimestamp } from '@airbotics-core/tuf';
-import { TUFRepo, TUFRole } from '@prisma/client';
 import { blobStorage } from '@airbotics-core/blob-storage';
 import { keyStorage } from '@airbotics-core/key-storage';
 import { getKeyStorageEcuKeyId, getKeyStorageRepoKeyId } from '@airbotics-core/utils';
@@ -20,23 +19,21 @@ import { getKeyStorageEcuKeyId, getKeyStorageRepoKeyId } from '@airbotics-core/u
 /**
  * Creates a new team
  * 
- * @description Performs the following:
- * 1. Create the team in our db
- * 2. Creates bucket in blob storage to hold its blobs
- * 3. Generates online TUF keys
- * 4. Creates initial image and director root.json metadata files and saves them to the db.
- * 5. Creates targets, snapshot and timestamp.json metadata files for the image repo
- * 6 Create two new relation tuples in ory
- *  a) one to say that ory_id (requester) is the admin of the new team
- *  b) one to say any admins of the new team are also members of that team
+ * - Create the team in our db
+ * - Generates online TUF keys
+ * - Creates initial image and director root.json metadata files and saves them to the db.
+ * - Creates targets, snapshot and timestamp.json metadata files for the image repo
+ * - Create two new relation tuples in ory
+ *  - one to say that ory_id (requester) is the admin of the new team
+ *  - one to say any admins of the new team are also members of that team
  */
 export const createTeam = async (req: Request, res: Response, next: NextFunction) => {
+
+    const oryID = req.oryIdentity!.traits.id;
 
     const {
         name
     } = req.body;
-
-    const oryID = req.oryIdentity!.traits.id;
 
     try {
 
@@ -84,7 +81,7 @@ export const createTeam = async (req: Request, res: Response, next: NextFunction
             });
 
             // image repo root.json
-            await tx.metadata.create({
+            await tx.tufMetadata.create({
                 data: {
                     team_id: team.id,
                     repo: TUFRepo.image,
@@ -96,7 +93,7 @@ export const createTeam = async (req: Request, res: Response, next: NextFunction
             });
 
             // image repo targets.json
-            await tx.metadata.create({
+            await tx.tufMetadata.create({
                 data: {
                     team_id: team.id,
                     repo: TUFRepo.image,
@@ -108,7 +105,7 @@ export const createTeam = async (req: Request, res: Response, next: NextFunction
             });
 
             // image repo snapshot.json
-            await tx.metadata.create({
+            await tx.tufMetadata.create({
                 data: {
                     team_id: team.id,
                     repo: TUFRepo.image,
@@ -120,7 +117,7 @@ export const createTeam = async (req: Request, res: Response, next: NextFunction
             });
 
             // image repo timestamp.json
-            await tx.metadata.create({
+            await tx.tufMetadata.create({
                 data: {
                     team_id: team.id,
                     repo: TUFRepo.image,
@@ -132,7 +129,7 @@ export const createTeam = async (req: Request, res: Response, next: NextFunction
             });
 
             // director repo root.json
-            await tx.metadata.create({
+            await tx.tufMetadata.create({
                 data: {
                     team_id: team.id,
                     repo: TUFRepo.director,
@@ -142,9 +139,6 @@ export const createTeam = async (req: Request, res: Response, next: NextFunction
                     expires_at: directorRepoRoot.signed.expires
                 }
             });
-
-            // create bucket in blob storage
-            await blobStorage.createBucket(team.id);
 
             // store image repo key pairs
             await keyStorage.putKeyPair(getKeyStorageRepoKeyId(team.id, TUFRepo.image, TUFRole.root), {
@@ -182,31 +176,6 @@ export const createTeam = async (req: Request, res: Response, next: NextFunction
                 privateKey: directorTimestampKeyPair.privateKey
             });
 
-            /*
-            // store image repo private keys
-            await keyStorage.putKey(`${team.id}-image-root-private`, imageRootKey.privateKey);
-            await keyStorage.putKey(`${team.id}-image-targets-private`, imageTargetsKey.privateKey);
-            await keyStorage.putKey(`${team.id}-image-snapshot-private`, imageSnapshotKey.privateKey);
-            await keyStorage.putKey(`${team.id}-image-timestamp-private`, imageTimestampKey.privateKey);
-
-            // store image repo public keys
-            await keyStorage.putKey(`${team.id}-image-root-public`, imageRootKey.publicKey);
-            await keyStorage.putKey(`${team.id}-image-targets-public`, imageTargetsKey.publicKey);
-            await keyStorage.putKey(`${team.id}-image-snapshot-public`, imageSnapshotKey.publicKey);
-            await keyStorage.putKey(`${team.id}-image-timestamp-public`, imageTimestampKey.publicKey);
-
-            // store director repo private keys
-            await keyStorage.putKey(`${team.id}-director-root-private`, directorRootKey.privateKey);
-            await keyStorage.putKey(`${team.id}-director-targets-private`, directorTargetsKey.privateKey);
-            await keyStorage.putKey(`${team.id}-director-snapshot-private`, directorSnapshotKey.privateKey);
-            await keyStorage.putKey(`${team.id}-director-timestamp-private`, directorTimestampKey.privateKey);
-
-            // store director repo public keys
-            await keyStorage.putKey(`${team.id}-director-root-public`, directorRootKey.publicKey);
-            await keyStorage.putKey(`${team.id}-director-targets-public`, directorTargetsKey.publicKey);
-            await keyStorage.putKey(`${team.id}-director-snapshot-public`, directorSnapshotKey.publicKey);
-            await keyStorage.putKey(`${team.id}-director-timestamp-public`, directorTimestampKey.publicKey);
-            */
 
             //Create the ory relationships
             const relationsParams: RelationshipApiPatchRelationshipsRequest = {
@@ -236,27 +205,32 @@ export const createTeam = async (req: Request, res: Response, next: NextFunction
                 ]
             }
 
-            //returns a 201 on success
+            // returns a 201 on success
+            // TODO check for success
             await ory.relations.patchRelationships(relationsParams);
 
             return team;
 
         });
 
-        auditEventEmitter.emit({
+        airEvent.emit({
+            resource: EEventResource.Team,
+            action: EEventAction.Created,
+            actor_type: EEventActorType.User,
             actor_id: oryID,
             team_id: newTeam.id,
-            action: 'create_team',
+            meta: {
+                name
+            }
         });
 
         logger.info('created a team');
         return new SuccessJsonResponse(res, newTeam);
 
     } catch (error) {
-        console.log(error);
 
         logger.error('A user was unable to create a new team');
-        return new BadResponse(res, 'Unable to create a new team!')
+        return new BadResponse(res, 'Unable to create a new team.')
     }
 
 }
@@ -271,6 +245,8 @@ export const createTeam = async (req: Request, res: Response, next: NextFunction
  * 2. Queries our db for auxilary info about teams
  * 3. Return a sanitised list of teams requester
  * 
+ * TODO
+ * - return role and joined at from ory
  */
 export const listTeams = async (req: Request, res: Response, next: NextFunction) => {
 
@@ -301,6 +277,8 @@ export const listTeams = async (req: Request, res: Response, next: NextFunction)
         const sanitisedTeams: ITeamDetail[] = teams.map(team => ({
             id: team.id,
             name: team.name,
+            role: 'Admin', // TODO
+            joined_at: '', // TODO
             created_at: team.created_at
         }));
 
@@ -403,17 +381,22 @@ export const updateTeam = async (req: Request, res: Response, next: NextFunction
             }
         });
 
+        airEvent.emit({
+            resource: EEventResource.Team,
+            action: EEventAction.DetailsUpdated,
+            actor_type: EEventActorType.User,
+            actor_id: req.oryIdentity!.traits.id,
+            team_id: team.id,
+            meta: {
+                name
+            }
+        });
+
         const sanitisedTeam: ITeamDetail = {
             id: team.id,
             name: team.name,
             created_at: team.created_at
         };
-
-        auditEventEmitter.emit({
-            actor_id: req.oryIdentity!.traits.id,
-            team_id: teamID,
-            action: 'update_team',
-        })
 
         logger.info('A team admin has updated info about one of their teams.');
         return new SuccessJsonResponse(res, sanitisedTeam);
@@ -430,11 +413,12 @@ export const updateTeam = async (req: Request, res: Response, next: NextFunction
  * Delete a team
  * 
  * - Deletes team in db, this cascades to all resources.
- * - Deletes bucket and all objects in blob storage.
+ * - Deletes all objects in blob storage.
  * - Deletes keys, images and treehub objects associated with this team.
  * 
  * TODO
  * - remove team members in ory
+ * - revoke all robot and provisioning certificates
  */
 export const deleteTeam = async (req: Request, res: Response, next: NextFunction) => {
 
@@ -459,17 +443,29 @@ export const deleteTeam = async (req: Request, res: Response, next: NextFunction
                 id: teamID
             },
             include: {
-                ecus: true
+                ecus: true,
+                provisioning_creds: true,
+                robots: true
             }
         });
 
         // delete ecu keys
-        for(const ecu of team.ecus) {
+        for (const ecu of team.ecus) {
             await keyStorage.deleteKeyPair(getKeyStorageEcuKeyId(teamID, ecu.id));
         }
 
-        // deletes bucket in blob storage
-        await blobStorage.deleteBucket(teamID);
+        // revoke any certs used for provisioning credentials
+        for (const cred of team.provisioning_creds) {
+            await certificateStorage.revokeCertificate(cred.cert_serial, 'Team was deleted');
+        }
+
+        // revoke all certs used for robots
+        for (const robot of team.robots) {
+            await certificateStorage.revokeCertificate(robot.cert_serial, 'Team was deleted');
+        }
+
+        // delete all objects beginning with their team id in the treehub bucket
+        await blobStorage.deleteTeamObjects(TREEHUB_BUCKET, teamID);
 
         // delete tuf keys
         await keyStorage.deleteKeyPair(getKeyStorageRepoKeyId(teamID, TUFRepo.image, TUFRole.root));
@@ -482,6 +478,15 @@ export const deleteTeam = async (req: Request, res: Response, next: NextFunction
         await keyStorage.deleteKeyPair(getKeyStorageRepoKeyId(teamID, TUFRepo.director, TUFRole.snapshot));
         await keyStorage.deleteKeyPair(getKeyStorageRepoKeyId(teamID, TUFRepo.director, TUFRole.timestamp));
 
+    });
+
+    airEvent.emit({
+        resource: EEventResource.Team,
+        action: EEventAction.Deleted,
+        actor_type: EEventActorType.User,
+        actor_id: req.oryIdentity!.traits.id,
+        team_id: teamID,
+        meta: null
     });
 
     logger.info('a user deleted a team');

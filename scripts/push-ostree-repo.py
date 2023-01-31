@@ -36,7 +36,6 @@ def _check_repo_exists():
 
 
 # push the repo's summary to the remote repo
-# TODO: this may not exist, check first
 def push_summary():
     filepath = os.path.join(REPO_ROOT_DIR, 'summary')
     content = _read_file(filepath, 'rb')
@@ -45,7 +44,6 @@ def push_summary():
 
 
 # pushes the repo's objects to the remote repo
-# TODO: should check these exist first
 # must send content-length header
 def push_objects():
     for prefix in os.listdir(os.path.join(REPO_ROOT_DIR, 'objects')):
@@ -56,7 +54,6 @@ def push_objects():
 
 
 # pushes the repo's refs to the remote repo
-# TODO: should check these exist first
 # only uploads heads, not mirrors or remotes
 def push_refs():
     for ref in os.listdir(os.path.join(REPO_ROOT_DIR, 'refs', 'heads')):

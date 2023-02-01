@@ -73,7 +73,7 @@ x-session-token: {{SESSION_TOKEN}}
 Content-Type: application/json
 
 {
-    "name": "Test team"
+    "name": "Quickstart team"
 }
 
 

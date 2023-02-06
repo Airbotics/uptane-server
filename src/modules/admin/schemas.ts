@@ -1,3 +1,4 @@
+import { RolloutTargetType } from '@airbotics-core/consts';
 import Joi from 'joi';
 
 /**
@@ -48,6 +49,19 @@ export const createTeamSchema = Joi.object({
 });
 
 export const createRolloutSchema = Joi.object({
-    ecu_id: Joi.string().required(),
-    image_id: Joi.string().required()
+    name: Joi.string().required(),
+    description: Joi.string().required(),
+    hwid_img_map: Joi.array().items(Joi.object({
+        hw_id: Joi.string().required(), 
+        img_id: Joi.string().required() 
+    })).min(1),
+    targeted_robots: Joi.object({
+        type: Joi.string().valid(
+            RolloutTargetType.group, 
+            RolloutTargetType.hw_id_match, 
+            RolloutTargetType.selected_bots
+        ).required(),
+        group_id: Joi.string().optional(),
+        selected_bot_ids: Joi.array().items(Joi.string()).optional()
+    })
 });

@@ -32,7 +32,7 @@ export const enum ETUFRole {
 
 // used to specify which version of the tuf metadata should be fetched
 export const TUF_METADATA_LATEST = -1;
-export const TUF_METADATA_INITIAL = 0;
+export const TUF_METADATA_INITIAL = 1;
 
 // hash digest lengths
 export const enum EHashDigest {

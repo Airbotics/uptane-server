@@ -60,18 +60,21 @@ export const mustBeRobot = async (req: Request, res: Response, next: NextFunctio
  */
 export const updateRobotMeta = async (req: Request, res: Response, next: NextFunction) => {
 
-    const { robot_id } = req.robotGatewayPayload!;
-    const agent_version = req.header('user-agent');
+    // const { robot_id } = req.robotGatewayPayload!;
+    // const agent_version = req.header('user-agent');
 
-    await prisma.robot.update({
-        where: {
-            id: robot_id
-        },
-        data: {
-            agent_version,
-            last_seen_at: new Date()
-        }
-    });
+    // console.log(agent_version);
+    
+
+    // await prisma.robot.update({
+    //     where: {
+    //         id: robot_id
+    //     },
+    //     data: {
+    //         agent_version,
+    //         last_seen_at: new Date()
+    //     }
+    // });
 
     next();
 

@@ -1,5 +1,5 @@
 import { Ecu, TUFRepo, TUFRole, Image, RolloutRobotStatus } from '@prisma/client';
-import { prisma } from '@airbotics-core/drivers/postgres';
+import prisma from '@airbotics-core/drivers/postgres';
 import config from '@airbotics-config';
 import { logger } from '@airbotics-core/logger';
 import { generateSignedSnapshot, generateSignedTargets, generateSignedTimestamp, getLatestMetadataVersion } from '@airbotics-core/tuf';
@@ -190,7 +190,7 @@ const generateNewMetadata = async (team_id: string, robot_id: string, affectedEc
     // perform db writes in transaction
     await prisma.$transaction(async tx => {
 
-        await tx.metadata.create({
+        await tx.tufMetadata.create({
             data: {
                 team_id,
                 repo: TUFRepo.director,
@@ -202,7 +202,7 @@ const generateNewMetadata = async (team_id: string, robot_id: string, affectedEc
             }
         });
 
-        await tx.metadata.create({
+        await tx.tufMetadata.create({
             data: {
                 team_id,
                 repo: TUFRepo.director,
@@ -214,7 +214,7 @@ const generateNewMetadata = async (team_id: string, robot_id: string, affectedEc
             }
         });
 
-        await tx.metadata.create({
+        await tx.tufMetadata.create({
             data: {
                 team_id,
                 repo: TUFRepo.director,

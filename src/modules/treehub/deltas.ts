@@ -17,12 +17,16 @@ const router = express.Router();
  * Example request:
  * `/deltas/M2/_TV2F38wdBiLREy1xvUUcgSh81HRez7odWfAzjM_k-NdSxsgJmi+UxquZCbebOp1Qaswjy_Ft6jykJhdo251A/superblock`
  */
-router.get('/deltas/:prefix/:suffix/:file', mustBeRobot, updateRobotMeta, async (req: Request, res) => {
+router.get('/deltas/:prefix/:suffix/:file', mustBeRobot, async (req: Request, res) => {
 
     const team_id = req.robotGatewayPayload!.team_id;
     const prefix = req.params.prefix;
     const suffix = req.params.suffix;
     const file = req.params.file;
+
+    return res.status(404).end();
+
+    /*
     const { from, to } = extractCommitsFromDelta(prefix, suffix);
 
     const delta = await prisma.staticDelta.findUnique({
@@ -58,6 +62,7 @@ router.get('/deltas/:prefix/:suffix/:file', mustBeRobot, updateRobotMeta, async 
         logger.error('ostree delta in postgres and blob storage are out of sync');
         return res.status(500).end();
     }
+    */
 
 });
 

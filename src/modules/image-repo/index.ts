@@ -26,7 +26,7 @@ const router = express.Router();
  * TODO:
  * - handle if it is outdated.
  */
-router.get('/:version.root.json', mustBeRobot, updateRobotMeta, async (req: Request, res) => {
+router.get('/:version.root.json', mustBeRobot, async (req: Request, res) => {
 
     const version = Number(req.params.version);
     const { team_id } = req.robotGatewayPayload!;

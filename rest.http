@@ -73,7 +73,7 @@ x-session-token: {{SESSION_TOKEN}}
 Content-Type: application/json
 
 {
-    "name": "Quickstart team"
+    "name": "Test team"
 }
 
 
@@ -94,15 +94,67 @@ air-team-id: {{TEAM_ID}}
 
 
 # -----------------------------------------
+# Provisioning
+# -----------------------------------------
+
+### create provisioning credentials
+POST {{BASE_URL}}/api/{{API_VERSION}}/admin/provisioning-credentials HTTP/1.1
+x-session-token: {{SESSION_TOKEN}}
+air-team-id: {{TEAM_ID}}
+
+
+### list provisioning credentials
+GET {{BASE_URL}}/api/{{API_VERSION}}/admin/provisioning-credentials HTTP/1.1
+x-session-token: {{SESSION_TOKEN}}
+air-team-id: {{TEAM_ID}}
+
+
+
+
+# -----------------------------------------
+# Robots
+# -----------------------------------------
+
+### list robots
+# @name robotsResponse
+GET {{BASE_URL}}/api/{{API_VERSION}}/admin/robots HTTP/1.1
+x-session-token: {{SESSION_TOKEN}}
+air-team-id: {{TEAM_ID}}
+
+@ROBOT_ID = {{robotsResponse.response.body.$[0].id}}
+
+
+### get a single robot
+GET {{BASE_URL}}/api/{{API_VERSION}}/admin/robots/{{ROBOT_ID}} HTTP/1.1
+x-session-token: {{SESSION_TOKEN}}
+air-team-id: {{TEAM_ID}}
+
+
+### delete a robot
+DELETE {{BASE_URL}}/api/{{API_VERSION}}/admin/robots/{{ROBOT_ID}} HTTP/1.1
+x-session-token: {{SESSION_TOKEN}}
+air-team-id: {{TEAM_ID}}
+
+
+### get groups a robot is in
+GET {{BASE_URL}}/api/{{API_VERSION}}/admin/robots/{{ROBOT_ID}}/groups HTTP/1.1
+x-session-token: {{SESSION_TOKEN}}
+air-team-id: {{TEAM_ID}}
+
+
+
+
+# -----------------------------------------
 # Group
 # -----------------------------------------
 
-@GROUP_ID=6838aa9f-68a9-4f0a-89dd-5b5cb699920f
-
 ### list groups
+# @name groupsResponse
 GET {{BASE_URL}}/api/{{API_VERSION}}/admin/groups HTTP/1.1
 x-session-token: {{SESSION_TOKEN}}
 air-team-id: {{TEAM_ID}}
+
+@GROUP_ID = {{groupsResponse.response.body.$[0].id}}
 
 
 ### create group
@@ -112,9 +164,9 @@ air-team-id: {{TEAM_ID}}
 Content-Type: application/json
 
 {
-    "name": "test group 1",
+    "name": "test group",
     "description": "this is a test group", 
-    "robot_ids": ["stevie-1", "stevie-2", "stevie-3"]
+    "robot_ids": ["{{ROBOT_ID}}"]
 }
 
 
@@ -151,7 +203,7 @@ Content-Type: application/json
 
 
 ### add a robot to a group
-POST {{BASE_URL}}/api/{{API_VERSION}}/admin/groups/1ed45faa-8f7c-4d8e-a389-9f05f4ee2dd1/robots HTTP/1.1
+POST {{BASE_URL}}/api/{{API_VERSION}}/admin/groups/{{GROUP_ID}}/robots HTTP/1.1
 x-session-token: {{SESSION_TOKEN}}
 air-team-id: {{TEAM_ID}}
 Content-Type: application/json
@@ -162,66 +214,34 @@ Content-Type: application/json
 
 
 ### delete a robot from a group
-DELETE {{BASE_URL}}/api/{{API_VERSION}}/admin/groups/1ed45faa-8f7c-4d8e-a389-9f05f4ee2dd1/robots HTTP/1.1
+DELETE {{BASE_URL}}/api/{{API_VERSION}}/admin/groups/{{GROUP_ID}}/robots HTTP/1.1
 x-session-token: {{SESSION_TOKEN}}
 air-team-id: {{TEAM_ID}}
 Content-Type: application/json
 
 {
-    "robot_id": "1234"
+    "robot_id": "{{ROBOT_ID}}"
 }
 
 
 
 
 # -----------------------------------------
-# Provisioning
+# Images
 # -----------------------------------------
 
-### create provisioning credentials
-POST {{BASE_URL}}/api/{{API_VERSION}}/admin/provisioning-credentials HTTP/1.1
+### list images
+# @name imagesResponse
+GET {{BASE_URL}}/api/{{API_VERSION}}/admin/images HTTP/1.1
 x-session-token: {{SESSION_TOKEN}}
 air-team-id: {{TEAM_ID}}
 
-
-### list provisioning credentials
-GET {{BASE_URL}}/api/{{API_VERSION}}/admin/provisioning-credentials HTTP/1.1
-x-session-token: {{SESSION_TOKEN}}
-air-team-id: {{TEAM_ID}}
+@IMAGE_ID = {{imagesResponse.response.body.$[0].id}}
+@HW_ID = {{imagesResponse.response.body.$[0].hwids.$[0]}}
 
 
-
-
-# -----------------------------------------
-# Robots
-# -----------------------------------------
-@ROBOT_ID=stevie-1
-# @ROBOT_ID=FCDEC946-E26B-48A5-A156-26C67F9FDA99
-
-### list robots
-GET {{BASE_URL}}/api/{{API_VERSION}}/admin/robots HTTP/1.1
-x-session-token: {{SESSION_TOKEN}}
-air-team-id: {{TEAM_ID}}
-
-
-### get a single robot
-GET {{BASE_URL}}/api/{{API_VERSION}}/admin/robots/{{ROBOT_ID}} HTTP/1.1
-x-session-token: {{SESSION_TOKEN}}
-air-team-id: {{TEAM_ID}}
-
-
-### delete a robot
-DELETE {{BASE_URL}}/api/{{API_VERSION}}/admin/{{TEAM_ID}}/robots/{{ROBOT_ID}} HTTP/1.1
-
-
-### delete a robot
-DELETE {{BASE_URL}}/api/{{API_VERSION}}/admin/robots/{{ROBOT_ID}} HTTP/1.1
-x-session-token: {{SESSION_TOKEN}}
-air-team-id: {{TEAM_ID}}
-
-
-### get groups a robot is in
-GET {{BASE_URL}}/api/{{API_VERSION}}/admin/robots/{{ROBOT_ID}}/groups HTTP/1.1
+### get single image
+GET {{BASE_URL}}/api/{{API_VERSION}}/admin/images/{{IMAGE_ID}} HTTP/1.1
 x-session-token: {{SESSION_TOKEN}}
 air-team-id: {{TEAM_ID}}
 
@@ -231,8 +251,6 @@ air-team-id: {{TEAM_ID}}
 # -----------------------------------------
 # Rollouts
 # -----------------------------------------
-
-@ROLLOUT_ID=516c800f-4c5d-4c92-a19a-7f4fde1c1a1b
 
 ### create a rollout
 POST {{BASE_URL}}/api/{{API_VERSION}}/admin/rollouts HTTP/1.1
@@ -244,15 +262,23 @@ air-team-id: {{TEAM_ID}}
     "name": "test rollout",
     "description": "this is a test rollout",
 	"hwid_img_map": [
-        { "hw_id": "", "img_id": "" },
-        { "hw_id": "", "img_id": "" },
+        { "hw_id": "{{HW_ID}}", "img_id": "{{IMAGE_ID}}" }
     ], 
 	"targeted_robots": {
-		"type": "group",    //could be "hw_id_match" OR "selected_bots"
-		"group_id": "",
-		"selected_bot_ids": null
+		"type": "group",
+		"group_id": "{{GROUP_ID}}",
+		"selected_bot_ids": []
 	}
 }
+
+
+### list rollouts
+# @name rolloutsResponse
+GET {{BASE_URL}}/api/{{API_VERSION}}/admin/rollouts HTTP/1.1
+x-session-token: {{SESSION_TOKEN}}
+air-team-id: {{TEAM_ID}}
+
+@ROLLOUT_ID = {{rolloutsResponse.response.body.$[0].id}}
 
 
 ### launch a rollout
@@ -264,13 +290,7 @@ air-team-id: {{TEAM_ID}}
 {}
 
 
-### list rollouts
-GET {{BASE_URL}}/api/{{API_VERSION}}/admin/rollouts HTTP/1.1
-x-session-token: {{SESSION_TOKEN}}
-air-team-id: {{TEAM_ID}}
-
-
-### get a single rollout
+### get a single rollout details
 GET {{BASE_URL}}/api/{{API_VERSION}}/admin/rollouts/{{ROLLOUT_ID}} HTTP/1.1
 x-session-token: {{SESSION_TOKEN}}
 air-team-id: {{TEAM_ID}}
@@ -279,29 +299,16 @@ air-team-id: {{TEAM_ID}}
 
 
 # -----------------------------------------
-# Images
-# -----------------------------------------
-
-@IMAGE_ID=6BEE1E07-4631-4F86-8CD4-12EFCFEFE6EE
-
-### list images
-GET {{BASE_URL}}/api/{{API_VERSION}}/admin/images HTTP/1.1
-x-session-token: {{SESSION_TOKEN}}
-air-team-id: {{TEAM_ID}}
-
-### get single image
-GET {{BASE_URL}}/api/{{API_VERSION}}/admin/images/{{IMAGE_ID}} HTTP/1.1
-x-session-token: {{SESSION_TOKEN}}
-air-team-id: {{TEAM_ID}}
-
-
-
-# -----------------------------------------
 # DIRECTOR REPO
 # -----------------------------------------
 
-### get versioned metadata
-GET {{BASE_URL}}/api/{{API_VERSION}}/robot/director/1.targets.json HTTP/1.1
+### get initial version of root metadata 
+GET {{BASE_URL}}/api/{{API_VERSION}}/robot/director/root.json HTTP/1.1
+air-client-id:{{ROBOT_ID}}
+
+
+### get latest targets metadata
+GET {{BASE_URL}}/api/{{API_VERSION}}/robot/director/targets.json HTTP/1.1
 air-client-id:{{ROBOT_ID}}
 
 
@@ -312,21 +319,8 @@ air-client-id:{{ROBOT_ID}}
 # -----------------------------------------
 
 ### get metadata
-GET {{BASE_URL}}/api/{{API_VERSION}}/robot/repo/1.root.json HTTP/1.1
-air-client-id: {{ROBOT_ID}}
-
-
-### download image with image id only
-GET {{BASE_URL}}/api/{{API_VERSION}}/image/{{TEAM_ID}}/images/{{IMAGE}} HTTP/1.1
-
-
-### download image with sha256 and image id
-GET {{BASE_URL}}/api/{{API_VERSION}}/image/{{TEAM_ID}}/images/e317b3f3501466ae189499652d5c4d2cc825444efb38c68a6e4df79f6b8beaa0.{{IMAGE}} HTTP/1.1
-
-
-### download image with sha512 and image id
-GET {{BASE_URL}}/api/{{API_VERSION}}/image/{{TEAM_ID}}/images/021a31d187c51c86dda1a3b4ae19e429d32452218c7dd5a145e84ea51718067bc005747b344679d86233f06134e873cc0f85e470a6282e53720eef6c8c9936f3.{{IMAGE}} HTTP/1.1
-
+GET {{BASE_URL}}/api/{{API_VERSION}}/robot/repo/2.root.json HTTP/1.1
+air-client-id:{{ROBOT_ID}}
 
 
 

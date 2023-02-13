@@ -11,7 +11,8 @@ import directorRepo from '@airbotics-modules/director-repo';
 import robot from '@airbotics-modules/robot';
 import rolloutWorker from '@airbotics-modules/background-workers/rollouts';
 import webhooks from '@airbotics-modules/webhooks';
-
+import cors from 'cors';
+import { InternalServerErrorResponse, NotFoundResponse, SuccessMessageResponse } from './core/network/responses';
 
 
 const app = express();
@@ -27,9 +28,16 @@ app.use((req, res, next) => {
 });
 
 
+app.use(cors({
+    credentials: true,
+    origin: config.CORS_ORIGIN,
+    methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS', 'HEAD'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Access-Control-Allow-Origin', 'air-team-id']
+}));
+
 // health check
 app.get('/', (req, res) => {
-    return res.status(200).send('Welcome to the Airbotics API');
+    return new SuccessMessageResponse(res, 'Welcome to the Airbotics API')
 });
 
 
@@ -51,7 +59,7 @@ if(config.USE_NODE_SCHEDULER) {
 // handle 404
 app.use((req: Request, res: Response, next: NextFunction) => {
     logger.warn(`404 - ${req.method} - ${req.originalUrl}`);
-    return res.status(404).end();
+    return new NotFoundResponse(res);
 });
 
 
@@ -59,7 +67,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
     logger.error('500');
     logger.error(err);
-    return res.status(500).end();
+    return new InternalServerErrorResponse(res);
 });
 
 

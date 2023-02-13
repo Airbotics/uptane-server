@@ -225,6 +225,7 @@ export const createTeam = async (req: Request, res: Response, next: NextFunction
         });
 
         logger.info('created a team');
+        
         return new SuccessJsonResponse(res, newTeam);
 
     } catch (error) {
@@ -274,20 +275,27 @@ export const listTeams = async (req: Request, res: Response, next: NextFunction)
             }
         });
 
-        const sanitisedTeams: ITeamDetail[] = teams.map(team => ({
-            id: team.id,
-            name: team.name,
-            role: 'Admin', // TODO
-            joined_at: '', // TODO
-            created_at: team.created_at
-        }));
+        if(teams.length === 0) {
+            return new NoContentResponse(res, 'User is not yet part of a team');
+        }
 
-        logger.info('A user read a list of their teams');
-        return new SuccessJsonResponse(res, sanitisedTeams);
+        else {
 
+            const sanitisedTeams: ITeamDetail[] = teams.map((team, idx) => ({
+                id: team.id,
+                name: team.name,
+                role: relationsRes.relation_tuples![idx].relation,
+                joined_at: '',
+                created_at: team.created_at
+            }));
+    
+            logger.info('A user read a list of their teams');
+            return new SuccessJsonResponse(res, sanitisedTeams);
+        }
 
     } catch (error) {
-
+        logger.error('A user was unable to read a list of teams they belong to');
+        return new BadResponse(res, 'Unable to get teams');
     }
 }
 

@@ -55,6 +55,7 @@ enum ImageFormat {
 model Team {
     id                  String          @id @default(uuid()) @unique
     name                String
+    num_members         Int             @default(1)
     created_at          DateTime        @default(now())
     updated_at          DateTime        @updatedAt
 

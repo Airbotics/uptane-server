@@ -24,6 +24,7 @@
         "async-shelljs": "^0.1.4",
         "axios": "^1.2.0",
         "canonicalize": "^1.0.8",
+        "cors": "^2.8.5",
         "dayjs": "^1.11.6",
         "dotenv": "^16.0.3",
         "express": "^4.17.3",
@@ -44,6 +45,7 @@
     "devDependencies": {
         "@aws-sdk/types": "^3.226.0",
         "@types/archiver": "^5.3.1",
+        "@types/cors": "^2.8.13",
         "@types/express": "^4.17.13",
         "@types/hpp": "^0.2.2",
         "@types/jest": "^29.2.3",

@@ -4,7 +4,7 @@ import { EBlobStorageProvider, ECertificateStorageProvider, EKeyStorageProvider,
 dotenv.config();
 
 const DEFAULT_CONN_STR = 'postgresql://user:password@localhost:5432/db?schema=public';
-
+const NODE_ENV = process.env.NODE_ENV || 'development';
 
 // NOTE: it would be nice to use something like TOML here, but we'll just keep it js for now
 const config = {
@@ -14,10 +14,11 @@ const config = {
 
     // http server
     PORT: process.env.PORT || 8001,                                             // port the server listens on
-    NODE_ENV: process.env.NODE_ENV || 'development',                            // mode to run the server in, 'production' or 'development'
+    NODE_ENV: NODE_ENV,                                                         // mode to run the server in, 'production' or 'development'
     MAX_JSON_REQUEST_SIZE: '100mb',                                             // max json size we accept
     MAIN_SERVER_ORIGIN: 'http://localhost:8002',                                // origin of the main server
     ROBOT_GATEWAY_ORIGIN: 'https://localhost:8003',                             // origin of the robot gateway
+    CORS_ORIGIN: NODE_ENV==='production' ? ['https://staging.airbotics.io', 'https://dashboard.airbotics.io'] : 'http://localhost:3000',
 
     // blob storage
     BLOB_STORAGE_PROVIDER: EBlobStorageProvider.Filesystem,                     // blob storage provider to use

@@ -30,8 +30,13 @@ export class FsBlobProvider implements IBlobStorageProvider {
 
     async deleteTeamObjects(bucketId: string, teamId: string): Promise<boolean> {
         const filePath = path.resolve(path.join(config.BLOB_FS_STORAGE_DIR, bucketId, teamId));
-        fs.rmdirSync(filePath, { recursive: true });
-        return true;
+        try {
+            fs.rmdirSync(filePath, { recursive: true });
+        } catch(e) {
+            console.log(e);
+        }finally {
+            return true;
+        }
     }
 
 }

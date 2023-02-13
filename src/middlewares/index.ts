@@ -91,10 +91,6 @@ export const mustBeAuthenticated = async (req: Request, res: Response, next: Nex
         }
 
         const orySession = (await ory.frontend.toSession(sessionParams)).data;
-
-        // if(orySession.identity.verifiable_addresses && !orySession.identity.verifiable_addresses[0].verified) {
-        //     return new BadResponse(res, 'Please verify your email first!');
-        // }
         
         req.oryIdentity = {
             session_id: orySession.id,

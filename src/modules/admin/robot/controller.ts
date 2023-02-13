@@ -13,6 +13,8 @@ import { certificateStorage } from '@airbotics-core/crypto';
  * Lists all robots in requesters team. 
  */
 export const listRobots = async (req: Request, res: Response, next: NextFunction) => {
+    
+    return new SuccessJsonResponse(res, []);
 
     const teamID = req.headers['air-team-id'];
 

@@ -87,9 +87,11 @@ model Team {
 model ProvisioningCredentials {
     id                  String          @id @default(uuid()) @unique
     team_id             String
+    description         String
     cert_serial         String                                  // serial no. of the cert so we can revoke it
     status              ProvisioningCredentialsStatus   @default(issuing)
     created_at          DateTime        @default(now())
+    expires_at          DateTime
 
     team                Team            @relation(fields: [team_id], references: [id], onDelete: Cascade)
 

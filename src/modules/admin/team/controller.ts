@@ -285,7 +285,7 @@ export const listTeams = async (req: Request, res: Response, next: NextFunction)
                 id: team.id,
                 name: team.name,
                 role: relationsRes.relation_tuples![idx].relation,
-                joined_at: '',
+                num_members: team.num_members,
                 created_at: team.created_at
             }));
     
@@ -305,7 +305,7 @@ export const listTeams = async (req: Request, res: Response, next: NextFunction)
  * Lists all team members in the requesters team 
  * 
  * @description Performs the following:
- * 1.Queries Ory for subjects (users) related to object (team) in the 'teams' namespace 
+ * 1 Queries Ory for subjects (users) related to object (team) in the 'teams' namespace 
  * 2 For each relation that is a subject(not subject set, ie a user), we go 
  *   back to ory and get that subjects full profile info 
  * 3 Return a sanitised list of team members to the requester
@@ -341,15 +341,10 @@ export const listTeamMembers = async (req: Request, res: Response, next: NextFun
 
                 teamMembers.push({
                     id: identity.id,
-                    created_at: identity.created_at,
-                    traits: {
-                        id: identity.traits.id,
-                        email: identity.traits.email,
-                        name: {
-                            first: identity.traits.name.first,
-                            last: identity.traits.name.last
-                        }
-                    }
+                    name: identity.traits.name.first + identity.traits.name.last,
+                    email: identity.traits.email,
+                    role: relation.relation,
+                    created_at: identity.created_at
                 })
             }
         }
@@ -403,6 +398,8 @@ export const updateTeam = async (req: Request, res: Response, next: NextFunction
         const sanitisedTeam: ITeamDetail = {
             id: team.id,
             name: team.name,
+            role: 'admin',
+            num_members: team.num_members,
             created_at: team.created_at
         };
 

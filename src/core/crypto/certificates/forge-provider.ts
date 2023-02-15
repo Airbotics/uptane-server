@@ -30,7 +30,7 @@ export class ForgeCertifcateProvider implements ICertificateStorageProvider {
 
 
     // reads root cert and creates a new child cert
-    async createCertificate(keyPair: IKeyPair, commonName: string): Promise<ICertificate | null> {
+    async createCertificate(keyPair: IKeyPair, commonName: string, expiry: number): Promise<ICertificate | null> {
 
         const rootCaKeyPair = await keyStorage.getKeyPair(DEV_ROOT_CA_KEY_ID);
 
@@ -77,12 +77,13 @@ export class ForgeCertifcateProvider implements ICertificateStorageProvider {
                 keyEncipherment: true
             }
         ];
-
+   
 
         // set cert fields
         cert.serialNumber = `00${randomBytes(4).toString('hex')}`;
         cert.validity.notBefore = dayjs().toDate();
-        cert.validity.notAfter = dayjs().add(config.ROOT_CA_TTL[0] as number, config.ROOT_CA_TTL[1] as ManipulateType).toDate();
+        cert.validity.notAfter = new Date(expiry)
+        // cert.validity.notAfter = dayjs().add(config.ROOT_CA_TTL[0] as number, config.ROOT_CA_TTL[1] as ManipulateType).toDate();
         cert.setExtensions(extensions);
         cert.setSubject(attrs);
         cert.setIssuer(rootCaCert.subject.attributes);

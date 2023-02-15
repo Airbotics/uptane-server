@@ -18,7 +18,7 @@ export interface IKeyStorageProvider {
 
 export interface ICertificateStorageProvider {
     getRootCertificate(): Promise<string | null>;
-    createCertificate(keyPair: IKeyPair, commonName: string): Promise<ICertificate | null>;
+    createCertificate(keyPair: IKeyPair, commonName: string, expiry: number): Promise<ICertificate | null>;
     revokeCertificate(serial: string, reason: string): Promise<boolean>;
 }
 
@@ -241,6 +241,8 @@ export interface OryIdentity {
 export interface ITeamDetail {
     id: string;
     name: string;
+    role: string;
+    num_members: number
     created_at: Date;
 }
 

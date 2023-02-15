@@ -29,8 +29,8 @@ export class CertificateStorageProvider implements ICertificateStorageProvider {
         return this.strategy.getRootCertificate();
     }
 
-    async createCertificate(keyPair: IKeyPair, commonName: string): Promise<ICertificate | null> {
-        return this.strategy.createCertificate(keyPair, commonName);
+    async createCertificate(keyPair: IKeyPair, commonName: string, expiry: number): Promise<ICertificate | null> {
+        return this.strategy.createCertificate(keyPair, commonName, expiry);
 
     }
 

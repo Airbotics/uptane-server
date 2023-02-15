@@ -36,12 +36,18 @@ export const createProvisioningCredentials = async (req: Request, res: Response)
     const oryID = req.oryIdentity!.traits.id;
     const teamID = req.headers['air-team-id']!;
 
+
+    const {
+        description,
+        expires_at
+    } = req.body;
+
     // create provisioning key
     const provisioningKeyPair = generateKeyPair({ keyType: EKeyType.Rsa });
 
     // get the provisioning cert
     // NOTE this takes a while if fetching from acm pca
-    const provisioningCert = await certificateStorage.createCertificate(provisioningKeyPair, teamID);
+    const provisioningCert = await certificateStorage.createCertificate(provisioningKeyPair, teamID, expires_at);
 
     if (!provisioningCert) {
         return res.status(500).end();
@@ -97,7 +103,9 @@ export const createProvisioningCredentials = async (req: Request, res: Response)
         data: {
             team_id: teamID,
             status: ProvisioningCredentialsStatus.downloaded,
-            cert_serial: provisioningCert.serial
+            cert_serial: provisioningCert.serial,
+            description: description,
+            expires_at: new Date(expires_at)
         }
     });
 

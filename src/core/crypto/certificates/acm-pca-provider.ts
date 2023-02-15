@@ -16,6 +16,7 @@ import {
     ROOT_CERT_COUNTRY,
 } from '@airbotics-core/consts';
 import { ICertificate, ICertificateStorageProvider } from '@airbotics-types';
+import dayjs from 'dayjs';
 
 
 
@@ -86,8 +87,7 @@ export class ACMPCACertifcateProvider implements ICertificateStorageProvider {
     }
 
     // TODO forge extract serial
-    // TODO handle expiry
-    async createCertificate(keyPair: IKeyPair, commonName: string): Promise<ICertificate | null> {
+    async createCertificate(keyPair: IKeyPair, commonName: string, expiry: number): Promise<ICertificate | null> {
 
         const csr = generateCertificateSigningRequest(keyPair, commonName);
 
@@ -99,7 +99,7 @@ export class ACMPCACertifcateProvider implements ICertificateStorageProvider {
             SigningAlgorithm: 'SHA256WITHRSA',
             Validity: {
                 Type: 'END_DATE',
-                Value: 20300101000000 // YYYY-MM-DD-HH-MM-SS, 2030-01-01-00-00-00
+                Value: Number(dayjs(expiry).format('YYYYMMDDHHmmss')) // YYYYMMDDHHMMSS, 20300101000000
             },
         };
 

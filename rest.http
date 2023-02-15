@@ -73,7 +73,7 @@ x-session-token: {{SESSION_TOKEN}}
 Content-Type: application/json
 
 {
-    "name": "Test team"
+    "name": "Boston Dynamics"
 }
 
 
@@ -89,6 +89,15 @@ x-session-token: {{SESSION_TOKEN}}
 DELETE {{BASE_URL}}/api/{{API_VERSION}}/admin/teams HTTP/1.1
 x-session-token: {{SESSION_TOKEN}}
 air-team-id: {{TEAM_ID}}
+
+
+### list members in team
+# @name teamResponse
+GET {{BASE_URL}}/api/{{API_VERSION}}/admin/teams/members HTTP/1.1
+x-session-token: {{SESSION_TOKEN}}
+air-team-id: {{TEAM_ID}}
+
+
 
 
 

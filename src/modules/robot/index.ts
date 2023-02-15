@@ -7,6 +7,8 @@ import { prisma } from '@airbotics-core/drivers';
 import { EKeyType } from '@airbotics-core/consts';
 import { mustBeRobot, updateRobotMeta } from '@airbotics-middlewares';
 import { IRobotEvent } from '@airbotics-types';
+import dayjs, { ManipulateType } from 'dayjs';
+import config from 'src/config';
 
 const router = express.Router();
 
@@ -52,8 +54,10 @@ router.post('/devices', async (req: Request, res) => {
     // generate key pair for the cert, this will be thrown away
     const robotKeyPair = generateKeyPair({ keyType: EKeyType.Rsa });
 
+    const expiryEpoch = dayjs().add(config.ROOT_CA_TTL[0] as number, config.ROOT_CA_TTL[1] as ManipulateType).valueOf();
+
     // this could take a while if we use acm pca
-    const robotCert = await certificateStorage.createCertificate(robotKeyPair, deviceId);
+    const robotCert = await certificateStorage.createCertificate(robotKeyPair, deviceId, expiryEpoch);
 
     if (!robotCert) {
         return res.status(500).end();

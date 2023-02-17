@@ -268,11 +268,11 @@ export interface IGroupRobot {
 export interface ICreateRolloutBody {
     name: string;
     description: string;
-	hwid_img_map: { hw_id: string, img_id: string }[],
+	hwid_img_map: { hw_id: string, img_id: string }[];
 	targeted_robots: {
-		type: RolloutTargetType,
-		group_id: string | null,
-		selected_bot_ids: string [] | null
+		type: RolloutTargetType;
+		group_id: string;
+		selected_bot_ids: string [];
 	}
 }
 

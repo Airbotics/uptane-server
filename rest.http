@@ -110,10 +110,23 @@ air-team-id: {{TEAM_ID}}
 POST {{BASE_URL}}/api/{{API_VERSION}}/admin/provisioning-credentials HTTP/1.1
 x-session-token: {{SESSION_TOKEN}}
 air-team-id: {{TEAM_ID}}
+Content-Type: application/json
+
+{
+    "description": "Test prov credentials",
+    "expires_at": 1992079455269       
+}
+//sometime in 2033
+
 
 
 ### list provisioning credentials
 GET {{BASE_URL}}/api/{{API_VERSION}}/admin/provisioning-credentials HTTP/1.1
+x-session-token: {{SESSION_TOKEN}}
+air-team-id: {{TEAM_ID}}
+
+###
+GET {{BASE_URL}}/api/{{API_VERSION}}/admin/f HTTP/1.1
 x-session-token: {{SESSION_TOKEN}}
 air-team-id: {{TEAM_ID}}
 
@@ -123,6 +136,18 @@ air-team-id: {{TEAM_ID}}
 # -----------------------------------------
 # Robots
 # -----------------------------------------
+
+### create robot (this will always be called by aktualizr not an admin)
+POST {{BASE_URL}}/api/{{API_VERSION}}/robot/devices HTTP/1.1
+x-session-token: {{SESSION_TOKEN}}
+air-client-id: {{TEAM_ID}}
+Content-Type: application/json
+
+{
+    "deviceId": "test bot",
+    "ttl": 0 
+}
+
 
 ### list robots
 # @name robotsResponse
@@ -218,7 +243,7 @@ air-team-id: {{TEAM_ID}}
 Content-Type: application/json
 
 {
-    "robot_id": "1234"
+    "robot_id": "{{ROBOT_ID}}"
 }
 
 

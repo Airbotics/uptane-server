@@ -61,7 +61,12 @@ export const createRolloutSchema = Joi.object({
             RolloutTargetType.hw_id_match, 
             RolloutTargetType.selected_bots
         ).required(),
-        group_id: Joi.string().optional(),
-        selected_bot_ids: Joi.array().items(Joi.string()).optional()
+        group_id: Joi.string().allow(''),
+        selected_bot_ids: Joi.array().items(Joi.string())
     })
+});
+
+export const provCredentialsSchema = Joi.object({
+    description: Joi.string().required().min(2),
+    expires_at: Joi.number().required().min(new Date().getDate())
 });

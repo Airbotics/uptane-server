@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { BadResponse, SuccessJsonResponse } from '@airbotics-core/network/responses';
 import { logger } from '@airbotics-core/logger';
-import { Rollout, RolloutStatus } from '@prisma/client';
+import { Ecu, Robot, Rollout, RolloutStatus } from '@prisma/client';
 import { ICreateRolloutBody } from 'src/types';
 import { RolloutTargetType } from '@airbotics-core/consts';
 import { SuccessMessageResponse } from '../../../core/network/responses';
@@ -92,7 +92,7 @@ export const createRollout = async (req: Request, res: Response) => {
         }
 
         else {
-            throw('Unknown robot target type for rollout');
+            throw ('Unknown robot target type for rollout');
         }
 
         await tx.rolloutRobot.createMany({
@@ -135,7 +135,7 @@ export const createRollout = async (req: Request, res: Response) => {
  * 
  */
 export const launchRollout = async (req: Request, res: Response) => {
-    
+
     const rolloutId = req.params.rollout_id;
     const teamId = req.headers['air-team-id']!;
 
@@ -151,14 +151,14 @@ export const launchRollout = async (req: Request, res: Response) => {
                 }
             }
         });
-    } 
-    catch(e) {
+    }
+    catch (e) {
         logger.warn('could not launch the rollout, either it does not exist or belongs to another team');
         return new BadResponse(res, 'Unable to launch rollout')
     }
 
     logger.info('a user has launched a rollout');
-    return new SuccessMessageResponse(res, rolloutId); 
+    return new SuccessMessageResponse(res, rolloutId);
 }
 
 
@@ -173,7 +173,7 @@ export const launchRollout = async (req: Request, res: Response) => {
 export const listRollouts = async (req: Request, res: Response) => {
 
     const teamId = req.headers['air-team-id'];
-    
+
     const rollouts = await prisma.rollout.findMany({
         where: {
             team_id: teamId
@@ -181,10 +181,10 @@ export const listRollouts = async (req: Request, res: Response) => {
         orderBy: {
             created_at: 'desc'
         }
-    });
+    })
 
     logger.info('A user read a list of rollouts');
-    
+
     return new SuccessJsonResponse(res, rollouts);
 }
 
@@ -229,8 +229,123 @@ export const getRollout = async (req: Request, res: Response) => {
             id: bot.id,
             status: bot.status
         }))
-    }; 
+    };
 
     logger.info('A user read a rollout detail');
     return new SuccessJsonResponse(res, rolloutSanitised);
+}
+
+
+
+
+interface IRolloutAffectedRobot {
+    id: string;
+    name: string;
+    ecus_affected: {
+        id: string;
+        hwid: string;
+        update_from: string;
+    }[]
+}
+
+type AffectedRobot = (Robot & {
+    ecus: (Ecu & {
+        installed_image: {
+            name: string;
+        } | null;
+    })[];
+})
+
+const computeAffectedHelper = (body:ICreateRolloutBody, robots: AffectedRobot[]): IRolloutAffectedRobot[] =>  {
+
+    return robots.map(bot => ({
+        id: bot.id,
+        name: bot.id,    //todo change to name
+        ecus_affected: bot.ecus
+            .filter(ecu => body.hwid_img_map.flatMap(elem => elem.hw_id).includes(ecu.hwid))
+            .map(ecu => ({
+                id: ecu.id,
+                hwid: ecu.hwid,
+                update_from: ecu.installed_image ? ecu.installed_image.name : 'Factory image'
+            }))
+    }))
+}
+
+
+export const computeAffected = async (req: Request, res: Response) => {
+
+    const body: ICreateRolloutBody = req.body;
+
+    const teamId = req.headers['air-team-id']!;
+
+    // rollout is targeting a group
+    if (body.targeted_robots.type === RolloutTargetType.group) {
+
+        const robotsInGroup = await prisma.robotGroup.findMany({
+            where: {
+                group_id: body.targeted_robots.group_id,
+                team_id: teamId
+            },
+            include: {
+                robot: {
+                    include: {
+                        ecus: {
+                            include: {
+                                installed_image: { select: { name: true } }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        const affected = computeAffectedHelper(body, robotsInGroup.map(robotGrp => robotGrp.robot))
+        return new SuccessJsonResponse(res, affected);
+    }
+
+    // rollout is targeting matching hwids
+    else if (body.targeted_robots.type === RolloutTargetType.hw_id_match) {
+
+        const robotsWithHwId = await prisma.robot.findMany({
+            where: {
+                ecus: {
+                    some: {
+                        hwid: { in: body.hwid_img_map.flatMap(elem => elem.hw_id) }
+                    }
+                }
+            },
+            include: {
+                ecus: {
+                    include: {
+                        installed_image: { select: { name: true } }
+                    }
+                }
+            }
+        })
+
+        const affected = computeAffectedHelper(body, robotsWithHwId)
+        return new SuccessJsonResponse(res, affected);
+    }
+
+    //rollout is targeting selected robots
+    else {
+
+        const selectedRobots = await prisma.robot.findMany({
+            where: {
+                id: { 
+                    in: body.targeted_robots.selected_bot_ids 
+                }
+            },
+            include: {
+                ecus: {
+                    include: {
+                        installed_image: { select: { name: true } }
+                    }
+                }
+            }
+        })
+
+        const affected = computeAffectedHelper(body, selectedRobots)
+        return new SuccessJsonResponse(res, affected);
+    }
 }

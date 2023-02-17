@@ -35,6 +35,12 @@ router.get('/rollouts/:rollout_id',
     mustBeInTeam(OryTeamRelations.admin),
     validate(rolloutIdSchema, EValidationSource.Path),
     controller.getRollout);
-    
+
+
+router.post('/rollouts/compute-affected',
+    mustBeAuthenticated,
+    mustBeInTeam(OryTeamRelations.member),
+    validate(createRolloutSchema, EValidationSource.Body),
+    controller.computeAffected);
 
 export default router;

@@ -19,7 +19,6 @@ import { generateTufKey, getTufMetadata } from '@airbotics-core/tuf';
 import { keyStorage } from '@airbotics-core/key-storage';
 import { getKeyStorageRepoKeyId, toCanonical } from '@airbotics-core/utils';
 
-
 /**
  * Create provisioning credentials.
  * 
@@ -98,6 +97,7 @@ export const createProvisioningCredentials = async (req: Request, res: Response)
     archive.append(Buffer.from(forge.asn1.toDer(p12).getBytes(), 'binary'), { name: 'autoprov_credentials.p12' });
     archive.finalize();
 
+
     // add record of creation of credentials to db
     const provisioningCredentials = await prisma.provisioningCredentials.create({
         data: {
@@ -120,13 +120,12 @@ export const createProvisioningCredentials = async (req: Request, res: Response)
         }
     });
 
-
     logger.info('provisioning credentials have been created');
 
-    res.set('content-type', 'application/zip');
+    res.set('Content-disposition', 'attachment; filename=credentials.zip');
+    res.set('Content-Type', 'application/zip');
     res.status(200);
     archive.pipe(res);
-
 }
 
 
@@ -149,7 +148,9 @@ export const listProvisioningCredentials = async (req: Request, res: Response) =
     const credentialsSanitised = provisioningCredentials.map(cred => ({
         id: cred.id,
         status: cred.status,
-        created_at: cred.created_at
+        description: cred.description,
+        expires_at: cred.expires_at,
+        created_at: cred.created_at,
     }));
 
     logger.info('A user read a list of the provisioning credentials');

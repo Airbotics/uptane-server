@@ -9,8 +9,8 @@ const router = express.Router();
 
 //list robots
 router.get('/robots',
-    // mustBeAuthenticated,
-    // mustBeInTeam(OryTeamRelations.admin),
+    mustBeAuthenticated,
+    mustBeInTeam(OryTeamRelations.admin),
     controller.listRobots);
 
 //get robot details

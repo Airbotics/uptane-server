@@ -9,6 +9,7 @@ import { mustBeRobot, updateRobotMeta } from '@airbotics-middlewares';
 import { IRobotEvent } from '@airbotics-types';
 import dayjs, { ManipulateType } from 'dayjs';
 import config from 'src/config';
+import { SuccessMessageResponse } from '../../core/network/responses';
 
 const router = express.Router();
 

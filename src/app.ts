@@ -32,7 +32,8 @@ app.use(cors({
     credentials: true,
     origin: config.CORS_ORIGIN,
     methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS', 'HEAD'],
-    allowedHeaders: ['Content-Type', 'Authorization', 'Access-Control-Allow-Origin', 'air-team-id']
+    allowedHeaders: ['Content-Type', 'Authorization', 'Access-Control-Allow-Origin', 'Content-Disposition', 'air-team-id'],
+    exposedHeaders: ['Content-Disposition']
 }));
 
 // health check

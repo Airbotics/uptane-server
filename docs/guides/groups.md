@@ -1,4 +1,4 @@
-# Grouping your robots
+# Groups
 
 Airbotics is designed to work with large fleet sizes, to help support this robots can be collected together into _Groups_ so software changes can be rolled out to multiple robots at once.
 
@@ -19,11 +19,11 @@ Some considerations for working with groups:
 To add a robot to a group, navigate to the group detail page to which you want to add the robot, go to the robots tabs and click _Add_, select the robot from the dropdown list.
 
 
-![Group - add robot](../imgs/group-add-robot.png)
+![Adding a robot to a group.](../imgs/group-add-robot.png)
 
 You cannot add a robot to a group from the robot detail page, you'll need to navigate to the group detail page and do it from there.
 
-## Removing robots from a group
+## Removing robot(s) from a group
 
 If you remove a robot from a group that has a rollout underway the robot will still be included in the rollout.
 

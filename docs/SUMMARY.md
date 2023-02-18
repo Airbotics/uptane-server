@@ -15,9 +15,13 @@
 
 * [Overview](guides/overview.md)
 * [Quickstart](guides/quickstart.md)
-* [Rolling out software](guides/rolling-out-software.md)
-* [Grouping your robots](guides/grouping-your-robots.md)
-* [Managing a robot](guides/managing-a-robot.md)
+* [Images](guides/images.md)
+* [Rollouts](guides/rollouts.md)
+* [Groups](guides/groups.md)
+* [Robots](guides/robots.md)
+* [Provisioning credentials](guides/provisioning-credentials.md)
+* [Accounts](guides/accounts.md)
+* [Teams](guides/teams.md)
 * [Self-hosting](guides/self-hosting.md)
 
 ## Developers

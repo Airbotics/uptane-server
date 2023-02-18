@@ -91,7 +91,7 @@ python primary.py
 | Action                                  | Description                                                              |
 | ----------------------------------------| ------------------------------------------------------------------------ |
 | 1. Inspect generated robot manifest     | Print out the generaged robot manifest without sending it to the backend |
-| 2. Generate and send robot manifest     | Send the generate robot manifest to the backend                          | 
+| 2. Generate and send robot manifest     | Send the generate robot manifest to the backend                          |
 | 3. Refresh top level metadata           | Refresh the Top level TUF metadata from the image and director repo.     |
 | 4. Run update cycle                     | Run the full Uptane update cycle                                         |
 | 5. "Install" image on primary ECU       | Change what "installed" image the primary ecu sends with its manifest    |

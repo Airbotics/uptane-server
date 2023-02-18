@@ -1,4 +1,4 @@
-# Self-Hosted Quickstart Guide
+# Self-hosting
 
 This guide provides the steps to set up the key Airbotics components to run in a **development** envirnoment. By the end of this guide you should be able to:
 

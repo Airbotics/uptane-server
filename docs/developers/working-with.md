@@ -1,6 +1,65 @@
-# Working with s3
+# Working with...
 
-We like to use AWS and s3 for storing blobs. We tend to use [localstack](https://localstack.cloud/) for development, this runs a mocked AWS cloud locally.
+
+## Working with AWS Secrets Manager
+
+We like to use AWS Secrets Manager for protecting secrets.
+
+### Useful commands
+
+**Create a secret**
+```
+aws --endpoint-url http://localhost:4566 secretsmanager create-secret --name my-secret --secret-string '{"lorem":"ipsum"}'
+```
+
+**List secrets**
+```
+aws --endpoint-url http://localhost:4566 secretsmanager list-secrets
+```
+
+**Get secret**
+```
+aws --endpoint-url http://localhost:4566 secretsmanager get-secret-value --secret-id my-secret
+```
+
+**Force delete secret**
+```
+aws --endpoint-url http://localhost:4566 secretsmanager delete-secret --force-delete-without-recovery --secret-id my-secret
+```
+
+
+## Working with Postgres
+
+We like to use Postgres as our relational database.
+
+Firstly, bring up Postgres in a Docker container with:
+
+```
+docker compose up postgres
+```
+
+**Push the schema**
+```
+npx prisma db push --schema ./src/prisma/schema.prisma
+```
+
+**Run studio**
+```
+npx prisma studio --schema ./src/prisma/schema.prisma
+```
+
+If you want a SQL session you can connect to it using:
+```
+PGPASSWORD=password psql -h localhost -p 5432  -U user -d db
+```
+
+NOTE: none of this should be done in production.
+
+
+
+## Working with s3
+
+We like to use AWS s3 for storing blobs.
 
 ### Bucket layout
 

@@ -1,22 +1,11 @@
 # Developers guide
 
-This guide is for developers that want to work on and develop Airbotics. Its recommended to start by reading the [overview](../introduction/overview.md) first to familiarise yourself with the system at a high level first.
+This guide is for developers that want to work on and develop Airbotics. It's recommended to start by reading the [overview](../introduction/overview.md) first to familiarise yourself with the system at a high level first.
 
-
-## Including a license notice
-
-This notice should be included at the top of every source code file:
-
-```
-/**
- * Copyright 2022 Airbotics, Inc. All Rights Reserved.
- * See LICENSE for license information.
- */
-```
 
 ## Documentation
 
-If you add a page to documentation, you'll need to add it to the `SUMMARY.MD` document for it to be listed.
+If you add a page to documentation, you'll need to add it to the `SUMMARY.md` document for it to be listed.
 
 
 ## Commit messages
@@ -88,14 +77,11 @@ Log levels and explantations:
 
 Log messages are lowercase without full stops.
 
-Mutations (POST, PUT, PATCH, DELETE) should produce an `info` level log message. Reads (OPTION, GET) do not produce a log message (unless there is an error).
-
 
 ## Infrastructure
 
 All infrastructure for Airbotics can be run in containers (we tend to use Docker). You can bring up the entire stack with:
 
 ```
-mkdir .localstack
 docker compose up
 ```

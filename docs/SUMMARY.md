@@ -14,17 +14,14 @@
 ## Guides
 
 * [Overview](guides/overview.md)
-* [Quickstart](guides/self-hosted-quickstart.md)
+* [Quickstart](guides/quickstart.md)
+* [Rolling out software](guides/rolling-out-software.md)
+* [Grouping your robots](guides/grouping-your-robots.md)
+* [Managing a robot](guides/managing-a-robot.md)
+* [Self-hosting](guides/self-hosting.md)
 
 ## Developers
 
 * [Overview](developers/overview.md)
-* [Working with Postgres](developers/working-with-postgres.md)
-* [Working with s3](developers/working-with-s3.md)
-* [Working with AWS Secrets Manager](developers/working-with-aws-secrets-manager.md)
-* [Scripts](developers/scripts.md)
-* [Key management](developers/key-management.md)
-* [Architecture](developers/architecture/overview.md)
-  * [The agent](developers/architecture/agent.md)
-  * [Director repository module](developers/architecture/director-repository.md)
-  * [Image repository module](developers/architecture/image-repository.md)
+* [Working with...](developers/working-with.md)
+* [Architecture](developers/architecture.md)

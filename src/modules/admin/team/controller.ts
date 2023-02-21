@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
+import { RevocationReason } from '@aws-sdk/client-acm-pca';
 import { ory, prisma } from '@airbotics-core/drivers';
 import { TUFRepo, TUFRole } from '@prisma/client';
 import { IdentityApiGetIdentityRequest, RelationshipApiGetRelationshipsRequest, RelationshipApiPatchRelationshipsRequest } from '@ory/client';
@@ -7,7 +8,7 @@ import { SuccessMessageResponse, BadResponse, SuccessJsonResponse, NoContentResp
 import { logger } from '@airbotics-core/logger';
 import { ITeamDetail } from '@airbotics-types';
 import { airEvent } from '@airbotics-core/events';
-import { certificateStorage, generateKeyPair } from '@airbotics-core/crypto';
+import { certificateManager, generateKeyPair } from '@airbotics-core/crypto';
 import config from '@airbotics-config';
 import { generateSignedRoot, generateSignedSnapshot, generateSignedTargets, generateSignedTimestamp } from '@airbotics-core/tuf';
 import { blobStorage } from '@airbotics-core/blob-storage';
@@ -423,7 +424,6 @@ export const updateTeam = async (req: Request, res: Response, next: NextFunction
  * 
  * TODO
  * - remove team members in ory
- * - revoke all robot and provisioning certificates
  */
 export const deleteTeam = async (req: Request, res: Response, next: NextFunction) => {
 
@@ -449,7 +449,7 @@ export const deleteTeam = async (req: Request, res: Response, next: NextFunction
             },
             include: {
                 ecus: true,
-                provisioning_creds: true,
+                certificates: true,
                 robots: true
             }
         });
@@ -459,14 +459,9 @@ export const deleteTeam = async (req: Request, res: Response, next: NextFunction
             await keyStorage.deleteKeyPair(getKeyStorageEcuKeyId(teamID, ecu.id));
         }
 
-        // revoke any certs used for provisioning credentials
-        for (const cred of team.provisioning_creds) {
-            await certificateStorage.revokeCertificate(cred.cert_serial, 'Team was deleted');
-        }
-
-        // revoke all certs used for robots
-        for (const robot of team.robots) {
-            await certificateStorage.revokeCertificate(robot.cert_serial, 'Team was deleted');
+        // revoke all robot and provisioning credentials certs
+        for (const cert of team.certificates) {
+            await certificateManager.revokeCertificate(cert.serial, RevocationReason.PRIVILEGE_WITHDRAWN);
         }
 
         // delete all objects beginning with their team id in the treehub bucket

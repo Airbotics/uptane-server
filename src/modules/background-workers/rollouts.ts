@@ -35,7 +35,7 @@ import { getKeyStorageRepoKeyId } from '@airbotics-core/utils';
  * 
  * 
  */
-export const processRollouts = async () => {
+export const processRolloutsHelper = async () => {
 
     const allTeams = await prisma.team.findMany({
         select: { id: true }
@@ -230,17 +230,15 @@ const generateNewMetadata = async (team_id: string, robot_id: string, affectedEc
 }
 
 
-const main = async () => {
+export const processRollouts = async () => {
 
     logger.info('rollouts processing started...');
 
     try {
-        await processRollouts();
+        await processRolloutsHelper();
         logger.info('rollouts processing completed!');
     } 
     catch(e) {
         logger.error('rollouts processing failed!');
     }
 }
-
-export default main;

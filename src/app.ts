@@ -1,18 +1,24 @@
 import express, { Request, Response, NextFunction } from 'express';
+import cors from 'cors';
 import hpp from 'hpp';
 import helmet from 'helmet';
 import schedule from 'node-schedule';
 import config from '@airbotics-config'
 import { logger } from '@airbotics-core/logger';
+import { InternalServerErrorResponse, NotFoundResponse, SuccessMessageResponse } from '@airbotics-core/network/responses';
 import admin from '@airbotics-modules/admin';
 import treehub from '@airbotics-modules/treehub';
 import imageRepo from '@airbotics-modules/image-repo';
 import directorRepo from '@airbotics-modules/director-repo';
 import robot from '@airbotics-modules/robot';
-import rolloutWorker from '@airbotics-modules/background-workers/rollouts';
 import webhooks from '@airbotics-modules/webhooks';
-import cors from 'cors';
-import { InternalServerErrorResponse, NotFoundResponse, SuccessMessageResponse } from './core/network/responses';
+import {
+    purgeExpiredProvisioningCredentials,
+    resignTufRoles,
+    processRollouts,
+    generateStaticDeltas
+} from '@airbotics-modules/background-workers';
+
 
 
 const app = express();
@@ -53,8 +59,10 @@ app.use('/api/v0/robot/treehub', treehub);
 
 // optionally mount a background worker in this process, if it has been configured
 if(config.USE_NODE_SCHEDULER) {
-    // schedule.scheduleJob(config.WORKER_CRON, backgroundWorker);
-    schedule.scheduleJob(config.ROLLOUT_WORKER_CRON, rolloutWorker);
+    schedule.scheduleJob(config.WORKERS.ROLLOUTS_CRON, processRollouts);
+    schedule.scheduleJob(config.WORKERS.PROVISIONING_CREDS_EXPIRY_PURGER_CRON, purgeExpiredProvisioningCredentials);
+    schedule.scheduleJob(config.WORKERS.TUF_RESIGNER_CRON, resignTufRoles);
+    schedule.scheduleJob(config.WORKERS.STATIC_DELTA_GENERATOR_CRON, generateStaticDeltas);
 }
 
 // handle 404

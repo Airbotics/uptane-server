@@ -1,15 +1,18 @@
 import express, { Request } from 'express';
+import { ManipulateType } from 'dayjs';
 import forge from 'node-forge';
-import { keyStorage } from '@airbotics-core/key-storage';
+import config from '@airbotics-config';
+import { dayjs } from '@airbotics-core/time';
 import { logger } from '@airbotics-core/logger';
-import { generateKeyPair, certificateStorage } from '@airbotics-core/crypto';
+import { generateKeyPair, certificateManager } from '@airbotics-core/crypto';
 import { prisma } from '@airbotics-core/drivers';
 import { EKeyType } from '@airbotics-core/consts';
 import { mustBeRobot, updateRobotMeta } from '@airbotics-middlewares';
 import { IRobotEvent } from '@airbotics-types';
-import dayjs, { ManipulateType } from 'dayjs';
-import config from 'src/config';
+// import dayjs, { ManipulateType } from 'dayjs';
 import { SuccessMessageResponse } from '../../core/network/responses';
+import { delay } from '@airbotics-core/utils';
+import { CertificateType } from '@prisma/client';
 
 const router = express.Router();
 
@@ -26,7 +29,6 @@ const router = express.Router();
  * 
  * TODO:
  * - handle ttl
- * - fill out cert_serial
  */
 router.post('/devices', async (req: Request, res) => {
 
@@ -34,6 +36,9 @@ router.post('/devices', async (req: Request, res) => {
         deviceId,
         ttl
     } = req.body;
+    
+    // we prefer robot nomenclature over device
+    const robotId = deviceId;
 
     const team_id = req.header('air-client-id')!;
 
@@ -42,7 +47,7 @@ router.post('/devices', async (req: Request, res) => {
         where: {
             team_id_id: {
                 team_id,
-                id: deviceId
+                id: robotId
             }
         }
     })
@@ -55,17 +60,23 @@ router.post('/devices', async (req: Request, res) => {
     // generate key pair for the cert, this will be thrown away
     const robotKeyPair = generateKeyPair({ keyType: EKeyType.Rsa });
 
-    const expiryEpoch = dayjs().add(config.ROOT_CA_TTL[0] as number, config.ROOT_CA_TTL[1] as ManipulateType).valueOf();
+    const certExpiresAt = dayjs().add(config.ROBOT_CERT_TTL[0] as number, config.ROBOT_CERT_TTL[1] as ManipulateType);
 
-    // this could take a while if we use acm pca
-    const robotCert = await certificateStorage.createCertificate(robotKeyPair, deviceId, expiryEpoch);
+    const robotCertId = await certificateManager.issueCertificate(team_id, robotKeyPair, CertificateType.robot, robotId, certExpiresAt);
+
+    // patiently wait for acm pca to issue, apologies client...
+    // TODO plz fix
+    await delay(8000);
+
+    // get robot cert
+    const robotCert = await certificateManager.downloadCertificate(team_id, robotCertId);
 
     if (!robotCert) {
         return res.status(500).end();
     }
 
     // get root cert
-    const rootCACert = await certificateStorage.getRootCertificate();
+    const rootCACert = await certificateManager.getRootCertificate();
 
     if (!rootCACert) {
         return res.status(500).end();
@@ -82,8 +93,8 @@ router.post('/devices', async (req: Request, res) => {
     await prisma.robot.create({
         data: {
             team_id,
-            id: deviceId,
-            cert_serial: robotCert.serial
+            id: robotId,
+            name: robotId
         }
     });
 

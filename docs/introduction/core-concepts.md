@@ -39,22 +39,6 @@ These are other (typically less powerful) computers on a robot. They do not comm
 
 The _Airbotics agent_ is an open-source program that runs on ECUs and handles connecting and authenticating with the backend; downloading, verifying and installing artifacts; and communicating the results of these actions to other programs on the ECU through various APIs (e.g. ROS). It is open-source and written in C++ on top of libaktualizer. It runs as a daemon service which we recommend managing using systemd.
 
-
-### API gateway
-
-Agents connect to the backend through the _API gateway_. This is a gateway that talks over HTTPS and performs mutual TLS authentication with robots before forwarding the requests onward.
-
-
-### Artifacts
-
-_Artifacts_ is a general term referring to anything that could be deployed to ECUs, e.g. full OS images, built binaries, configuration files, maps, Docker images.
-
-
-### Stacks
-
-_Stacks_ are an abstraction on top of artifacts making it easier to manage multiple artifacts together.
-
-
 ### Rollouts
 
 Artifacts are assigned to ECUs on robots through _rollouts_, i.e. they associate a set of artifacts for a set of ECUs. Rollouts are used by the director repository to determine if a robot's software is up-to-date or not.

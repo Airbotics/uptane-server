@@ -1,4 +1,4 @@
-# Self-Hosted Quickstart Guide
+# Self-hosting
 
 ## :warning: :warning: This  guide is WIP and may be incomplete or unstable :warning: :warning:
 
@@ -147,8 +147,15 @@ TODO
 ### Create a robot group
 TODO
 
-### Create a rollout
-TODO
+| Action                                  | Description                                                              |
+| ----------------------------------------| ------------------------------------------------------------------------ |
+| 1. Inspect generated robot manifest     | Print out the generaged robot manifest without sending it to the backend |
+| 2. Generate and send robot manifest     | Send the generate robot manifest to the backend                          |
+| 3. Refresh top level metadata           | Refresh the Top level TUF metadata from the image and director repo.     |
+| 4. Run update cycle                     | Run the full Uptane update cycle                                         |
+| 5. "Install" image on primary ECU       | Change what "installed" image the primary ecu sends with its manifest    |
+| 6. "Install" image on secondary ECU     | Change what "installed" image the secondary ecu sends with its manifest  |
+| 7. "Report" detected attack on ECU      | Change what "attack" primary ecu sends with its manifest                 |
 
 ### Launch a rollout
 TODO

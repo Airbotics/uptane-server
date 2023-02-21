@@ -10,10 +10,10 @@ export const enum EKeyStorageProvider {
     AWS = 'aws'
 }
 
-// supported providers for certificate storage
-export const enum ECertificateStorageProvider {
+// supported providers for certificate management
+export const enum ECertificateManagerProvider {
     ACMPCA = 'acm',
-    Forge = 'forge'
+    Local = 'local'
 }
 
 // default ostree config
@@ -115,6 +115,7 @@ export const enum EEventResource {
 export const enum EEventAction {
     Created = 'created',
     Verified = 'verified',
+    Issued = 'issued',
     LoggedIn = 'logged_in',
     DetailsUpdated = 'details_updated', // name, description, etc.
     AccountRecoveredStarted = 'account_recovery_started',

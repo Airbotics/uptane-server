@@ -1,4 +1,6 @@
-import { EKeyType, ESignatureScheme, ETUFRole, RolloutTargetType } from '@airbotics-core/consts';
+import { Dayjs } from 'dayjs';
+import { CertificateType } from '@prisma/client';
+import { EKeyType, ESignatureScheme, ETUFRole, RolloutTargetType  } from '@airbotics-core/consts';
 
 /**
  * Provider interfaces
@@ -16,10 +18,12 @@ export interface IKeyStorageProvider {
     deleteKeyPair(id: string): Promise<boolean>;
 }
 
-export interface ICertificateStorageProvider {
+export interface ICertificateManagerProvider {
     getRootCertificate(): Promise<string | null>;
-    createCertificate(keyPair: IKeyPair, commonName: string, expiry: number): Promise<ICertificate | null>;
+    issueCertificate(teamId: string, keyPair: IKeyPair, certType: CertificateType, commonName: string, expiresAt: Dayjs): Promise<any>;
+    downloadCertificate(teamId: string, certId: string): Promise<ICertificate | null>;
     revokeCertificate(serial: string, reason: string): Promise<boolean>;
+    purgeExpiredCertificates(): Promise<any>;
 }
 
 
@@ -34,6 +38,7 @@ export interface IKeyPair {
 export interface ICertificate {
     cert: string;
     serial: string;
+    expiresAt: Dayjs;
 }
 
 

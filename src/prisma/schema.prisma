@@ -76,7 +76,7 @@ model Team {
     packages_reports    InstalledPackagesReport[]
     hw_info_reports     HardwareInfoReport[]
     akt_config_reports  AktualizrConfigReport[]
-    robot_events        RobotEvent[]
+    ecu_telemetry       EcuTelemetry[]
     provisioning_creds  ProvisioningCredentials[]
     groups              Group[]
     robot_groups        RobotGroup[]
@@ -207,7 +207,7 @@ model Robot {
     packages_reports    InstalledPackagesReport[]
     hw_info_reports     HardwareInfoReport[]
     akt_config_reports  AktualizrConfigReport[]
-    events              RobotEvent[]
+
     groups              RobotGroup[]
     rollouts            RolloutRobot[]
     certificates        Certificate[]
@@ -231,6 +231,8 @@ model Ecu {
     team                Team            @relation(fields: [team_id], references: [id], onDelete: Cascade)
     robot               Robot           @relation(fields: [team_id, robot_id], references: [team_id, id], onDelete: Cascade)
     installed_image     Image?          @relation(fields: [team_id, image_id], references: [team_id, id], onDelete: Cascade)
+   
+    telemetry           EcuTelemetry[]
 
     @@unique([team_id, id])
     @@map("ecus")
@@ -302,22 +304,22 @@ model HardwareInfoReport {
     @@map("hardware_info_reports")
 }
 
-// telemetry events sent by a robot
-model RobotEvent {
+// telemetry events sent by an ecu
+model EcuTelemetry {
     id                  String          @id @default(uuid()) @unique
     team_id             String
-    robot_id            String
-    event_type          String                              // TODO make enum
+    ecu_id              String
+
+    event_type          String
     device_time         DateTime
-    ecu                 String                              // TODO make FK to ecu table
     success             Boolean?
     created_at          DateTime        @default(now())
 
     team                Team            @relation(fields: [team_id], references: [id], onDelete: Cascade)
-    robot               Robot           @relation(fields: [team_id, robot_id], references: [team_id, id], onDelete: Cascade)
+    ecu                 Ecu             @relation(fields: [team_id, ecu_id], references: [team_id, id], onDelete: Cascade)
 
     @@unique([team_id, id])
-    @@map("robot_events")
+    @@map("ecu_telemetry")
 }
 
 

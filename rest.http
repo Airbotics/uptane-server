@@ -174,6 +174,19 @@ air-team-id: {{TEAM_ID}}
 GET {{BASE_URL}}/api/{{API_VERSION}}/admin/robots/{{ROBOT_ID}}/groups HTTP/1.1
 x-session-token: {{SESSION_TOKEN}}
 air-team-id: {{TEAM_ID}}
+Content-Type: application/json
+
+
+### get telemetry from all ecus on a robot
+GET {{BASE_URL}}/api/{{API_VERSION}}/admin/robots/{{ROBOT_ID}}/telemetry HTTP/1.1
+x-session-token: {{SESSION_TOKEN}}
+air-team-id: {{TEAM_ID}}
+
+
+### get rollouts a robot is in
+GET {{BASE_URL}}/api/{{API_VERSION}}/admin/robots/{{ROBOT_ID}}/rollouts HTTP/1.1
+x-session-token: {{SESSION_TOKEN}}
+air-team-id: {{TEAM_ID}}
 
 
 

@@ -215,20 +215,6 @@ export interface IEcuRegistrationPayload {
     }[];
 }
 
-export interface IRobotEvent {
-    deviceTime: string;
-    event: {
-        ecu: string;
-        success?: boolean;
-    };
-    eventType: {
-        id: string;
-        version: number;
-    };
-    id: string;
-};
-
-
 export interface OryIdentity {
     session_id: string;
     traits: {

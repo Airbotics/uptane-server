@@ -1,16 +1,13 @@
 import express, { Request } from 'express';
-import { ManipulateType } from 'dayjs';
 import forge from 'node-forge';
-import config from '@airbotics-config';
-import { dayjs } from '@airbotics-core/time';
 import { logger } from '@airbotics-core/logger';
 import { generateKeyPair, certificateManager } from '@airbotics-core/crypto';
 import { prisma } from '@airbotics-core/drivers';
 import { EKeyType } from '@airbotics-core/consts';
 import { mustBeRobot, updateRobotMeta } from '@airbotics-middlewares';
-import { IRobotEvent } from '@airbotics-types';
-// import dayjs, { ManipulateType } from 'dayjs';
-import { SuccessMessageResponse } from '../../core/network/responses';
+import dayjs, { ManipulateType } from 'dayjs';
+import config from 'src/config';
+import { IRobotTelemetryReq } from 'src/types/requests';
 import { delay } from '@airbotics-core/utils';
 import { CertificateType } from '@prisma/client';
 
@@ -204,18 +201,17 @@ router.post('/events', mustBeRobot, updateRobotMeta, async (req: Request, res) =
         robot_id
     } = req.robotGatewayPayload!;
 
-    const events = req.body as IRobotEvent[];
+    const events = req.body as IRobotTelemetryReq[];
 
     const robotEvents = events.map(robotEvent => ({
         team_id,
-        robot_id,
+        ecu_id: robotEvent.event.ecu,
         event_type: robotEvent.eventType.id,
         device_time: robotEvent.deviceTime,
-        ecu: robotEvent.event.ecu,
         success: robotEvent.event.success
     }));
 
-    await prisma.robotEvent.createMany({
+    await prisma.ecuTelemetry.createMany({
         data: robotEvents
     });
 

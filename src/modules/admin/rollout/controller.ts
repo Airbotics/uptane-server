@@ -9,6 +9,7 @@ import { prisma } from '@airbotics-core/drivers';
 import { generateStaticDelta } from '@airbotics-core/generate-static-delta';
 import { airEvent } from '@airbotics-core/events';
 import { EEventAction, EEventActorType, EEventResource } from '@airbotics-core/consts';
+import { IRolloutAffectedBotRes, IRolloutDetailRes, IRolloutRes } from 'src/types/responses';
 
 
 /**
@@ -115,10 +116,18 @@ export const createRollout = async (req: Request, res: Response) => {
         meta: null
     });
 
+    const rolloutSantised: IRolloutRes = {
+        id: createdRollout.id,
+        name: createdRollout.name,
+        description: createdRollout.description,
+        status: createdRollout.status,
+        created_at: createdRollout.created_at,
+        updated_at: createdRollout.updated_at
+    }
 
     logger.info('created rollout');
 
-    return new SuccessJsonResponse(res, createdRollout);
+    return new SuccessJsonResponse(res, rolloutSantised);
 
 }
 
@@ -183,9 +192,18 @@ export const listRollouts = async (req: Request, res: Response) => {
         }
     })
 
+    const rolloutSanitised: IRolloutRes[] = rollouts.map(rollout => ({
+        id: rollout.id,
+        name: rollout.name,
+        description: rollout.description,
+        status: rollout.status,
+        created_at: rollout.created_at,
+        updated_at: rollout.updated_at
+    }))
+
     logger.info('A user read a list of rollouts');
 
-    return new SuccessJsonResponse(res, rollouts);
+    return new SuccessJsonResponse(res, rolloutSanitised);
 }
 
 
@@ -221,8 +239,11 @@ export const getRollout = async (req: Request, res: Response) => {
         return new BadResponse(res, 'Unable to get rollout details');
     }
 
-    const rolloutSanitised = {
+    const rolloutSanitised: IRolloutDetailRes = {
         id: rollout.id,
+        name: rollout.name,
+        description: rollout.description,
+        status: rollout.status,
         created_at: rollout.created_at,
         updated_at: rollout.updated_at,
         robots: rollout.robots.map(bot => ({
@@ -238,15 +259,7 @@ export const getRollout = async (req: Request, res: Response) => {
 
 
 
-interface IRolloutAffectedRobot {
-    id: string;
-    name: string;
-    ecus_affected: {
-        id: string;
-        hwid: string;
-        update_from: string;
-    }[]
-}
+
 
 type AffectedRobot = (Robot & {
     ecus: (Ecu & {
@@ -256,7 +269,7 @@ type AffectedRobot = (Robot & {
     })[];
 })
 
-const computeAffectedHelper = (body:ICreateRolloutBody, robots: AffectedRobot[]): IRolloutAffectedRobot[] =>  {
+const computeAffectedHelper = (body:ICreateRolloutBody, robots: AffectedRobot[]): IRolloutAffectedBotRes[] =>  {
 
     return robots.map(bot => ({
         id: bot.id,

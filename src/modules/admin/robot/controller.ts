@@ -6,7 +6,8 @@ import { getKeyStorageEcuKeyId } from '@airbotics-core/utils';
 import { keyStorage } from '@airbotics-core/key-storage';
 import { airEvent } from '@airbotics-core/events';
 import { EEventAction, EEventActorType, EEventResource } from '@airbotics-core/consts';
-import { certificateStorage } from '@airbotics-core/crypto';
+import { certificateManager } from '@airbotics-core/crypto';
+import { RevocationReason } from '@aws-sdk/client-acm-pca';
 
 
 /**
@@ -65,7 +66,12 @@ export const getRobot = async (req: Request, res: Response, next: NextFunction) 
                 orderBy: {
                     created_at: 'desc'
                 }
-            }
+            },
+            certificates: {
+                orderBy: {
+                    created_at: 'desc'
+                }
+            },
         }
     });
 
@@ -86,6 +92,13 @@ export const getRobot = async (req: Request, res: Response, next: NextFunction) 
             id: ecu.id,
             created_at: ecu.created_at,
             updated_at: ecu.updated_at,
+        })),
+        certificates: robot.certificates.map(cert => ({
+            id: cert.id,
+            created_at: cert.created_at,
+            expires_at: cert.expires_at,
+            status: cert.status,
+            revoked_at: cert.revoked_at
         }))
     };
 
@@ -116,7 +129,8 @@ export const deleteRobot = async (req: Request, res: Response, next: NextFunctio
                 }
             },
             include: {
-                ecus: true
+                ecus: true,
+                certificates: true
             }
         });
 
@@ -126,7 +140,7 @@ export const deleteRobot = async (req: Request, res: Response, next: NextFunctio
         }
 
         // revoke certificate
-        await certificateStorage.revokeCertificate(robot.cert_serial, 'Robot was deleted');
+        await certificateManager.revokeCertificate(robot.certificates[0].serial, RevocationReason.PRIVILEGE_WITHDRAWN);
 
         airEvent.emit({
             resource: EEventResource.Robot,

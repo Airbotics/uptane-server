@@ -12,6 +12,12 @@ router.post('/provisioning-credentials',
     mustBeInTeam(OryTeamRelations.admin),
     controller.createProvisioningCredentials);
 
+// get a provisioning credential
+router.get('/provisioning-credentials/:id',
+    mustBeAuthenticated,
+    mustBeInTeam(OryTeamRelations.admin),
+    controller.downloadProvisioningCredential);
+
 // list provisioning credentials
 router.get('/provisioning-credentials',
     mustBeAuthenticated,

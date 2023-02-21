@@ -1,5 +1,11 @@
 import dotenv from 'dotenv';
-import { EBlobStorageProvider, ECertificateStorageProvider, EKeyStorageProvider, EKeyType, ESignatureScheme } from '@airbotics-core/consts';
+import {
+    EBlobStorageProvider,
+    ECertificateManagerProvider,
+    EKeyStorageProvider,
+    EKeyType,
+    ESignatureScheme
+} from '@airbotics-core/consts';
 
 dotenv.config();
 
@@ -28,7 +34,7 @@ const config = {
     KEYS_FS_STORAGE_DIR: './.keys',                                             // where private keys are stored when filesystem provider is being used
 
     // certificate storage and management
-    CERTIFICATE_STORAGE_PROVIDER: ECertificateStorageProvider.Forge,            // key storage provider to use
+    CERTIFICATE_MANAGER_PROVIDER: ECertificateManagerProvider.Local,            // certificate manager provider to use
 
     // tuf
     TUF_KEY_TYPE: EKeyType.Rsa,                                                 // key type to use for TUF
@@ -64,9 +70,13 @@ const config = {
     ORY_SCHEMA_ID: process.env.ORY_SCHEMA_ID,                                   // scehma ID for ory
     ORY_TIMEOUT: 4000,                                                          // timeout in ms
 
-    // background worker
-    WORKER_CRON: '0 * * * *',                                                   // cron to run background worker, i.e. every hour
+    // background workers
     USE_NODE_SCHEDULER: true,                                                   // whether to use the nodejs scheduler to run workers, for development
+    WORKERS: {
+        TUF_RESIGNER_CRON: '0 * * * *',                                         // how often to run the tuf resigner
+        STATIC_DELTA_GENERATOR_CRON: '0 * * * *',                               // how often to run the static delta generator
+        PROVISIONING_CREDS_EXPIRY_PURGER_CRON: '0 * * * *'                      // how often to run the worker to "purge" expired provisioning credentials
+    },
 
     // manifest processing
     PRIMARY_ECU_VALID_FOR_SECS: process.env.SECONDARY_ECU_VALID_FOR_SECS || 3600,
@@ -75,9 +85,10 @@ const config = {
     // logs
     LOGS_DIR: '.logs',                                                          // local log directory
 
-    // root ca
-    ROOT_CA_TTL: [10, 'year'],                                                  // expiry of the root ca cert
-
+    // certs
+    ROBOT_CERT_TTL: [10, 'year'],                                               // expiry of robot certs
+    DEV_ROOT_CA_TTL: [20, 'year'],                                              // expiry of dev root cert
+    DEV_GATEWAY_CA_TTL: [10, 'year'],                                           // expiry of dev gateway cert
 
 };
 

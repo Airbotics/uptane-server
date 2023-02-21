@@ -14,14 +14,19 @@ enum UploadStatus {
     uploaded
 }
 
-// status of provisioning credential
-// NOTE issuing will always be the state until a user tries to download it
-// then it will turn to downloaded, but it may be ready to be downloaded 
-// some time before that
-enum ProvisioningCredentialsStatus {
-    issuing
-    downloaded
-    revoked
+// status of a certifcate 
+enum CertificateStatus {
+    issuing         // waiting for pca to issue
+    issued          // sent to the client
+    expired         // naturally expired
+    revoked         // user explicity revoked (can only do this if status is issued)
+}
+
+// type of a certificate
+enum CertificateType {
+    provisioning    // for aktualizr to provision primary ecu
+    client          // for garage sign
+    robot           // used by a provisioned robot for regular coms
 }
 
 // type of tuf repo
@@ -74,6 +79,7 @@ model Team {
     provisioning_creds  ProvisioningCredentials[]
     groups              Group[]
     robot_groups        RobotGroup[]
+    certificates        Certificate[]
 
     @@map("teams")
 }
@@ -81,18 +87,50 @@ model Team {
 
 // provisioning credentials
 // TODO add in the account that downloaded/revoked it
-// TODO add in revoked_at timestamp
 model ProvisioningCredentials {
     id                  String          @id @default(uuid()) @unique
     team_id             String
-    cert_serial         String                                  // serial no. of the cert so we can revoke it
-    status              ProvisioningCredentialsStatus   @default(issuing)
     created_at          DateTime        @default(now())
+    status              CertificateStatus   @default(issuing)   // combination of status as certs
+    expires_at          DateTime                                // will be the same as certs
+    revoked_at          DateTime?                               // will be the same as certs
+    client_cert_id      String
+    provisioning_cert_id     String
 
     team                Team            @relation(fields: [team_id], references: [id], onDelete: Cascade)
 
+    client_cert         Certificate     @relation(name: "client", fields: [team_id, client_cert_id], references: [team_id, id], onDelete: Cascade)
+    provisioning_cert   Certificate     @relation(name: "prov", fields: [team_id, provisioning_cert_id], references: [team_id, id], onDelete: Cascade)
+
     @@unique([team_id, id])
+    @@unique([team_id, client_cert_id])
+    @@unique([team_id, provisioning_cert_id])
     @@map("provisioning_credentials")
+}
+
+
+
+// a record of certs that we have issued
+model Certificate {
+    id                  String          @default(uuid())
+    team_id             String
+    serial              String          @unique
+    acm_arn             String?
+    created_at          DateTime        @default(now())
+    expires_at          DateTime
+    revoked_at          DateTime?
+    revoked_reason      String?
+    status              CertificateStatus   @default(issuing)
+    cert_type           CertificateType
+    robot_id            String?
+
+    client_creds        ProvisioningCredentials? @relation("client")
+    provisioning_creds  ProvisioningCredentials? @relation("prov")
+    team                Team            @relation(fields: [team_id], references: [id], onDelete: Cascade)
+    robot               Robot?          @relation(fields: [robot_id], references: [id], onDelete: Cascade)
+
+    @@id([team_id, id])
+    @@map("certificates")
 }
 
 
@@ -123,11 +161,11 @@ model Image {
 model TufMetadata {
     id                  String          @id @default(uuid()) @unique
     team_id             String
-    robot_id            String?
+    robot_id            String?                                 // which robot does the snapshot, timestamp and target apply to (director only)
     role                TUFRole                                 // director or image repo
     repo                TUFRepo                                 // root, targets, snapshot or timestamp
     version             Int                                     // must match the version in the signed portion of the metadata
-    value               Json                                    // holds entire signed metadata
+    value               Json                                    // holds the canonicalised signed metadata
     created_at          DateTime        @default(now())
     expires_at          DateTime                                // this should always match the 'expires' field in the signed portion
 
@@ -155,7 +193,6 @@ model Robot {
     ecus_registered     Boolean         @default(false)     // whether the ecus have been registered, they can only do this once
     created_at          DateTime        @default(now())
     updated_at          DateTime        @updatedAt
-    cert_serial         String                              // serial no. of the cert so we can revoke it
 
     team                Team            @relation(fields: [team_id], references: [id], onDelete: Cascade)
 
@@ -168,6 +205,7 @@ model Robot {
     akt_config_reports  AktualizrConfigReport[]
     events              RobotEvent[]
     groups              RobotGroup[]
+    certificates        Certificate[]
 
     @@unique([team_id, id])
     @@map("robots")

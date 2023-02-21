@@ -10,6 +10,11 @@ import imageRepo from '@airbotics-modules/image-repo';
 import directorRepo from '@airbotics-modules/director-repo';
 import robot from '@airbotics-modules/robot';
 import webhooks from '@airbotics-modules/webhooks';
+import {
+    purgeExpiredProvisioningCredentials,
+    resignTufRoles,
+    generateStaticDeltas
+} from '@airbotics-modules/background-workers';
 
 
 
@@ -42,9 +47,11 @@ app.use('/api/v0/robot/treehub', treehub);
 
 
 // optionally mount a background worker in this process, if it has been configured
-// if(config.USE_NODE_SCHEDULER) {
-//     schedule.scheduleJob(config.WORKER_CRON, backgroundWorker);
-// }
+if(config.USE_NODE_SCHEDULER) {
+    schedule.scheduleJob(config.WORKERS.PROVISIONING_CREDS_EXPIRY_PURGER_CRON, purgeExpiredProvisioningCredentials);
+    schedule.scheduleJob(config.WORKERS.TUF_RESIGNER_CRON, resignTufRoles);
+    schedule.scheduleJob(config.WORKERS.STATIC_DELTA_GENERATOR_CRON, generateStaticDeltas);
+}
 
 // handle 404
 app.use((req: Request, res: Response, next: NextFunction) => {

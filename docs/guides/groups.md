@@ -18,15 +18,15 @@ Some considerations for working with groups:
 
 To add a robot to a group, navigate to the group detail page to which you want to add the robot, go to the robots tabs and click _Add_, select the robot from the dropdown list.
 
+You cannot add a robot to a group from the robot detail page, you'll need to navigate to the group detail page and do it from there.
 
 ![Adding a robot to a group.](../imgs/group-add-robot.png)
 
-You cannot add a robot to a group from the robot detail page, you'll need to navigate to the group detail page and do it from there.
 
-## Removing robot(s) from a group
+## Removing robots from a group
 
-If you remove a robot from a group that has a rollout underway the robot will still be included in the rollout.
+You can remove a robot from the robots tab on the group detail page. If you remove a robot from a group that has a rollout underway, the robot will still be included in the rollout.
 
 ## Deleting a group
 
-If you delete a group it will still show up in rollouts that have targetted it, but you won't be able to click through to see the group. If you delete a group that is the target of a rollout while it is underway, the rollout will still proceed.
+If you delete a group it will still show up in rollouts that have targetted it, but you won't be able to click through to see the group. If you delete a group that is the target of a rollout while it is underway, the rollout will still proceed to the robots that were in the group.

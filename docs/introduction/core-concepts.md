@@ -4,7 +4,7 @@ In this page we introduce the main concepts you'll need to know about in order t
 
 ### Team
 
-A _team_ is a collection of members (users). All resources belong to teams, resources could be robots, TUF metadata, ECUs, manifests, images, etc. etc.
+A _team_ is a collection of members (users). All resources belong to teams, resources could be robots, TUF metadata, ECUs, manifests, software images, etc. etc.
 
 
 ### Robot 

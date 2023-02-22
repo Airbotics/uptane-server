@@ -15,11 +15,11 @@
 
 * [Overview](guides/overview.md)
 * [Quickstart](guides/quickstart.md)
+* [Provisioning credentials](guides/provisioning-credentials.md)
 * [Images](guides/images.md)
+* [Robots](guides/robots.md)
 * [Rollouts](guides/rollouts.md)
 * [Groups](guides/groups.md)
-* [Robots](guides/robots.md)
-* [Provisioning credentials](guides/provisioning-credentials.md)
 * [Accounts](guides/accounts.md)
 * [Teams](guides/teams.md)
 * [Self-hosting](guides/self-hosting.md)

@@ -22,9 +22,9 @@ ECUs cannot be modified, or added or removed from a robot, if you wish to make c
 
 | Status                                  | Description                                                              |
 | ----------------------------------------| ------------------------------------------------------------------------ |
-| Pending     | A rollout has been targetted at one or more ECU on this robot but has not began. |
-| Underway           | A rollout has been targetted at one or more ECU on this robot and is underway.    |
-| Up to date     | All software on all ECUs in this robot is up-to-date.                      |
+| `Pending`     | A rollout has been targetted at one or more ECU on this robot but has not began. |
+| `Underway`           | A rollout has been targetted at one or more ECU on this robot and is underway.    |
+| `Up to date`     | All software on all ECUs in this robot is up-to-date.                      |
 
 ## Rollout history
 
@@ -33,13 +33,13 @@ You can view a history of all deployments sent to this robot from the dashboard.
 
 | Status                                  | Description                                                              |
 | ----------------------------------------| ------------------------------------------------------------------------ |
-| Pending     | Rollout has been created but it hasn't been processed yet. |
-| Skipped           | The update is not applicable for this robot.    |
-| Scheduled           | The rollout has been scheduled for this robot.    |
-| Accepted           | The robot has acknowledged the update and will process it.   |
-| Successful           | The robot has successfully pulled the update.   |
-| Cancelled           | The rollout was cancelled by a user.    |
-| Failed           | The robot has tried and failed to pull the update.   |
+| `Pending`     | Rollout has been created but it hasn't been processed yet. |
+| `Skipped`           | The update is not applicable for this robot.    |
+| `Scheduled`           | The rollout has been scheduled for this robot.    |
+| `Accepted`           | The robot has acknowledged the update and will process it.   |
+| `Successful`           | The robot has successfully pulled the update.   |
+| `Cancelled`           | The rollout was cancelled by a user.    |
+| `Failed`           | The robot has tried and failed to pull the update.   |
 
 ![History of rollouts affecting this robot.](../imgs/robot-history.png)
 

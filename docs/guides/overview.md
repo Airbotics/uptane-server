@@ -2,12 +2,13 @@
 
 These guides will help you perform various actions with Airbotics:
 
+* [Overview](overview.md)
 * [Quickstart](quickstart.md)
-* [Images](images.md)
-* [Rollouts](rollouts.md)
-* [Groups](grouping-your-robots.md)
-* [Robots](robot.md)
 * [Provisioning credentials](provisioning-credentials.md)
+* [Images](images.md)
+* [Robots](robots.md)
+* [Rollouts](rollouts.md)
+* [Groups](groups.md)
 * [Accounts](accounts.md)
 * [Teams](teams.md)
 * [Self-hosting](self-hosting.md)

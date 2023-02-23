@@ -22,8 +22,8 @@ const config = {
     PORT: process.env.PORT || 8001,                                             // port the server listens on
     NODE_ENV: NODE_ENV,                                                         // mode to run the server in, 'production' or 'development'
     MAX_JSON_REQUEST_SIZE: '100mb',                                             // max json size we accept
-    MAIN_SERVER_ORIGIN: 'http://localhost:8002',                                // origin of the main server
-    ROBOT_GATEWAY_ORIGIN: 'https://localhost:8003',                             // origin of the robot gateway
+    API_ORIGIN: 'http://localhost:8002',                                        // origin of the api (api.airbotics.io)
+    GATEWAY_ORIGIN: 'https://localhost:8003',                                   // origin of the gateway (gateway.airbotics.io)
     CORS_ORIGIN: NODE_ENV==='production' ? ['https://staging.airbotics.io', 'https://dashboard.airbotics.io'] : 'http://localhost:3000',
 
     // blob storage

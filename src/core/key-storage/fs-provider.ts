@@ -34,9 +34,6 @@ export class FilesystemProvider implements IKeyStorageProvider {
     }
 
     async getKeyPair(id: string): Promise<IKeyPair> {
-        console.log(id);
-        console.log(`${id.replace(/\//g, '-')}-public.pem`);
-        console.log('-----------------------')
         const publicFilePathKey = path.resolve(path.join(this.keysPath, `${id.replace(/\//g, '-')}-public.pem`));
         const privateFilePathKey = path.resolve(path.join(this.keysPath, `${id.replace(/\//g, '-')}-private.pem`));
         return {

@@ -95,12 +95,12 @@ router.put('/:team_id/api/v1/user_repo/targets', validate(targetsSchema, EValida
     // to it from the get call, not the checksum of the targets in this requests body
 
     const targetsCheckSum = generateHash(toCanonical(clientTargetsMetadata), { hashDigest: EHashDigest.Sha256 });
-    /*  
+    
     if (targetsCheckSum !== clientChecksum) {
         logger.warn('a client is trying to upload a targets.json whose checksum is incorrect');
         return res.status(412).json({ code: 'role_checksum_mismatch' });
     }
-    */
+    
 
     // validate signature
     // assuming only one signature is sent and rsa keys are used
@@ -115,7 +115,6 @@ router.put('/:team_id/api/v1/user_repo/targets', validate(targetsSchema, EValida
 
     if (!verified) {
         logger.warn('a client is trying to upload a targets.json whose signature is incorrect');
-        //TODO incorrect error response
         return res.status(400).json({ code: 'invalid_signature' });
     }
 

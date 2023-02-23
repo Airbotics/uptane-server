@@ -91,6 +91,7 @@ model Team {
 // TODO add in the account that downloaded/revoked it
 model ProvisioningCredentials {
     id                  String          @id @default(uuid()) @unique
+    name                String
     team_id             String
     created_at          DateTime        @default(now())
     status              CertificateStatus   @default(issuing)   // combination of status as certs

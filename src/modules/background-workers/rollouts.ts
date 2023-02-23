@@ -163,7 +163,7 @@ const generateNewMetadata = async (team_id: string, robot_id: string, affectedEc
                     }
                 },
                 targetFormat: String(affected.image.format).toUpperCase(),
-                uri: `${config.ROBOT_GATEWAY_ORIGIN}/api/v0/robot/repo/images/${affected.image.id}`
+                uri: `${config.GATEWAY_ORIGIN}/api/v0/robot/repo/images/${affected.image.id}`
             },
             length: affected.image.size,
             hashes: {

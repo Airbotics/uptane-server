@@ -1,6 +1,6 @@
 # vs code extension to make http requests easily
 
-@BASE_URL=http://localhost:8001
+@BASE_URL=http://localhost:8002
 @API_VERSION=v0
 @ORY_PROJECT_URL={{$dotenv %ORY_PROJECT_URL}}
 
@@ -73,7 +73,7 @@ x-session-token: {{SESSION_TOKEN}}
 Content-Type: application/json
 
 {
-    "name": "Boston Dynamics"
+    "name": "Acme Robotics"
 }
 
 
@@ -113,22 +113,27 @@ air-team-id: {{TEAM_ID}}
 Content-Type: application/json
 
 {
-    "description": "Test prov credentials",
-    "expires_at": 1992079455269       
+    "name": "a test credential",
+    "expires_at": 1992079455269
 }
 //sometime in 2033
 
 
 
 ### list provisioning credentials
+# @name provsioningCredentialsResponse
 GET {{BASE_URL}}/api/{{API_VERSION}}/admin/provisioning-credentials HTTP/1.1
 x-session-token: {{SESSION_TOKEN}}
 air-team-id: {{TEAM_ID}}
 
-###
-GET {{BASE_URL}}/api/{{API_VERSION}}/admin/f HTTP/1.1
+@CREDENTIALS_ID = {{provsioningCredentialsResponse.response.body.$[0].id}}
+
+
+### download provisioning credentials
+GET {{BASE_URL}}/api/{{API_VERSION}}/admin/provisioning-credentials/{{CREDENTIALS_ID}} HTTP/1.1
 x-session-token: {{SESSION_TOKEN}}
 air-team-id: {{TEAM_ID}}
+
 
 
 

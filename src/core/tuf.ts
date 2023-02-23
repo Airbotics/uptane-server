@@ -99,9 +99,6 @@ export const getTufMetadata = async (
 
     else {
 
-        console.log(version);
-        
-
         const metadata = await prisma.tufMetadata.findFirst({
             where: {
                 team_id,

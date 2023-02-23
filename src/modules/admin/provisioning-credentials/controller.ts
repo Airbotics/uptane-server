@@ -35,7 +35,8 @@ export const createProvisioningCredentials = async (req: Request, res: Response)
 
     const oryID = req.oryIdentity!.traits.id;
     const teamID = req.headers['air-team-id']!;
-    const { expires_at } = req.body;
+    const expires_at = dayjs(req.body.expires_at);
+    const { name } = req.body;
 
     // create the provisioning key and issue the provisioning cert, this will create it in the db
     const provisioningKeyPair = generateKeyPair({ keyType: EKeyType.Rsa });
@@ -53,8 +54,9 @@ export const createProvisioningCredentials = async (req: Request, res: Response)
     const provisioningCredentials = await prisma.provisioningCredentials.create({
         data: {
             team_id: teamID,
+            name,
             status: CertificateStatus.issuing,
-            expires_at,
+            expires_at: expires_at.toDate(),
             provisioning_cert_id: provisioningCertId,
             client_cert_id: clientCertId
         }
@@ -67,12 +69,13 @@ export const createProvisioningCredentials = async (req: Request, res: Response)
         actor_id: oryID,
         team_id: teamID,
         meta: {
-            id: provisioningCredentials.id
+            id: provisioningCredentials.id,
+            name
         }
     });
 
     logger.info('provisioning credentials have been created');
-    return res.status(200).end()
+    return res.status(200).json({id: provisioningCredentials.id });
 
 }
 
@@ -101,12 +104,12 @@ export const downloadProvisioningCredential = async (req: Request, res: Response
     });
 
     if (!provisioningCredentials) {
-        logger.warning('trying to download credentials that do not exist');
+        logger.warn('trying to download credentials that do not exist');
         return res.status(400).end();
     }
 
     if (provisioningCredentials.status !== CertificateStatus.issuing) {
-        logger.warning('trying to download credentials that is not issuing');
+        logger.warn('trying to download credentials that is not issuing');
         return res.status(400).end();
     }
 
@@ -127,7 +130,7 @@ export const downloadProvisioningCredential = async (req: Request, res: Response
     const provisioningKeyPair = await keyStorage.getKeyPair(provisioningCredentials.provisioning_cert_id);
 
     // get client cert and key
-    const clientCert = await certificateManager.downloadCertificate(teamID, provisioningCredentials.provisioning_cert_id);
+    const clientCert = await certificateManager.downloadCertificate(teamID, provisioningCredentials.client_cert_id);
 
     if(!clientCert) {
         return res.status(400).end();
@@ -163,7 +166,7 @@ export const downloadProvisioningCredential = async (req: Request, res: Response
     // NOTE: dont include auth field since were using client mutual tls, for testing we can include: `no_auth: true`
     const treehubJson = {
         ostree: {
-            server: `${config.MAIN_SERVER_ORIGIN}/api/v0/robot/treehub/${teamID}`
+            server: `${config.GATEWAY_ORIGIN}/api/v0/robot/treehub`
         }
     };
 
@@ -175,10 +178,10 @@ export const downloadProvisioningCredential = async (req: Request, res: Response
     const archive = archiver('zip');
     archive.append(Buffer.from(toCanonical(targetsTufKeyPublic), 'ascii'), { name: 'targets.pub' });
     archive.append(Buffer.from(toCanonical(targetsTufKeyPrivate), 'ascii'), { name: 'targets.sec' });
-    archive.append(Buffer.from(`${config.MAIN_SERVER_ORIGIN}/api/v0/robot/repo/${teamID}`, 'ascii'), { name: 'tufrepo.url' });
+    archive.append(Buffer.from(`${config.GATEWAY_ORIGIN}/api/v0/robot/repo`, 'ascii'), { name: 'tufrepo.url' });
     archive.append(Buffer.from(toCanonical(rootMetadata), 'ascii'), { name: 'root.json' });
     archive.append(Buffer.from(JSON.stringify(treehubJson), 'ascii'), { name: 'treehub.json' });
-    archive.append(Buffer.from(`${config.ROBOT_GATEWAY_ORIGIN}/api/v0/robot`, 'ascii'), { name: 'autoprov.url' });
+    archive.append(Buffer.from(`${config.GATEWAY_ORIGIN}/api/v0/robot`, 'ascii'), { name: 'autoprov.url' });
     archive.append(Buffer.from(forge.asn1.toDer(clientp12).getBytes(), 'binary'), { name: 'client_auth.p12' });
     archive.append(Buffer.from(forge.asn1.toDer(provisioningp12).getBytes(), 'binary'), { name: 'autoprov_credentials.p12' });
     archive.finalize();
@@ -234,6 +237,7 @@ export const listProvisioningCredentials = async (req: Request, res: Response) =
 
     const credentialsSanitised = provisioningCredentials.map(cred => ({
         id: cred.id,
+        name: cred.name,
         status: cred.status,
         expires_at: cred.expires_at,
         created_at: cred.created_at,

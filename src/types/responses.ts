@@ -94,6 +94,25 @@ export interface IRobotRolloutRes {
 
 
 
+/**
+ * Images
+ */
+
+export interface IImageRobotRes {
+    robot: {
+        id: string;
+        name: string | null;
+    },
+    ecu: {
+        id: string;
+        hw_id: string;
+        primary: boolean;
+        updated_at: Date
+    }
+}
+
+
+
 
 
 /**

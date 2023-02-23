@@ -2,6 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { BadResponse, SuccessJsonResponse } from '@airbotics-core/network/responses';
 import { logger } from '@airbotics-core/logger';
 import { prisma } from '@airbotics-core/drivers';
+import { IImageRobotRes } from 'src/types/responses';
 
 
 /**
@@ -75,6 +76,40 @@ export const getImage = async (req: Request, res: Response) => {
 
 }
 
+
+
+export const listRobotsWithImage = async (req: Request, res: Response) => {
+
+    const teamID = req.headers['air-team-id']!;
+    const imageID = req.params.image_id;
+
+    const ecus = await prisma.ecu.findMany({
+        where: {
+            image_id: imageID,
+            team_id: teamID
+        },
+        include: {
+            robot: true
+        }
+    })
+
+    const ecusSanitised: IImageRobotRes[] = ecus.map(ecu => ({
+        robot: {
+            id: ecu.robot.id,
+            name: ecu.robot.name
+        },
+        ecu: {
+            id: ecu.id,
+            hw_id: ecu.hwid,
+            primary: ecu.primary,
+            updated_at: ecu.updated_at
+        }
+    }))
+
+    logger.info('A user read a list of robots that have an image installed');
+    return new SuccessJsonResponse(res, ecusSanitised);
+
+}
 
 
 /**

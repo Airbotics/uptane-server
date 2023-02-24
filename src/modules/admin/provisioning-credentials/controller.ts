@@ -19,6 +19,7 @@ import config from '@airbotics-config';
 import { generateTufKey, getTufMetadata } from '@airbotics-core/tuf';
 import { keyStorage } from '@airbotics-core/key-storage';
 import { getKeyStorageRepoKeyId, toCanonical } from '@airbotics-core/utils';
+import { ICredentialsRes } from 'src/types/responses';
 
 /**
  * Create provisioning credentials.
@@ -235,7 +236,7 @@ export const listProvisioningCredentials = async (req: Request, res: Response) =
         }
     });
 
-    const credentialsSanitised = provisioningCredentials.map(cred => ({
+    const credentialsSanitised: ICredentialsRes[] = provisioningCredentials.map(cred => ({
         id: cred.id,
         name: cred.name,
         status: cred.status,

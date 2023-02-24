@@ -1,4 +1,4 @@
-import { ImageFormat, RolloutRobotStatus, RolloutStatus } from "@prisma/client";
+import { CertificateStatus, ImageFormat, RolloutRobotStatus, RolloutStatus } from "@prisma/client";
 
 
 /**
@@ -150,4 +150,22 @@ export interface IRolloutAffectedBotRes {
         hwid: string;
         update_from: string;
     }[]
+}
+
+
+/**
+ * PROVISIONING CREDENTIALS
+ */
+export interface ICreateCredentialsRes {
+    id: string;
+}
+
+
+export interface ICredentialsRes {
+    id: string;
+    name: string;
+    status: CertificateStatus;
+    expires_at: Date;
+    created_at: Date;
+    revoked_at: Date | null;
 }

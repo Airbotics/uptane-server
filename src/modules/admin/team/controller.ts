@@ -494,3 +494,45 @@ export const deleteTeam = async (req: Request, res: Response, next: NextFunction
     return new NoContentResponse(res, 'The team has been deleted')
 }
 
+
+
+
+/**
+ * Delete a member from the requesters team 
+ * 
+ * DOES NOT YET DELETE MEMBER
+ * 
+ * Multi player is not yet implemented yet, so each team only has one member
+ * and cannot be removed at this time.
+ */
+export const deleteTeamMembers = async (req: Request, res: Response, next: NextFunction) => {
+
+    const teamID = req.headers['air-team-id']!;
+
+
+    const oryID = req.oryIdentity!.traits.id;
+    
+    airEvent.emit({
+        resource: EEventResource.Team,
+        action: EEventAction.MemberRemoved,
+        actor_type: EEventActorType.User,
+        actor_id: oryID,
+        team_id: teamID,
+        meta: null
+    });
+
+    logger.info('a user has attempted to remove a member from their team');
+    return new BadResponse(res, 'You may not remove yourself from a team');
+}
+
+
+
+
+
+/**
+ * DOES NOT YET DELETE ACCOUNT
+ * 
+ * At this stage we will direct users to contact us to confirm account deletion as this 
+ * could potentially be a very damaaging action
+ * 
+ */

@@ -23,18 +23,23 @@ router.patch('/teams',
     mustBeInTeam(OryTeamRelations.admin),
     controller.updateTeam);
 
-//list team members
-router.get('/teams/members',
-    mustBeAuthenticated,
-    mustBeInTeam(OryTeamRelations.admin),
-    controller.listTeamMembers);
-
 // delete team
 router.delete('/teams',
     mustBeAuthenticated,
     mustBeInTeam(OryTeamRelations.admin),
     controller.deleteTeam);
 
+//list team members
+router.get('/teams/members',
+    mustBeAuthenticated,
+    mustBeInTeam(OryTeamRelations.admin),
+    controller.listTeamMembers);
+
+// remove member from team
+router.delete('/teams/members/:member_id',
+    mustBeAuthenticated,
+    mustBeInTeam(OryTeamRelations.admin),
+    controller.deleteTeamMembers);
     
 
 /*

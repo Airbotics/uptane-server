@@ -123,7 +123,8 @@ export const enum EEventAction {
     Deleted = 'deleted',
     RobotAdded = 'robot_added',
     RobotRemoved = 'robot_removed',
-    Signed = 'signed'
+    Signed = 'signed',
+    MemberRemoved = 'member_removed'
 }
 
 // types of actors that can make an event

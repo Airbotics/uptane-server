@@ -19,4 +19,12 @@ router.get('/images/:image_id',
     validate(imageIdSchema, EValidationSource.Path),
     controller.getImage);
 
+
+// get all robots that have image installed
+router.get('/images/:image_id/robots',
+    mustBeAuthenticated,
+    mustBeInTeam(OryTeamRelations.admin),
+    validate(imageIdSchema, EValidationSource.Path),
+    controller.listRobotsWithImage);
+
 export default router;

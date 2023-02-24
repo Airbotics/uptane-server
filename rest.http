@@ -154,6 +154,29 @@ Content-Type: application/json
 }
 
 
+### Register a robots ECUs (this will always be called by aktualizr not an admin)
+POST {{BASE_URL}}/api/{{API_VERSION}}/robot/director/ecus HTTP/1.1
+x-session-token: {{SESSION_TOKEN}}
+air-client-id: {{ROBOT_ID}}
+Content-Type: application/json
+
+{
+    "primary_ecu_serial": "nvidia-jetson-AFHSDFJKAL",
+    "ecus": [
+        {
+            "ecu_serial": "nvidia-jetson-AFHSDFJKAL",
+            "hardware_identifier": "nvidia-jetson",
+            "clientKey": {
+                "keytype": "RSA",
+                "keyval": {
+                    "public": "-----BEGIN PUBLIC KEY-----12334-----END PUBLIC KEY-----"
+                }
+            }
+        }
+    ]
+}
+
+
 ### list robots
 # @name robotsResponse
 GET {{BASE_URL}}/api/{{API_VERSION}}/admin/robots HTTP/1.1
@@ -374,6 +397,47 @@ air-client-id:{{ROBOT_ID}}
 GET {{BASE_URL}}/api/{{API_VERSION}}/robot/repo/2.root.json HTTP/1.1
 air-client-id:{{ROBOT_ID}}
 
+
+
+### Upload a new targets.json (usually done by garage sign)
+PUT {{BASE_URL}}/api/{{API_VERSION}}/robot/repo/{{TEAM_ID}}/api/v1/user_repo/targets HTTP/1.1
+Content-Type: application/json
+
+{
+  "signed": {
+    "_type": "Targets",
+    "expires": "2024-01-31T22:28:17Z",
+    "targets": {
+      "jetson-primary-1.0.0": {
+        "hashes": {
+          "sha256": "908d8794ca5295eb87a180f5ad746154559cf736cbe4da2c84024db58cbc31c1",
+          "sha512": "07cce32d67b098a1a49d949a129187ddede133aa15ef88d9202ede4b287775d0f8053459201e3abc24425014fae8083e134d8de2741f28f59ad0dd62cf699fd8"
+        },
+        "length": 1024,
+        "custom": {
+          "cliUploaded": false,
+          "name": "jetson-primary",
+          "version": "1.0.0",
+          "hardwareIds": [
+            "nvidia-jetson"
+          ],
+          "targetFormat": "OSTREE",
+          "uri": "http://images.airbotics.io/908d8794ca5295eb87a180f5ad746154559cf736cbe4da2c84024db58cbc31c1",
+          "createdAt": "2022-01-31T22:28:17Z",
+          "updatedAt": "2022-01-31T22:28:17Z"
+        }
+      }
+    },
+    "version": 1
+  },
+  "signatures": [
+    {
+      "sig": "otBiJ9Xap2yDyz1IOwF7/jb3ja46vVl6vz/oIvQxLBg5XKFk1czyEb/L5g4RYYYhq/0jVf+UPWxR5gGEXLN5J24dBl+CDAyawZqTaGSn+pTt61zT2BVheV5ThfUhOcBQJBnABvW4BTvswzW0UHulRfD6lCwR2FQc/PbkcqVTSH+UBcDxBUYsS2KKVlJA5XbcvYvu+wEKSuo620APPJ86ztePZj1lgu07MpTQ3cVuRoYDzjWJmLmTXrZW4nd31It4rEpn3jd9WWda7kiAHZd2eGGwVjAGROwMm8ykHo0eQmYhQCok79Ro7Phtl10wDf258HgNrsAka2djH9oxZ2zelQ==",
+      "keyid": "d9d51166f1146a45e3a3c8a02d50e9d4d035a50fb8e9bc426ab41787aa539a4e",
+      "method": "rsassa-pss-sha256"
+    }
+  ]
+}
 
 
 

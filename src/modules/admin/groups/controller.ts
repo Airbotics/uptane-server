@@ -1,8 +1,8 @@
 import e, { Request, Response, NextFunction } from 'express';
 import { BadResponse, SuccessJsonResponse, NoContentResponse } from '@airbotics-core/network/responses';
 import { logger } from '@airbotics-core/logger';
-import { prisma } from '@airbotics-core/drivers';
-import { IGroup, IGroupRobot } from '@airbotics-types';
+import prisma from '@airbotics-core/drivers/postgres';
+import { ICreateGroupBody, IGroup, IGroupRobot } from '@airbotics-types';
 import { airEvent } from '@airbotics-core/events';
 import { EEventAction, EEventActorType, EEventResource } from '@airbotics-core/consts';
 
@@ -13,27 +13,27 @@ import { EEventAction, EEventActorType, EEventResource } from '@airbotics-core/c
  */
 export const createGroup = async (req: Request, res: Response, next: NextFunction) => {
 
-    const oryID = req.oryIdentity!.traits.id;
-    const teamID = req.headers['air-team-id']!;
+    const oryId = req.oryIdentity!.traits.id;
+    const teamId = req.headers['air-team-id']!;
 
     const {
         name,
         description,
-        robotIDs
-    } = req.body;
+        robot_ids
+    } = req.body as ICreateGroupBody;
 
     try {
 
-
         const group = await prisma.group.create({
             data: {
-                name,
-                description,
-                team_id: teamID,
+                name: name,
+                description: description,
+                team_id: teamId,
                 robots: {
                     createMany: {
-                        data: robotIDs.map((id: string) => ({
-                            robot_id: id
+                        data: robot_ids.map(id => ({
+                            robot_id: id,
+                            team_id: teamId
                         }))
                     }
                 }
@@ -44,7 +44,7 @@ export const createGroup = async (req: Request, res: Response, next: NextFunctio
             id: group.id,
             name: group.name,
             description: group.description,
-            num_robots: robotIDs.length,
+            num_robots: robot_ids.length,
             created_at: group.created_at
         }
 
@@ -52,13 +52,13 @@ export const createGroup = async (req: Request, res: Response, next: NextFunctio
             resource: EEventResource.Group,
             action: EEventAction.Created,
             actor_type: EEventActorType.User,
-            actor_id: oryID,
-            team_id: teamID,
+            actor_id: oryId,
+            team_id: teamId,
             meta: {
                 id: group.id,
                 name,
                 description,
-                robot_ids: robotIDs
+                robot_ids: robot_ids
             }
         });
 
@@ -67,6 +67,8 @@ export const createGroup = async (req: Request, res: Response, next: NextFunctio
         return new SuccessJsonResponse(res, sanitisedGroup);
 
     } catch (error) {
+        console.log(error);
+        
         next(error);
     }
 }

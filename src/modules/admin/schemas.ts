@@ -1,3 +1,4 @@
+import { RolloutTargetType } from '@airbotics-core/consts';
 import Joi from 'joi';
 
 /**
@@ -35,7 +36,7 @@ export const updateAccountSchema = Joi.object({
 export const createGroupSchema = Joi.object({
     name: nameField.required(),
     description: nameField,
-    robotIDs: Joi.array().items(robotIdField.required()).min(1).max(100)
+    robot_ids: Joi.array().items(robotIdField.required()).min(1).max(100)
 });
 
 export const updateGoupSchema = Joi.object({
@@ -48,6 +49,24 @@ export const createTeamSchema = Joi.object({
 });
 
 export const createRolloutSchema = Joi.object({
-    ecu_id: Joi.string().required(),
-    image_id: Joi.string().required()
+    name: Joi.string().required(),
+    description: Joi.string().required(),
+    hwid_img_map: Joi.array().items(Joi.object({
+        hw_id: Joi.string().required(), 
+        img_id: Joi.string().required() 
+    })).min(1),
+    targeted_robots: Joi.object({
+        type: Joi.string().valid(
+            RolloutTargetType.group, 
+            RolloutTargetType.hw_id_match, 
+            RolloutTargetType.selected_bots
+        ).required(),
+        group_id: Joi.string().allow(''),
+        selected_bot_ids: Joi.array().items(Joi.string())
+    })
+});
+
+export const provCredentialsSchema = Joi.object({
+    name: Joi.string().required().min(2),
+    expires_at: Joi.number().required().min(new Date().getDate())
 });

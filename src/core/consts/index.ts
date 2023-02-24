@@ -32,7 +32,7 @@ export const enum ETUFRole {
 
 // used to specify which version of the tuf metadata should be fetched
 export const TUF_METADATA_LATEST = -1;
-export const TUF_METADATA_INITIAL = 0;
+export const TUF_METADATA_INITIAL = 1;
 
 // hash digest lengths
 export const enum EHashDigest {
@@ -86,6 +86,12 @@ export const ROOT_CERT_LOCALITY = 'San Francisco';
 export const ROOT_CERT_STATE = 'CA';
 export const ROOT_CERT_COUNTRY = 'US';
 
+
+export const enum RolloutTargetType {
+    group = 'group',
+    hw_id_match = 'hw_id_match',
+    selected_bots = 'selected_bots',
+}
 
 // event resources
 export const enum EEventResource {

@@ -12,4 +12,9 @@ router.put('/account',
     validate(updateAccountSchema, EValidationSource.Body),
     controller.updateAccount);
 
+// delete a users account
+router.delete('/account',
+    mustBeAuthenticated,
+    controller.deleteAccount);
+
 export default router;

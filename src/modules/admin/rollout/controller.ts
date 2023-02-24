@@ -1,103 +1,364 @@
 import { Request, Response, NextFunction } from 'express';
 import { BadResponse, SuccessJsonResponse } from '@airbotics-core/network/responses';
 import { logger } from '@airbotics-core/logger';
+import { Ecu, Robot, Rollout, RolloutStatus } from '@prisma/client';
+import { ICreateRolloutBody } from 'src/types';
+import { RolloutTargetType } from '@airbotics-core/consts';
+import { SuccessMessageResponse } from '../../../core/network/responses';
 import { prisma } from '@airbotics-core/drivers';
 import { generateStaticDelta } from '@airbotics-core/generate-static-delta';
 import { airEvent } from '@airbotics-core/events';
 import { EEventAction, EEventActorType, EEventResource } from '@airbotics-core/consts';
+import { IRolloutAffectedBotRes, IRolloutDetailRes, IRolloutRes } from 'src/types/responses';
 
 
 /**
  * Create a rollout.
  * 
- * Creates an association betwen an ecu and image and triggers a delta generate
+ * @description At a high level a rollout is a map between ecu hw_id(s) and built
+ * compatible image(s). Creating a rollout will store which images are due to be 
+ * installed on which ecus with mathcing hw_ids given a a list of targeted robots. 
+ * The state of the rollout on each affected device is stored as well as the overall 
+ * state of the rollout. This endpoint leaves the rollout in a 'pending' state, the
+ * launchRollout endpoint must be called before the updates begin to be applied to
+ * affected robots 
+ * 
+ * TODO: Generate deltas
+ * 
  */
 export const createRollout = async (req: Request, res: Response) => {
 
-    const oryID = req.oryIdentity!.traits.id;
-    const teamID = req.headers['air-team-id']!;
+    const body: ICreateRolloutBody = req.body;
 
-    const {
-        ecu_id,
-        image_id
-    } = req.body;
+    const teamId = req.headers['air-team-id']!;
+    const oryId = req.oryIdentity!.traits.id;
 
-    // check ecu exists
-    const ecu = await prisma.ecu.findUnique({
-        where: {
-            id: ecu_id
+
+    const createdRollout: Rollout = await prisma.$transaction(async tx => {
+
+        //Create the rollout
+        const rollout = await tx.rollout.create({
+            data: {
+                team_id: teamId,
+                name: body.name,
+                description: body.description,
+                status: RolloutStatus.preparing
+            }
+        });
+
+        //Add the hw_id to image_id map for the rollout
+        await tx.rolloutHardwareImage.createMany({
+            data: body.hwid_img_map.map(elem => ({
+                rollout_id: rollout.id,
+                hw_id: elem.hw_id,
+                image_id: elem.img_id
+
+            }))
+        });
+
+        //determine which robots are affected by the rollout
+        const robotIDs: string[] = [];
+        const botTargetType = body.targeted_robots.type;
+
+        if (botTargetType === RolloutTargetType.selected_bots) {
+            robotIDs.push(...body.targeted_robots.selected_bot_ids!);
         }
-    });
 
-    if (!ecu) {
-        logger.warn('could not create a rollout because ecu does not exist');
-        return new BadResponse(res, 'could not create rollout');
-    }
+        else if (botTargetType === RolloutTargetType.group) {
 
-    // if this ecu has an image already then we'll create a delta between it and the image we want to go to
-    if (ecu.image_id) {
-        // TODO compute static delta
-        // await generateStaticDelta(teamID, branch, from, to);
-    }
+            const robotsInGroup = await tx.robotGroup.findMany({
+                where: {
+                    group_id: body.targeted_robots.group_id!
+                },
+                include: {
+                    robot: { select: { id: true } }
+                }
+            });
 
-    // check image exists
-    const imageCount = await prisma.image.count({
-        where: {
-            id: image_id
+            robotIDs.push(...robotsInGroup.map(botGrp => (botGrp.robot_id)));
         }
-    });
 
-    if (imageCount === 0) {
-        logger.warn('could not create a rollout because image does not exist');
-        return new BadResponse(res, 'could not create rollout');
-    }
+        else if (botTargetType === RolloutTargetType.hw_id_match) {
 
-    const tmpRollout = await prisma.tmpEcuImages.create({
-        data: {
-            image_id,
-            ecu_id
+            const hwIds = body.hwid_img_map.map(elem => (elem.hw_id));
+
+            const ecuRobots = await tx.ecu.findMany({
+                where: {
+                    hwid: { in: hwIds }
+                },
+                distinct: ['robot_id']
+            });
+
+            robotIDs.push(...ecuRobots.map(ecuBot => (ecuBot.robot_id)));
         }
+
+        else {
+            throw ('Unknown robot target type for rollout');
+        }
+
+        await tx.rolloutRobot.createMany({
+            data: robotIDs.map(id => ({
+                rollout_id: rollout.id,
+                robot_id: id
+            }))
+        });
+
+        return rollout;
+
     });
 
     airEvent.emit({
         resource: EEventResource.Rollout,
         action: EEventAction.Created,
         actor_type: EEventActorType.User,
-        actor_id: oryID,
-        team_id: teamID,
+        actor_id: oryId,
+        team_id: teamId,
         meta: null
     });
 
-    const santistedRollout = {
-        image_id: tmpRollout.image_id,
-        ecu_id: tmpRollout.ecu_id,
-        created_at: tmpRollout.created_at,
-        updated_at: tmpRollout.updated_at
-    };
+    const rolloutSantised: IRolloutRes = {
+        id: createdRollout.id,
+        name: createdRollout.name,
+        description: createdRollout.description,
+        status: createdRollout.status,
+        created_at: createdRollout.created_at,
+        updated_at: createdRollout.updated_at
+    }
 
-    logger.info('created tmp rollout');
-    return new SuccessJsonResponse(res, santistedRollout);
+    logger.info('created rollout');
+
+    return new SuccessJsonResponse(res, rolloutSantised);
 
 }
 
+
+
 /**
- * List rollouts.
+ * Launches a rollout
  * 
- * TODO
- * - implement
+ * @description This will set the rollout status to 'launched' meaning
+ * the next time the rollout worker runs it will process the rollout and 
+ * generate new director targets metadata for all the affected devices.
+ * As the affected robots attempt to update themselves, the various status 
+ * fields will be updated.
+ * 
+ */
+export const launchRollout = async (req: Request, res: Response) => {
+
+    const rolloutId = req.params.rollout_id;
+    const teamId = req.headers['air-team-id']!;
+
+    try {
+        await prisma.rollout.update({
+            data: {
+                status: 'launched'
+            },
+            where: {
+                id_team_id: {
+                    id: rolloutId,
+                    team_id: teamId
+                }
+            }
+        });
+    }
+    catch (e) {
+        logger.warn('could not launch the rollout, either it does not exist or belongs to another team');
+        return new BadResponse(res, 'Unable to launch rollout')
+    }
+
+    logger.info('a user has launched a rollout');
+    return new SuccessMessageResponse(res, rolloutId);
+}
+
+
+
+
+/**
+ * Lists rollouts
+ * 
+ * @description This will return a list of rollouts.
+ * 
  */
 export const listRollouts = async (req: Request, res: Response) => {
-    logger.info('a user has gotten a list of rollout');
-    return new SuccessJsonResponse(res, []);
+
+    const teamId = req.headers['air-team-id'];
+
+    const rollouts = await prisma.rollout.findMany({
+        where: {
+            team_id: teamId
+        },
+        orderBy: {
+            created_at: 'desc'
+        }
+    })
+
+    const rolloutSanitised: IRolloutRes[] = rollouts.map(rollout => ({
+        id: rollout.id,
+        name: rollout.name,
+        description: rollout.description,
+        status: rollout.status,
+        created_at: rollout.created_at,
+        updated_at: rollout.updated_at
+    }))
+
+    logger.info('A user read a list of rollouts');
+
+    return new SuccessJsonResponse(res, rolloutSanitised);
 }
 
+
+
 /**
- * Get a rollout detail.
+ * Get detailed information about one rollout
  * 
- * TODO
- * - implement
+ * @description This will return detailed information about a given 
+ * rollout, including the status of each robot in the rollout
+ * 
  */
 export const getRollout = async (req: Request, res: Response) => {
-    logger.info('a user has gotten details of a rollout');
-    return new SuccessJsonResponse(res, {});
+
+    const rolloutId = req.params.rollout_id;
+    const teamId = req.headers['air-team-id']!;
+
+    const rollout = await prisma.rollout.findUnique({
+        where: {
+            id_team_id: {
+                id: rolloutId,
+                team_id: teamId
+            }
+        },
+        include: {
+            robots: {
+                select: { id: true, status: true }
+            }
+        }
+    })
+
+    if (!rollout) {
+        logger.warn('could not get rollout details, either it does not exist or belongs to another team');
+        return new BadResponse(res, 'Unable to get rollout details');
+    }
+
+    const rolloutSanitised: IRolloutDetailRes = {
+        id: rollout.id,
+        name: rollout.name,
+        description: rollout.description,
+        status: rollout.status,
+        created_at: rollout.created_at,
+        updated_at: rollout.updated_at,
+        robots: rollout.robots.map(bot => ({
+            id: bot.id,
+            status: bot.status
+        }))
+    };
+
+    logger.info('A user read a rollout detail');
+    return new SuccessJsonResponse(res, rolloutSanitised);
+}
+
+
+
+
+
+
+type AffectedRobot = (Robot & {
+    ecus: (Ecu & {
+        installed_image: {
+            name: string;
+        } | null;
+    })[];
+})
+
+const computeAffectedHelper = (body:ICreateRolloutBody, robots: AffectedRobot[]): IRolloutAffectedBotRes[] =>  {
+
+    return robots.map(bot => ({
+        id: bot.id,
+        name: bot.id,    //todo change to name
+        ecus_affected: bot.ecus
+            .filter(ecu => body.hwid_img_map.flatMap(elem => elem.hw_id).includes(ecu.hwid))
+            .map(ecu => ({
+                id: ecu.id,
+                hwid: ecu.hwid,
+                update_from: ecu.installed_image ? ecu.installed_image.name : 'Factory image'
+            }))
+    }))
+}
+
+
+export const computeAffected = async (req: Request, res: Response) => {
+
+    const body: ICreateRolloutBody = req.body;
+
+    const teamId = req.headers['air-team-id']!;
+
+    // rollout is targeting a group
+    if (body.targeted_robots.type === RolloutTargetType.group) {
+
+        const robotsInGroup = await prisma.robotGroup.findMany({
+            where: {
+                group_id: body.targeted_robots.group_id,
+                team_id: teamId
+            },
+            include: {
+                robot: {
+                    include: {
+                        ecus: {
+                            include: {
+                                installed_image: { select: { name: true } }
+                            }
+                        }
+                    }
+                }
+            }
+        });
+
+        const affected = computeAffectedHelper(body, robotsInGroup.map(robotGrp => robotGrp.robot))
+        return new SuccessJsonResponse(res, affected);
+    }
+
+    // rollout is targeting matching hwids
+    else if (body.targeted_robots.type === RolloutTargetType.hw_id_match) {
+
+        const robotsWithHwId = await prisma.robot.findMany({
+            where: {
+                ecus: {
+                    some: {
+                        hwid: { in: body.hwid_img_map.flatMap(elem => elem.hw_id) }
+                    }
+                }
+            },
+            include: {
+                ecus: {
+                    include: {
+                        installed_image: { select: { name: true } }
+                    }
+                }
+            }
+        })
+
+        const affected = computeAffectedHelper(body, robotsWithHwId)
+        return new SuccessJsonResponse(res, affected);
+    }
+
+    //rollout is targeting selected robots
+    else {
+
+        const selectedRobots = await prisma.robot.findMany({
+            where: {
+                id: { 
+                    in: body.targeted_robots.selected_bot_ids 
+                }
+            },
+            include: {
+                ecus: {
+                    include: {
+                        installed_image: { select: { name: true } }
+                    }
+                }
+            }
+        })
+
+        const affected = computeAffectedHelper(body, selectedRobots)
+        return new SuccessJsonResponse(res, affected);
+    }
 }

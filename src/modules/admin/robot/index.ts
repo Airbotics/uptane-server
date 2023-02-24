@@ -10,13 +10,13 @@ const router = express.Router();
 //list robots
 router.get('/robots',
     mustBeAuthenticated,
-    mustBeInTeam(OryTeamRelations.admin),
+    mustBeInTeam(OryTeamRelations.member),
     controller.listRobots);
 
 //get robot details
 router.get('/robots/:robot_id',
     mustBeAuthenticated,
-    mustBeInTeam(OryTeamRelations.admin),
+    mustBeInTeam(OryTeamRelations.member),
     validate(robotIdSchema, EValidationSource.Path),
     controller.getRobot);
 
@@ -29,8 +29,23 @@ router.delete('/robots/:robot_id',
 //list groups robot is in
 router.get('/robots/:robot_id/groups',
     mustBeAuthenticated,
-    mustBeInTeam(OryTeamRelations.admin),
+    mustBeInTeam(OryTeamRelations.member),
     validate(robotIdSchema, EValidationSource.Path),
     controller.listRobotGroups);
+
+//list a robots rollouts
+router.get('/robots/:robot_id/rollouts',
+    mustBeAuthenticated,
+    mustBeInTeam(OryTeamRelations.member),
+    validate(robotIdSchema, EValidationSource.Path),
+    controller.listRobotRollouts);
+
+//list a robots telemetry
+router.get('/robots/:robot_id/telemetry',
+    mustBeAuthenticated,
+    mustBeInTeam(OryTeamRelations.member),
+    validate(robotIdSchema, EValidationSource.Path),
+    controller.listRobotTelemetry);
+
 
 export default router;

@@ -22,10 +22,10 @@ export const targetsSchema = Joi.object({
     signed: Joi.object({
         _type: Joi.string().valid(ETUFRole.Targets).required(),
         version: Joi.number().integer().positive().required(),
-        expired: Joi.string().required(), //.format('YYYY-MM-DDThh:mm:SS[Z]')
-        ecu_version_manifests: Joi.object().pattern(/^/, Joi.object({
+        expires: Joi.string().required(), //.format('YYYY-MM-DDThh:mm:SS[Z]')
+        targets: Joi.object().pattern(/^/, Joi.object({
             hashes: hashschema.required(),
-            length: Joi.number().integer().positive().required(),
+            length: Joi.number().integer().required(),
             custom: Joi.object({
                 cliUploaded: Joi.boolean().required(),
                 name: Joi.string().required(),

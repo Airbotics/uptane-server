@@ -11,6 +11,8 @@ import { getKeyStorageRepoKeyId, getKeyStorageEcuKeyId, toCanonical } from '@air
 import { generateSignedSnapshot, generateSignedTargets, generateSignedTimestamp, getLatestMetadataVersion } from '@airbotics-core/tuf';
 import { ManifestErrors } from '@airbotics-core/consts/errors';
 import { mustBeRobot, updateRobotMeta } from '@airbotics-middlewares';
+import { BadResponse } from '@airbotics-core/network/responses';
+import { SuccessMessageResponse } from '../../core/network/responses';
 
 
 const router = express.Router();
@@ -189,195 +191,6 @@ export const robotManifestChecks = async (robotManifest: IRobotManifest, teamID:
 
 
 /**
- * For now we have a tmp table that simply maps ecu serials and images to make it easier
- * to test a full uptane runthrough. We will figure out how to do all the joining between rollouts,
- * stacks, versions, ecus etc. in due course when the schema becomes clearer.
- * 
- * For each ECU determine if the reported installed image is different to the latest one 
- * we have on record, if it is, we need to generate new tuf metadata for the ecu. Otherwise
- * we can infer that the ECU is running the latest avaiable image. There is also a check to 
- * see if the latest rollout has been acknowledged so we don't generate new metadata more than once.
- * 
- * NOTE: THIS WILL BE REPLACED VERY SOON
- */
-const determineNewMetadataRequired = async (robotManifest: IRobotManifest, ecuSerials: string[]): Promise<boolean> => {
-
-
-    //get all the 'rollouts' for each ecu reported
-    const rolloutsPerEcu = await prisma.tmpEcuImages.findMany({
-        distinct: ['ecu_id'],
-        where: {
-            ecu_id: {
-                in: ecuSerials
-            }
-        },
-        orderBy: {
-            created_at: 'desc'
-        },
-        include: {
-            image: true
-        }
-    })
-
-    for (const ecuSerial of ecuSerials) {
-
-        //Which (if any) of the ecus latest rollouts is this?
-        const idx = rolloutsPerEcu.findIndex(elem => elem.ecu_id === ecuSerial);
-
-        /*
-        The robot has reported an ecu with an installed image that is not associated
-        to any rollouts yet.This likely happens when the robot has it's factory image 
-        installed and has never been instructed to perform an update to any of its ecus
-        */
-        if (idx == -1) {
-            logger.warn('ECU image is not in rollout');
-        } else {
-
-            /*
-            The robot is reporting an ecu that is associated with a rollout
-            Lets first check if the rollout has been acknowledged, If it has, we have 
-            already generated the corresponding metadata files, so we dont have to do anything
-            */
-            if (rolloutsPerEcu[idx].acknowledged) {
-                logger.info('Metadata has already been generated for this ECUs image')
-            } else {
-
-                if (rolloutsPerEcu[idx].image.sha256 !==
-                    robotManifest.signed.ecu_version_manifests[ecuSerial].signed.installed_image.fileinfo.hashes.sha256) {
-
-                    //there is a mismatch between rollout image and reported image, so we must generate new metadata
-                    return true;
-                }
-            }
-        }
-    }
-    return false;
-}
-
-
-/**
- * This can definitely be optimised but will do while we focus on readability 
- * rather than effiency. This is called after detecting if any of the ecus reported
- * by a robot differ to what is defined in the tmp rollouts table (TmpEcuImages).
- * We will generate the entite targets json from scratch and not try to compute which
- * of the ecus 1 - N ecus are different
- */
-const generateNewMetadata = async (team_id: string, robot_id: string, ecuSerials: string[]) => {
-
-    //we're repeating ourselves.... will be refactored later
-    const rolloutsPerEcu = await prisma.tmpEcuImages.findMany({
-        distinct: ['ecu_id'],
-        where: {
-            ecu_id: {
-                in: ecuSerials
-            }
-        },
-        orderBy: {
-            created_at: 'desc'
-        },
-        include: {
-            image: true,
-            ecu: true
-        }
-    });
-
-
-    // Lets generate the whole metadata file again
-    const targetsImages: ITargetsImages = {};
-
-    for (const ecuRollout of rolloutsPerEcu) {
-
-        targetsImages[ecuRollout.image_id] = {
-            custom: {
-                ecuIdentifiers: {
-                    [ecuRollout.ecu_id]: {
-                        hardwareId: ecuRollout.ecu.hwid
-                    }
-                },
-                targetFormat: String(ecuRollout.image.format).toUpperCase(),
-                uri: null
-                // uri: `${config.ROBOT_GATEWAY_ORIGIN}/api/v0/robot/repo/images/${ecuRollout.image_id}`
-            },
-            length: ecuRollout.image.size,
-            hashes: {
-                sha256: ecuRollout.image.sha256,
-                // sha512: ecuRollout.image.sha512,
-            }
-        }
-    }
-
-
-    //determine new metadata versions
-    const newTargetsVersion = await getLatestMetadataVersion(team_id, TUFRepo.director, TUFRole.targets, robot_id) + 1;
-    const newSnapshotVersion = await getLatestMetadataVersion(team_id, TUFRepo.director, TUFRole.snapshot, robot_id) + 1;
-    const newTimestampVersion = await getLatestMetadataVersion(team_id, TUFRepo.director, TUFRole.timestamp, robot_id) + 1;
-
-    //Read the keys for the director
-    const targetsKeyPair = await keyStorage.getKeyPair(getKeyStorageRepoKeyId(team_id, TUFRepo.director, TUFRole.targets));
-    const snapshotKeyPair = await keyStorage.getKeyPair(getKeyStorageRepoKeyId(team_id, TUFRepo.director, TUFRole.snapshot));
-    const timestampKeyPair = await keyStorage.getKeyPair(getKeyStorageRepoKeyId(team_id, TUFRepo.director, TUFRole.timestamp));
-
-    //Generate the new metadata
-    const targetsMetadata = generateSignedTargets(config.TUF_TTL.DIRECTOR.TARGETS, newTargetsVersion, targetsKeyPair, targetsImages);
-    const snapshotMetadata = generateSignedSnapshot(config.TUF_TTL.DIRECTOR.SNAPSHOT, newSnapshotVersion, snapshotKeyPair, targetsMetadata);
-    const timestampMetadata = generateSignedTimestamp(config.TUF_TTL.DIRECTOR.TIMESTAMP, newTimestampVersion, timestampKeyPair, snapshotMetadata);
-
-    // perform db writes in transaction
-    await prisma.$transaction(async tx => {
-
-        await tx.tufMetadata.create({
-            data: {
-                team_id,
-                repo: TUFRepo.director,
-                role: TUFRole.targets,
-                robot_id: robot_id,
-                version: newTargetsVersion,
-                value: targetsMetadata as object,
-                expires_at: targetsMetadata.signed.expires
-            }
-        });
-
-        await tx.tufMetadata.create({
-            data: {
-                team_id,
-                repo: TUFRepo.director,
-                role: TUFRole.snapshot,
-                robot_id: robot_id,
-                version: newSnapshotVersion,
-                value: snapshotMetadata as object,
-                expires_at: snapshotMetadata.signed.expires
-            }
-        });
-
-        await tx.tufMetadata.create({
-            data: {
-                team_id,
-                repo: TUFRepo.director,
-                role: TUFRole.timestamp,
-                robot_id: robot_id,
-                version: newTimestampVersion,
-                value: timestampMetadata as object,
-                expires_at: timestampMetadata.signed.expires
-            }
-        });
-
-        // update the acknowledged field in the rollouts table
-        await tx.tmpEcuImages.updateMany({
-            where: {
-                ecu_id: {
-                    in: ecuSerials
-                }
-            },
-            data: {
-                acknowledged: true
-            }
-        })
-
-    })
-}
-
-
-/**
  * Process a manifest from a robot
  */
 router.put('/manifest', mustBeRobot, updateRobotMeta, async (req: Request, res) => {
@@ -408,55 +221,16 @@ router.put('/manifest', mustBeRobot, updateRobotMeta, async (req: Request, res) 
             // .validateTime()
             .validateAttacks()
 
-        /**
-         * if we get to this point we believe we have a manifest that is in good order
-         * now we can inspect the images that were reported and decide what to do.
-         * in airbotics, images are deployed to robots through rollouts so we consult that table.
-         * if the robot is up-to-date then no new tuf metadata needs to be created, so we gracefully
-         * exit and thank the primary for its time. Otherwise we need to generate new TUF targets, 
-         * snapshot and timestamp files for each ecu that needs updated.
-         */
-
-        // firstly record which images are installed on the ecus
-        // TODO these should be done in a transaction
-        // TODO only need to do this if the image id has actually changed
-        for (const ecuSerial in manifest.signed.ecu_version_manifests) {
-
-            await prisma.ecu.update({
-                where: {
-                    team_id_id: {
-                        team_id,
-                        id: ecuSerial
-                    }
-                },
-                data: {
-                    image_id: manifest.signed.ecu_version_manifests[ecuSerial].signed.installed_image.filepath
-                }
-            });
-        }
-
-        const updateRequired = await determineNewMetadataRequired(manifest, ecuSerials);
-
-        if (!updateRequired) {
-            logger.info('processed manifest for robot and determined all ecus have already installed their latest images');
-        } else {
-            await generateNewMetadata(team_id, robot_id, ecuSerials);
-            logger.info('processed manifest for robot and created new tuf metadata');
-        }
-
-        // phew we made it
-        return res.status(200).end();
-
+        return new SuccessMessageResponse(res, 'thank you for your manifest')
 
     }
     catch (e) {
         valid = false;
         logger.error('unable to accept robot manifest');
         logger.error(e);
-        return res.status(400).send('unable to accept robot manifest');
+        return new BadResponse(res, 'unable to accept robot manifest');
     }
     finally {
-
         //Regardless of what happened above, lets save the sent manifest
         await prisma.robotManifest.create({
             data: {
@@ -466,9 +240,7 @@ router.put('/manifest', mustBeRobot, updateRobotMeta, async (req: Request, res) 
                 valid: valid
             }
         });
-
     }
-
 });
 
 

@@ -13,6 +13,9 @@ import { keyStorage } from '@airbotics-core/key-storage';
 import { generateSignedSnapshot, generateSignedTimestamp, getTufMetadata, getLatestMetadataVersion } from '@airbotics-core/tuf';
 import { targetsSchema } from './schemas';
 
+import cannonicalize from 'canonicalize';
+import crypto from 'crypto';
+import {writeFileSync} from 'fs';
 
 const router = express.Router();
 
@@ -23,7 +26,7 @@ const router = express.Router();
  * TODO:
  * - handle if it is outdated.
  */
-router.get('/:version.root.json', mustBeRobot, updateRobotMeta, async (req: Request, res) => {
+router.get('/:version.root.json', mustBeRobot, async (req: Request, res) => {
 
     const version = Number(req.params.version);
     const { team_id } = req.robotGatewayPayload!;
@@ -79,30 +82,40 @@ router.get('/:role.json', mustBeRobot, updateRobotMeta, async (req: Request, res
  * - fix untidy url structure, put team id in header
  * - image size is 0
  * - update ostree commit and ref
+ *  -confirm checksum check
  */
 router.put('/:team_id/api/v1/user_repo/targets', validate(targetsSchema, EValidationSource.Body), async (req, res) => {
 
     const clientChecksum = req.header('x-ats-role-checksum');
     const clientTargetsMetadata = req.body as ISignedTargetsTUF;
     const team_id = req.params.team_id;
-
+    
     // validate checksum
-    const targetsCheckSum = generateHash(toCanonical(clientTargetsMetadata), { hashDigest: EHashDigest.Sha256 });
+    // the checksum sent by meta-updater is the one from the last version of targets that we sent
+    // to it from the get call, not the checksum of the targets in this requests body
 
+    const targetsCheckSum = generateHash(toCanonical(clientTargetsMetadata), { hashDigest: EHashDigest.Sha256 });
+    
     if (targetsCheckSum !== clientChecksum) {
         logger.warn('a client is trying to upload a targets.json whose checksum is incorrect');
         return res.status(412).json({ code: 'role_checksum_mismatch' });
     }
+    
 
     // validate signature
     // assuming only one signature is sent and rsa keys are used
     const targetsKeyPair = await keyStorage.getKeyPair(getKeyStorageRepoKeyId(team_id, TUFRepo.image, TUFRole.targets));
 
-    const verified = verifySignature(toCanonical(clientTargetsMetadata), clientTargetsMetadata.signatures[0].sig, targetsKeyPair.publicKey, { signatureScheme: ESignatureScheme.RsassaPssSha256 });
+    const verified = verifySignature(
+        toCanonical(clientTargetsMetadata.signed), 
+        clientTargetsMetadata.signatures[0].sig, 
+        targetsKeyPair.publicKey, 
+        { signatureScheme: ESignatureScheme.RsassaPssSha256 }
+    );
 
     if (!verified) {
-        logger.warn('a client is trying to upload a targets.json whose checksum is incorrect');
-        return res.status(412).json({ code: 'role_checksum_mismatch' });
+        logger.warn('a client is trying to upload a targets.json whose signature is incorrect');
+        return res.status(400).json({ code: 'invalid_signature' });
     }
 
     // get most recently created target
@@ -115,7 +128,8 @@ router.put('/:team_id/api/v1/user_repo/targets', validate(targetsSchema, EValida
         if (!mostRecentTarget) {
             mostRecentTargetKey = targetKey;
             mostRecentTarget = targets[targetKey];
-        } else if (dayjs(targets[targetKey].custom.createdAt).isAfter(dayjs(mostRecentTarget.custom.createdAt))) {
+        } 
+        else if (dayjs(targets[targetKey].custom.createdAt).isAfter(dayjs(mostRecentTarget.custom.createdAt))) {
             mostRecentTargetKey = targetKey;
             mostRecentTarget = targets[targetKey];
         }
@@ -145,9 +159,6 @@ router.put('/:team_id/api/v1/user_repo/targets', validate(targetsSchema, EValida
     // if(!object) {
     //     return res.status(400).end();
     // }
-
-    
-
 
     // perform db writes in transaction
     await prisma.$transaction(async tx => {
@@ -227,6 +238,8 @@ router.get('/:team_id/api/v1/user_repo/targets.json', async (req, res) => {
 
     const targetscheckSum = generateHash(toCanonical(latest as object), { hashDigest: EHashDigest.Sha256 });
 
+    console.log(targetscheckSum);
+    
     res.set('x-ats-role-checksum', targetscheckSum);
     return res.status(200).send(latest);
 

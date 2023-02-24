@@ -60,18 +60,21 @@ export const mustBeRobot = async (req: Request, res: Response, next: NextFunctio
  */
 export const updateRobotMeta = async (req: Request, res: Response, next: NextFunction) => {
 
-    const { robot_id } = req.robotGatewayPayload!;
-    const agent_version = req.header('user-agent');
+    // const { robot_id } = req.robotGatewayPayload!;
+    // const agent_version = req.header('user-agent');
 
-    await prisma.robot.update({
-        where: {
-            id: robot_id
-        },
-        data: {
-            agent_version,
-            last_seen_at: new Date()
-        }
-    });
+    // console.log(agent_version);
+    
+
+    // await prisma.robot.update({
+    //     where: {
+    //         id: robot_id
+    //     },
+    //     data: {
+    //         agent_version,
+    //         last_seen_at: new Date()
+    //     }
+    // });
 
     next();
 
@@ -81,18 +84,14 @@ export const updateRobotMeta = async (req: Request, res: Response, next: NextFun
 export const mustBeAuthenticated = async (req: Request, res: Response, next: NextFunction) => {
 
     try {
-
+        
         const sessionParams: FrontendApiToSessionRequest = {
             xSessionToken: req.header("x-session-token"),       //from api authenticated clients
             cookie: req.header("cookie")                        //from browser authenticated clients
         }
 
         const orySession = (await ory.frontend.toSession(sessionParams)).data;
-
-        // if(orySession.identity.verifiable_addresses && !orySession.identity.verifiable_addresses[0].verified) {
-        //     return new BadResponse(res, 'Please verify your email first!');
-        // }
-
+        
         req.oryIdentity = {
             session_id: orySession.id,
             traits: {
@@ -106,10 +105,12 @@ export const mustBeAuthenticated = async (req: Request, res: Response, next: Nex
                 }
             }
         }
-
+        
         next();
 
     } catch (error) {
+        console.log(error);
+        
         logger.warn('An unauthenticated user is trying to access a protected endpoint');
         return new UnauthorizedResponse(res);
     }

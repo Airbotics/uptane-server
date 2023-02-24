@@ -1,6 +1,38 @@
 # Working with...
 
 
+## Working with certificates
+
+**Inspect x.509 certificate**
+```
+openssl x509 -in path/to/cert -text
+```
+
+**Testing mutual TLS authentication given a p12**
+```
+curl -v --cert-type P12 --cert path/to/client.p12 https://localhost:8003
+```
+
+or
+
+```
+openssl pkcs12 -in test.p12 -out ca.pem -cacerts -nokeys
+openssl pkcs12 -in test.p12 -out client.pem -clcerts -nokeys
+openssl pkcs12 -in test.p12 -nocerts -nodes  | openssl rsa -out privkey.pem
+curl -v --cacert ca.pem --cert ./client.pem:1234 --key ./privkey.pem https://localhost:8003
+```
+
+**Inspect a p12**
+```
+openssl pkcs12 -in path/to/client.p12 -nodes -passin pass:"" 
+```
+
+**Test private key and cert match (output should be the same)**
+```
+openssl x509 -noout -modulus -in server.crt | openssl md5
+openssl rsa -noout -modulus -in server.key | openssl md5
+```
+
 ## Working with AWS Secrets Manager
 
 We like to use AWS Secrets Manager for protecting secrets.

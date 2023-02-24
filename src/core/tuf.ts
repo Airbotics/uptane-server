@@ -66,9 +66,9 @@ export const generateTufKey = (key: string, { isPublic }: IGenerateTufKeyOpts): 
  * `robot_id` should not be specificed if you're fetching from the image repo.
  * 
  * `version` can either be:
- * - a `number` specifying a specific version.
- * - `TUF_METADATA_LATEST` (-1) to get the most recent / latest version.
- * - `TUF_METADATA_INITIAL` (0) to get the first / initial version.
+ * -  A `number` specifying a specific version.
+ * -  TUF_METADATA_LATEST` (-1) to get the most recent / latest version.
+ * - `TUF_METADATA_INITIAL` (1) to get the first / initial version.
  */
 export const getTufMetadata = async (
     team_id: string,
@@ -79,7 +79,8 @@ export const getTufMetadata = async (
 
     let metadataValue: any = null;
 
-    if (TUF_METADATA_LATEST) {
+
+    if (version === TUF_METADATA_LATEST) {
 
         const metadata = await prisma.tufMetadata.findFirst({
             where: {
@@ -93,12 +94,10 @@ export const getTufMetadata = async (
             }
         });
 
-        if (metadata) {
-            metadataValue = metadata!.value;
-        }
+        metadataValue = metadata ? metadata.value : null;
+    }
 
-
-    } else {
+    else {
 
         const metadata = await prisma.tufMetadata.findFirst({
             where: {
@@ -109,10 +108,8 @@ export const getTufMetadata = async (
                 version
             }
         });
-        if (metadata) {
-            metadataValue = metadata!.value;
-        }
 
+        metadataValue = metadata ? metadata.value : null;       
     }
 
     return metadataValue as ISignedRootTUF | ISignedTargetsTUF | ISignedSnapshotTUF | ISignedTimestampTUF | null;

@@ -60,6 +60,7 @@ enum ImageFormat {
 model Team {
     id                  String          @id @default(uuid()) @unique
     name                String
+    num_members         Int             @default(1)
     created_at          DateTime        @default(now())
     updated_at          DateTime        @updatedAt
 
@@ -75,10 +76,11 @@ model Team {
     packages_reports    InstalledPackagesReport[]
     hw_info_reports     HardwareInfoReport[]
     akt_config_reports  AktualizrConfigReport[]
-    robot_events        RobotEvent[]
+    ecu_telemetry       EcuTelemetry[]
     provisioning_creds  ProvisioningCredentials[]
     groups              Group[]
     robot_groups        RobotGroup[]
+    rollouts            Rollout[]
     certificates        Certificate[]
 
     @@map("teams")
@@ -89,6 +91,7 @@ model Team {
 // TODO add in the account that downloaded/revoked it
 model ProvisioningCredentials {
     id                  String          @id @default(uuid()) @unique
+    name                String
     team_id             String
     created_at          DateTime        @default(now())
     status              CertificateStatus   @default(issuing)   // combination of status as certs
@@ -149,8 +152,8 @@ model Image {
 
     team                Team            @relation(fields: [team_id], references: [id], onDelete: Cascade)
 
-    tmp_ecu_images      TmpEcuImages[]
     ecus                Ecu[]
+    rollout_image       RolloutHardwareImage[]
 
     @@unique([team_id, id])
     @@map("images")
@@ -188,6 +191,8 @@ model TufMetadata {
 model Robot {
     id                  String          @id @default(uuid()) @unique
     team_id             String
+    name                String?
+    description         String?
     agent_version       String?                             // the version of the agent running on the primary ecu
     last_seen_at        DateTime?                           // the last time this robot was seen at
     ecus_registered     Boolean         @default(false)     // whether the ecus have been registered, they can only do this once
@@ -203,8 +208,9 @@ model Robot {
     packages_reports    InstalledPackagesReport[]
     hw_info_reports     HardwareInfoReport[]
     akt_config_reports  AktualizrConfigReport[]
-    events              RobotEvent[]
+
     groups              RobotGroup[]
+    rollouts            RolloutRobot[]
     certificates        Certificate[]
 
     @@unique([team_id, id])
@@ -226,9 +232,8 @@ model Ecu {
     team                Team            @relation(fields: [team_id], references: [id], onDelete: Cascade)
     robot               Robot           @relation(fields: [team_id, robot_id], references: [team_id, id], onDelete: Cascade)
     installed_image     Image?          @relation(fields: [team_id, image_id], references: [team_id, id], onDelete: Cascade)
-
-    tmp_ecu_images      TmpEcuImages[]
-
+   
+    telemetry           EcuTelemetry[]
 
     @@unique([team_id, id])
     @@map("ecus")
@@ -300,22 +305,22 @@ model HardwareInfoReport {
     @@map("hardware_info_reports")
 }
 
-// telemetry events sent by a robot
-model RobotEvent {
+// telemetry events sent by an ecu
+model EcuTelemetry {
     id                  String          @id @default(uuid()) @unique
     team_id             String
-    robot_id            String
-    event_type          String                              // TODO make enum
+    ecu_id              String
+
+    event_type          String
     device_time         DateTime
-    ecu                 String                              // TODO make FK to ecu table
     success             Boolean?
     created_at          DateTime        @default(now())
 
     team                Team            @relation(fields: [team_id], references: [id], onDelete: Cascade)
-    robot               Robot           @relation(fields: [team_id, robot_id], references: [team_id, id], onDelete: Cascade)
+    ecu                 Ecu             @relation(fields: [team_id, ecu_id], references: [team_id, id], onDelete: Cascade)
 
     @@unique([team_id, id])
-    @@map("robot_events")
+    @@map("ecu_telemetry")
 }
 
 
@@ -392,22 +397,6 @@ model StaticDelta {
 }
 
 
-
-// TODO this is a temporary table
-model TmpEcuImages {
-    ecu_id              String
-    image_id            String
-    created_at          DateTime        @default(now())
-    updated_at          DateTime        @updatedAt
-    acknowledged        Boolean         @default(false)
-
-    ecu                 Ecu             @relation(fields: [ecu_id], references: [id], onDelete: Cascade)
-    image               Image           @relation(fields: [image_id], references: [id], onDelete: Cascade)
-
-    @@unique([ecu_id, image_id])
-    @@map("tmp_ecu_images")
-}
-
 // groups that a robot can be in
 model Group {
     id                  String          @id @default(uuid()) @unique
@@ -437,4 +426,95 @@ model RobotGroup {
 
     @@id([team_id, robot_id, group_id])
     @@map("robot_groups")
+}
+
+
+// ---------------- ROLLOUTS ---------------- //
+
+
+enum RolloutStatus {
+    preparing
+    launched
+    finished
+    cancelled
+}
+
+
+model Rollout {
+    id                  String          @id @default(uuid()) @unique
+    team_id             String
+    name                String
+    description         String
+    status              RolloutStatus   @default(preparing)
+
+    created_at          DateTime        @default(now())
+    updated_at          DateTime        @default(now())
+
+    team                Team            @relation(fields: [team_id], references: [id], onDelete: Cascade)
+
+    cancelled           RolloutsCancelled[]
+    robots              RolloutRobot[]
+    hw_imgs             RolloutHardwareImage[]
+
+    @@unique([id, team_id])
+    @@map("rollouts")
+}
+
+
+model RolloutsCancelled {
+    rollout_id          String          @unique
+    status              String
+
+    created_at          DateTime        @default(now())
+    updated_at          DateTime        @default(now())
+
+    rollout             Rollout         @relation(fields: [rollout_id], references: [id], onDelete: Cascade)
+
+
+    @@map("rollouts_cancelled")
+}
+ 
+
+model RolloutHardwareImage {
+    id                  String          @id @default(uuid()) @unique
+    rollout_id          String
+    hw_id               String
+    image_id            String?
+
+    created_at          DateTime        @default(now())
+
+    image               Image?          @relation(fields: [image_id], references: [id], onDelete: SetNull)
+    rollout             Rollout         @relation(fields: [rollout_id], references: [id], onDelete: Cascade)
+    
+    @@unique([rollout_id, hw_id, image_id])
+    @@map("rollout_hardware_images")
+}
+
+
+enum RolloutRobotStatus {
+    pending             // rollout created but worker hasn’t got around to processing
+    skipped             // worker determined update is n/a for bot
+    scheduled           // worker has created the latest targets.json in the director repo
+    accepted            // robot has acknowledged the update
+    successful          // robot has successfully pulled the update
+    cancelled           // the rollout was cancelled
+    failed              // robot tried and failed to pull the update
+}
+
+
+model RolloutRobot {
+    id                  String              @id @default(uuid()) @unique
+    rollout_id          String
+    robot_id            String?
+    status              RolloutRobotStatus  @default(pending) 
+    result_desc         String?
+
+    created_at          DateTime            @default(now())
+    updated_at          DateTime            @default(now())
+
+    rollout             Rollout             @relation(fields: [rollout_id], references: [id], onDelete: Cascade)
+    robot               Robot?              @relation(fields: [robot_id], references: [id], onDelete: SetNull)
+    
+    @@unique([rollout_id, robot_id])
+    @@map("rollout_robots")
 }

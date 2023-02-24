@@ -34,7 +34,7 @@ const createAllCerts: ICmd = {
 
         console.log('Creating root and gateway cert');
 
-        const gatewayCommonName: string = readlineSync.question('Enter the Common Name (CN): ');
+        const gatewayCommonName: string = readlineSync.question('Enter the gateway Common Name (CN): ');
 
         // generate key pair for root cert
         const rootCaKeyPair = generateKeyPair({ keyType: EKeyType.Rsa });
@@ -51,10 +51,7 @@ const createAllCerts: ICmd = {
         const gatewayCert = generateCertificate(gatewayKeyPair, gatewayExpiresAt, {
             commonName: gatewayCommonName,
             parentCert: rootCaCert,
-            parentKeyPair: {
-                privateKey: rootCaKeyPair.privateKey,
-                publicKey: rootCaKeyPair.publicKey
-            }
+            parentKeyPair: rootCaKeyPair
         });
 
         await blobStorage.putObject(DEV_CERTS_BUCKET, '', DEV_ROOT_CA_CERT_OBJ_ID, forge.pki.certificateToPem(rootCaCert));

@@ -29,7 +29,7 @@ export const issueCertificate = async (teamId: string, keyPair: IKeyPair, certTy
     };
 
     
-    const cert = generateCertificate(keyPair, expiresAt, opts)
+    const cert = generateCertificate(keyPair, expiresAt, opts);
 
 
     const certDb = await prisma.certificate.create({
@@ -83,7 +83,7 @@ export const downloadCertificate = async (teamId: string, certId: string): Promi
 
     return {
         cert: certStr.toString(),
-        expiresAt: dayjs(),
+        expiresAt: dayjs(dbCert.expires_at),
         serial: dbCert.serial
     };
 }

@@ -1,6 +1,6 @@
 import { Dayjs } from 'dayjs';
 import { CertificateType } from '@prisma/client';
-import { EKeyType, ESignatureScheme, ETUFRole } from '@airbotics-core/consts';
+import { EKeyType, ESignatureScheme, ETUFRole, RolloutTargetType  } from '@airbotics-core/consts';
 
 /**
  * Provider interfaces
@@ -215,20 +215,6 @@ export interface IEcuRegistrationPayload {
     }[];
 }
 
-export interface IRobotEvent {
-    deviceTime: string;
-    event: {
-        ecu: string;
-        success?: boolean;
-    };
-    eventType: {
-        id: string;
-        version: number;
-    };
-    id: string;
-};
-
-
 export interface OryIdentity {
     session_id: string;
     traits: {
@@ -246,6 +232,8 @@ export interface OryIdentity {
 export interface ITeamDetail {
     id: string;
     name: string;
+    role: string;
+    num_members: number
     created_at: Date;
 }
 
@@ -264,4 +252,24 @@ export interface IGroupRobot {
         id: string;
         hwid: string;
     }[]
+}
+
+
+
+export interface ICreateRolloutBody {
+    name: string;
+    description: string;
+	hwid_img_map: { hw_id: string, img_id: string }[];
+	targeted_robots: {
+		type: RolloutTargetType;
+		group_id: string;
+		selected_bot_ids: string [];
+	}
+}
+
+
+export interface ICreateGroupBody {
+    name: string;
+    description: string; 
+    robot_ids: string[];
 }

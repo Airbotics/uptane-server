@@ -74,3 +74,13 @@ export const getImage = async (req: Request, res: Response) => {
     return new SuccessJsonResponse(res, imageSanitised);
 
 }
+
+
+
+/**
+ * Edgecase for deleting Image 
+ * 
+ * If the image is associated with a RolloutRobot that has a status of 'scheduled' or 'accepted',
+ * a robot may be in the process of pulling the image and will need to be checked for.
+ * 
+ */

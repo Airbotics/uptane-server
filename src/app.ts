@@ -1,9 +1,11 @@
 import express, { Request, Response, NextFunction } from 'express';
+import cors from 'cors';
 import hpp from 'hpp';
 import helmet from 'helmet';
 import schedule from 'node-schedule';
 import config from '@airbotics-config'
 import { logger } from '@airbotics-core/logger';
+import { InternalServerErrorResponse, NotFoundResponse, SuccessMessageResponse } from '@airbotics-core/network/responses';
 import admin from '@airbotics-modules/admin';
 import treehub from '@airbotics-modules/treehub';
 import imageRepo from '@airbotics-modules/image-repo';
@@ -13,6 +15,7 @@ import webhooks from '@airbotics-modules/webhooks';
 import {
     purgeExpiredProvisioningCredentials,
     resignTufRoles,
+    processRollouts,
     generateStaticDeltas
 } from '@airbotics-modules/background-workers';
 
@@ -31,9 +34,17 @@ app.use((req, res, next) => {
 });
 
 
+app.use(cors({
+    credentials: true,
+    origin: config.CORS_ORIGIN,
+    methods: ['GET', 'POST', 'PATCH', 'PUT', 'DELETE', 'OPTIONS', 'HEAD'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Access-Control-Allow-Origin', 'Content-Disposition', 'air-team-id'],
+    exposedHeaders: ['Content-Disposition']
+}));
+
 // health check
 app.get('/', (req, res) => {
-    return res.status(200).send('Welcome to the Airbotics API');
+    return new SuccessMessageResponse(res, 'Welcome to the Airbotics API')
 });
 
 
@@ -48,6 +59,7 @@ app.use('/api/v0/robot/treehub', treehub);
 
 // optionally mount a background worker in this process, if it has been configured
 if(config.USE_NODE_SCHEDULER) {
+    schedule.scheduleJob(config.WORKERS.ROLLOUTS_CRON, processRollouts);
     schedule.scheduleJob(config.WORKERS.PROVISIONING_CREDS_EXPIRY_PURGER_CRON, purgeExpiredProvisioningCredentials);
     schedule.scheduleJob(config.WORKERS.TUF_RESIGNER_CRON, resignTufRoles);
     schedule.scheduleJob(config.WORKERS.STATIC_DELTA_GENERATOR_CRON, generateStaticDeltas);
@@ -56,7 +68,7 @@ if(config.USE_NODE_SCHEDULER) {
 // handle 404
 app.use((req: Request, res: Response, next: NextFunction) => {
     logger.warn(`404 - ${req.method} - ${req.originalUrl}`);
-    return res.status(404).end();
+    return new NotFoundResponse(res);
 });
 
 
@@ -64,7 +76,7 @@ app.use((req: Request, res: Response, next: NextFunction) => {
 app.use((err: Error, req: Request, res: Response, next: NextFunction) => {
     logger.error('500');
     logger.error(err);
-    return res.status(500).end();
+    return new InternalServerErrorResponse(res);
 });
 
 

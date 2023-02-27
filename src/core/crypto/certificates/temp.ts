@@ -1,15 +1,16 @@
 import forge from 'node-forge';
-import { Dayjs } from 'dayjs';
+import { ManipulateType } from 'dayjs';
 import { randomBytes } from 'crypto';
+import config from '@airbotics-config';
 import { dayjs } from '@airbotics-core/time';
 import { IKeyPair } from '@airbotics-types';
 import {
+    ROOT_CERT_COMMON_NAME,
     ROOT_CERT_ORGANISATION,
     ROOT_CERT_LOCALITY,
-    ROOT_CERT_STATE,
-    ROOT_CERT_COUNTRY,
+    ROOT_CERT_STATE ,
+    ROOT_CERT_COUNTRY ,
 } from '@airbotics-core/consts';
-
 
 export interface ICertOpts {
     commonName: string; // common name of this cert
@@ -17,60 +18,19 @@ export interface ICertOpts {
     parentCert: forge.pki.Certificate; // cert of the parent cert
 }
 
-
-
-
 /**
- * Helper funciton to create CSR
+ * Generates a certificate.
+ * 
+ * If this is a root CA then `opts` should be `undefined`, otherwise it should be defined.
  */
-export const generateCertificateSigningRequest = (keyPair: IKeyPair, commonName: string): string => {
-
-    const csr = forge.pki.createCertificationRequest();
-    csr.publicKey = forge.pki.publicKeyFromPem(keyPair.publicKey);
-
-    const attrs: forge.pki.CertificateField[] = [
-        {
-            shortName: 'CN',
-            value: commonName
-        },
-        {
-            shortName: 'O',
-            value: ROOT_CERT_ORGANISATION
-        },
-        {
-            shortName: 'L',
-            value: ROOT_CERT_LOCALITY
-        },
-        {
-            shortName: 'ST',
-            value: ROOT_CERT_STATE
-        },
-        {
-            shortName: 'C',
-            value: ROOT_CERT_COUNTRY
-        }
-    ];
-
-    csr.setSubject(attrs);
-    csr.sign(forge.pki.privateKeyFromPem(keyPair.privateKey));
-
-    return forge.pki.certificationRequestToPem(csr);
-
-}
-
-
-
-/**
- * Generate a certificate.
- */
-export const generateCertificate = (myKeyPair: IKeyPair, expiresAt: Dayjs, opts?: ICertOpts): forge.pki.Certificate => {
+export const generateCertificate = (myKeyPair: IKeyPair, opts?: ICertOpts): forge.pki.Certificate => {
 
     const cert = forge.pki.createCertificate();
 
     const attrs: forge.pki.CertificateField[] = [
         {
             shortName: 'CN',
-            value: opts ? opts.commonName : 'dev-airbotics-root'
+            value: opts ? opts.commonName : ROOT_CERT_COMMON_NAME
         },
         {
             shortName: 'O',
@@ -109,8 +69,7 @@ export const generateCertificate = (myKeyPair: IKeyPair, expiresAt: Dayjs, opts?
     // set cert fields
     cert.serialNumber = `00${randomBytes(4).toString('hex')}`;
     cert.validity.notBefore = dayjs().toDate();
-    // cert.validity.notAfter = expiresAt.toDate();
-    cert.validity.notAfter = dayjs().add(5, 'year').toDate();
+    cert.validity.notAfter = dayjs().add(config.ROOT_CA_TTL[0] as number, config.ROOT_CA_TTL[1] as ManipulateType).toDate();
     cert.setExtensions(extensions);
     cert.setSubject(attrs);
     cert.setIssuer(opts ? opts.parentCert.subject.attributes : attrs);

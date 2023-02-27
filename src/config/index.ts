@@ -22,9 +22,9 @@ const config = {
     PORT: process.env.PORT || 8001,                                             // port the server listens on
     NODE_ENV: NODE_ENV,                                                         // mode to run the server in, 'production' or 'development'
     MAX_JSON_REQUEST_SIZE: '100mb',                                             // max json size we accept
-    API_ORIGIN: 'http://localhost:8002',                                        // origin of the api (api.airbotics.io)
-    GATEWAY_ORIGIN: 'https://localhost:8003',                                   // origin of the gateway (gateway.airbotics.io)
-    CORS_ORIGIN: NODE_ENV==='production' ? ['https://staging.airbotics.io', 'https://dashboard.airbotics.io'] : 'http://localhost:3000',
+    API_ORIGIN: 'http://172.20.10.2:8002',                                        // origin of the api (api.airbotics.io)
+    GATEWAY_ORIGIN: 'https://172.20.10.2:8003',                                   // origin of the gateway (gateway.airbotics.io)
+    CORS_ORIGIN: NODE_ENV==='production' ? ['https://dashboard.staging.airbotics.io', 'https://dashboard.airbotics.io'] : 'http://localhost:3000',
 
     // blob storage
     BLOB_STORAGE_PROVIDER: EBlobStorageProvider.Filesystem,                     // blob storage provider to use
@@ -88,9 +88,11 @@ const config = {
     LOGS_DIR: '.logs',                                                          // local log directory
 
     // certs
-    ROBOT_CERT_TTL: [10, 'year'],                                               // expiry of robot certs
-    DEV_ROOT_CA_TTL: [20, 'year'],                                              // expiry of dev root cert
-    DEV_GATEWAY_CA_TTL: [10, 'year'],                                           // expiry of dev gateway cert
+    // ROBOT_CERT_TTL: [10, 'year'],                                               // expiry of robot certs
+    // DEV_ROOT_CA_TTL: [20, 'year'],                                              // expiry of dev root cert
+    // DEV_GATEWAY_CA_TTL: [10, 'year'],                                           // expiry of dev gateway cert
+
+    ROOT_CA_TTL: [10, 'year'],                                                  // expiry of the root ca cert
 
 };
 

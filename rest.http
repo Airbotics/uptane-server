@@ -1,6 +1,6 @@
 # vs code extension to make http requests easily
 
-@BASE_URL=http://localhost:8002
+@BASE_URL=http://localhost:8001
 @API_VERSION=v0
 @ORY_PROJECT_URL={{$dotenv %ORY_PROJECT_URL}}
 
@@ -187,9 +187,12 @@ air-team-id: {{TEAM_ID}}
 
 
 ### get a single robot
+# @name robotResponse
 GET {{BASE_URL}}/api/{{API_VERSION}}/admin/robots/{{ROBOT_ID}} HTTP/1.1
 x-session-token: {{SESSION_TOKEN}}
 air-team-id: {{TEAM_ID}}
+
+@ECU_ID = {{robotResponse.response.body.ecus.$[0].id}}
 
 
 ### delete a robot
@@ -499,3 +502,31 @@ GET {{BASE_URL}}/api/{{API_VERSION}}/treehub/{{TEAM_ID}}/refs/head/main HTTP/1.1
 
 ###
 GET {{BASE_URL}}/api/{{API_VERSION}}/api/v1/user_repo/targets.json HTTP/1.1
+
+
+
+# -----------------------------------------
+# Misc
+# -----------------------------------------
+
+### Simulate robot sending event
+POST {{BASE_URL}}/api/{{API_VERSION}}/robot/events HTTP/1.1
+x-session-token: {{SESSION_TOKEN}}
+air-client-id: {{ROBOT_ID}}
+Content-Type: application/json
+
+[
+  {
+    "id": "9CBB02F4-F42F-4B05-BB24-25FF967EE30A",
+    "deviceTime": "2022-01-31T22:28:17Z",
+    "eventType": {
+      "id": "EcuInstallationStarted",
+      "version": 1
+    },
+    "event": {
+      "correlationId": "",
+      "ecu": "{{ECU_ID}}",
+      "success": true
+    }
+  } 
+]

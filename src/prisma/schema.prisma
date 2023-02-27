@@ -234,6 +234,7 @@ model Ecu {
     installed_image     Image?          @relation(fields: [team_id, image_id], references: [team_id, id], onDelete: Cascade)
    
     telemetry           EcuTelemetry[]
+    rollouts            RolloutRobotEcu[]
 
     @@unique([team_id, id])
     @@map("ecus")
@@ -501,6 +502,13 @@ enum RolloutRobotStatus {
     failed              // robot tried and failed to pull the update
 }
 
+enum RolloutEcuStatus {
+    pending
+    started
+    completed
+    applied
+}
+
 
 model RolloutRobot {
     id                  String              @id @default(uuid()) @unique
@@ -514,7 +522,28 @@ model RolloutRobot {
 
     rollout             Rollout             @relation(fields: [rollout_id], references: [id], onDelete: Cascade)
     robot               Robot?              @relation(fields: [robot_id], references: [id], onDelete: SetNull)
+
+    ecus                RolloutRobotEcu[]
+
     
     @@unique([rollout_id, robot_id])
     @@map("rollout_robots")
+}
+
+
+model RolloutRobotEcu {
+    id                  String              @id @default(uuid()) @unique
+    rollout_robot_id    String
+    ecu_id              String?
+    download_status     RolloutEcuStatus    @default(pending)
+    install_status      RolloutEcuStatus    @default(pending)
+
+    created_at          DateTime            @default(now())
+    updated_at          DateTime            @default(now())
+
+    rollout_robot       RolloutRobot        @relation(fields: [rollout_robot_id], references: [id], onDelete: Cascade)
+    ecu                 Ecu?                @relation(fields: [ecu_id], references: [id], onDelete: SetNull)
+    
+    @@unique([rollout_robot_id, ecu_id])
+    @@map("rollout_robot_ecus")
 }

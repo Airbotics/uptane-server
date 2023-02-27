@@ -1,5 +1,7 @@
 import { EAktualizrEvent, EEventAction, EEventActorType, EEventResource } from '@airbotics-core/consts';
+import { logger } from '@airbotics-core/logger';
 import EventEmitter from 'events';
+import { rolloutEventHandler } from './rolloutHandler';
 
 /**
  * Notes:
@@ -46,4 +48,7 @@ class AirEventEmitter<T> {
 }
 
 export const airEvent = new AirEventEmitter<AirEvent>();
+
 export const aktualizrEvent = new AirEventEmitter<AktualizrEvent>();
+
+aktualizrEvent.addListener(rolloutEventHandler);

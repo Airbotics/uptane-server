@@ -13,10 +13,6 @@ import { keyStorage } from '@airbotics-core/key-storage';
 import { generateSignedSnapshot, generateSignedTimestamp, getTufMetadata, getLatestMetadataVersion } from '@airbotics-core/tuf';
 import { targetsSchema } from './schemas';
 
-import cannonicalize from 'canonicalize';
-import crypto from 'crypto';
-import {writeFileSync} from 'fs';
-
 const router = express.Router();
 
 
@@ -132,6 +128,18 @@ router.put('/:team_id/api/v1/user_repo/targets', validate(targetsSchema, EValida
         }
     }
 
+    // check this image hasn't been created before
+    const exists = await prisma.image.findUnique({
+        where: {
+            id: mostRecentTargetKey!
+        }
+    });
+
+    if(exists) {
+        logger.warn('a client is trying to upload an image that already exists');
+        return res.status(400).end();
+    }
+
     const snapshotKeyPair = await keyStorage.getKeyPair(getKeyStorageRepoKeyId(team_id, TUFRepo.image, TUFRole.snapshot));
     const timestampKeyPair = await keyStorage.getKeyPair(getKeyStorageRepoKeyId(team_id, TUFRepo.image, TUFRole.timestamp));
 
@@ -148,8 +156,11 @@ router.put('/:team_id/api/v1/user_repo/targets', validate(targetsSchema, EValida
     //     where: {
     //         team_id_object_id: {
     //             team_id,
-    //             object_id: `${clientTargetsMetadata.signed.version}.commit`
+    //             object_id: `${mostRecentTarget.custom.version}.commit`
     //         } 
+    //     },
+    //     include: {
+    //         refs: true
     //     }
     // });
 

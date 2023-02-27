@@ -75,7 +75,8 @@ router.post('/:team_id/refs/heads/:name', express.text({ type: '*/*' }), async (
             commit
         },
         update: {
-            commit
+            commit,
+            object_id
         },
         where: {
             team_id_name: {

@@ -133,3 +133,17 @@ export const enum EEventActorType {
     AirboticsBot = 'airbotics-bot',
     Robot = 'robot'
 }
+
+
+export const enum EAktualizrEvent {
+    CampaignAccepted = 'campaign_accepted',
+    CampaignDeclined = 'campaign_declined',
+    CampaignPostponed = 'campaign_postponed',
+    DevicePaused = 'DevicePaused',
+    DeviceResumed = 'DeviceResumed',
+    EcuDownloadStarted = 'EcuDownloadStarted',              //Emitted when installation on a specific ecu has started
+    EcuDownloadCompleted = 'EcuDownloadCompleted',          //Emitted when installation on a specific ecu has ended (T | F)
+    EcuInstallationStarted = 'EcuInstallationStarted',      //Emitted when installation on a specific ecu has started
+    EcuInstallationCompleted = 'EcuInstallationCompleted',  //Emitted when installation on a specific ecu has ended (T | F).
+    EcuInstallationApplied = 'EcuInstallationApplied'
+}

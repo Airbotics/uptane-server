@@ -7,9 +7,9 @@ import { EKeyType } from '@airbotics-core/consts';
 import { mustBeRobot, updateRobotMeta } from '@airbotics-middlewares';
 import dayjs, { ManipulateType } from 'dayjs';
 import config from 'src/config';
-import { IRobotTelemetryReq } from 'src/types/requests';
 import { delay } from '@airbotics-core/utils';
 import { CertificateType } from '@prisma/client';
+import { aktualizrEvent, AktualizrEvent } from '@airbotics-core/events';
 
 const router = express.Router();
 
@@ -182,30 +182,17 @@ router.put('/core/installed', mustBeRobot, updateRobotMeta, async (req: Request,
  */
 router.post('/events', mustBeRobot, updateRobotMeta, async (req: Request, res) => {
 
-    /*
-    Events sent by aktualizr:
-        CampaignAcceptedReport(const std::string& campaign_id);
-        CampaignDeclinedReport(const std::string& campaign_id);
-        CampaignPostponedReport(const std::string& campaign_id);
-        DevicePausedReport(const std::string& correlation_id);
-        DeviceResumedReport(const std::string& correlation_id);
-        EcuDownloadStartedReport(const Uptane::EcuSerial& ecu, const std::string& correlation_id);
-        EcuDownloadCompletedReport(const Uptane::EcuSerial& ecu, const std::string& correlation_id, bool success);
-        EcuInstallationStartedReport(const Uptane::EcuSerial& ecu, const std::string& correlation_id);
-        EcuInstallationAppliedReport(const Uptane::EcuSerial& ecu, const std::string& correlation_id);
-        EcuInstallationCompletedReport(const Uptane::EcuSerial& ecu, const std::string& correlation_id, bool success);
-    */
 
     const {
         team_id,
         robot_id
     } = req.robotGatewayPayload!;
 
-    const events = req.body as IRobotTelemetryReq[];
+    const events = req.body as AktualizrEvent[];
 
     const robotEvents = events.map(robotEvent => ({
         team_id,
-        ecu_id: robotEvent.event.ecu,
+        ecu_id: robotEvent.event.ecu!,
         event_type: robotEvent.eventType.id,
         device_time: robotEvent.deviceTime,
         success: robotEvent.event.success
@@ -214,6 +201,10 @@ router.post('/events', mustBeRobot, updateRobotMeta, async (req: Request, res) =
     await prisma.ecuTelemetry.createMany({
         data: robotEvents
     });
+
+    for(const event of events)  {
+        aktualizrEvent.emit(event)
+    } 
 
     logger.info('ingested robot event');
     return res.status(200).end();

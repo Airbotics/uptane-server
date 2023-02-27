@@ -3,10 +3,16 @@ import archiver from 'archiver';
 import forge from 'node-forge';
 import { CertificateStatus, CertificateType, TUFRepo, TUFRole } from '@prisma/client';
 import {
+    // DEV_CERTS_BUCKET,
+    // DEV_ROOT_CA_CERT_OBJ_ID,
+    // DEV_ROOT_CA_KEY_ID,
     EEventAction,
     EEventActorType,
     EEventResource,
     EKeyType,
+    ROOT_BUCKET,
+    ROOT_CA_CERT_OBJ_ID,
+    ROOT_CA_KEY_ID,
     TUF_METADATA_INITIAL
 } from '@airbotics-core/consts';
 import { SuccessJsonResponse } from '@airbotics-core/network/responses';
@@ -20,6 +26,109 @@ import { generateTufKey, getTufMetadata } from '@airbotics-core/tuf';
 import { keyStorage } from '@airbotics-core/key-storage';
 import { getKeyStorageRepoKeyId, toCanonical } from '@airbotics-core/utils';
 import { ICredentialsRes } from 'src/types/responses';
+import { generateCertificate } from '@airbotics-core/crypto/certificates/temp';
+import { blobStorage } from '@airbotics-core/blob-storage';
+
+
+
+export const createProvisioningCredentials = async (req: Request, res: Response) => {
+
+    const oryID = req.oryIdentity!.traits.id;
+    const teamID = req.headers['air-team-id']!;
+
+    // create provisioning key
+    const provisioningKeyPair = generateKeyPair({ keyType: EKeyType.Rsa });
+
+
+
+    // load root ca and key, used to sign provisioning cert
+    const rootCaKeyPair = await keyStorage.getKeyPair(ROOT_CA_KEY_ID);
+    const rootCaCertStr = await blobStorage.getObject(ROOT_BUCKET, '', ROOT_CA_CERT_OBJ_ID) as string;
+    const rootCaCert = forge.pki.certificateFromPem(rootCaCertStr);
+
+    // generate provisioning cert using root ca as parent
+    const opts = {
+        commonName: teamID,
+        parentCert: rootCaCert,
+        parentKeyPair: rootCaKeyPair
+    };
+    const provisioningCert = generateCertificate(provisioningKeyPair, opts);
+
+    // bundle into pcks12, no encryption password set
+    const p12 = forge.pkcs12.toPkcs12Asn1(forge.pki.privateKeyFromPem(provisioningKeyPair.privateKey), [provisioningCert, rootCaCert], null, { algorithm: 'aes256' });
+
+
+
+    // const clientKeyPair = generateKeyPair({ keyType: EKeyType.Rsa });
+    // const clientopts = {
+    //     commonName: teamID,
+    //     parentCert: rootCaCert,
+    //     parentKeyPair: rootCaKeyPair
+    // };
+    // const clientCert = generateCertificate(clientKeyPair, opts);
+
+    // // bundle into pcks12, no encryption password set
+    // const p12 = forge.pkcs12.toPkcs12Asn1(forge.pki.privateKeyFromPem(provisioningKeyPair.privateKey), [provisioningCert, rootCaCert], null, { algorithm: 'aes256' });
+
+
+
+
+    // get initial root metadata
+    const rootMetadata = await getTufMetadata(teamID, TUFRepo.image, TUFRole.root, TUF_METADATA_INITIAL);
+
+    if (!rootMetadata) {
+        logger.warn('could not create provisioning credentials because no root metadata for the team exists');
+        return res.status(400).send('could not create provisioning credentials');
+    }
+
+    const targetsKeyPair = await keyStorage.getKeyPair(getKeyStorageRepoKeyId(teamID, TUFRepo.image, TUFRole.targets));
+    const targetsTufKeyPublic = generateTufKey(targetsKeyPair.publicKey, { isPublic: true });
+    const targetsTufKeyPrivate = generateTufKey(targetsKeyPair.privateKey, { isPublic: false });
+
+    // create credentials.zip
+    const treehub = {
+        no_auth: true,
+        ostree: {
+            server: `${config.API_ORIGIN}/api/v0/robot/treehub/${teamID}`
+        }
+    };
+
+    const archive = archiver('zip');
+    archive.append(Buffer.from(toCanonical(targetsTufKeyPublic), 'ascii'), { name: 'targets.pub' });
+    archive.append(Buffer.from(toCanonical(targetsTufKeyPrivate), 'ascii'), { name: 'targets.sec' });
+    archive.append(Buffer.from(`${config.API_ORIGIN}/api/v0/robot/repo/${teamID}`, 'ascii'), { name: 'tufrepo.url' });
+    archive.append(Buffer.from(toCanonical(rootMetadata), 'ascii'), { name: 'root.json' });
+    archive.append(Buffer.from(JSON.stringify(treehub), 'ascii'), { name: 'treehub.json' });
+    archive.append(Buffer.from(`${config.GATEWAY_ORIGIN}/api/v0/robot`, 'ascii'), { name: 'autoprov.url' });
+    archive.append(Buffer.from(forge.asn1.toDer(p12).getBytes(), 'binary'), { name: 'autoprov_credentials.p12' });
+    archive.finalize();
+
+
+    // add record of creation of credentials to db
+    // const provisioningCredentials = await prisma.provisioningCredentials.create({
+    //     data: {
+    //         team_id: teamID
+    //     }
+    // });
+
+    // airEvent.emit({
+    //     resource: EEventResource.ProvisioningCredentials,
+    //     action: EEventAction.Created,
+    //     actor_type: EEventActorType.User,
+    //     actor_id: oryID,
+    //     team_id: teamID,
+    //     meta: {
+    //         id: provisioningCredentials.id
+    //     }
+    // });
+
+    logger.info('provisioning credentials have been created');
+
+    res.set('content-type', 'application/zip');
+    res.status(200);
+    archive.pipe(res);
+}
+
 
 /**
  * Create provisioning credentials.
@@ -32,6 +141,7 @@ import { ICredentialsRes } from 'src/types/responses';
  * - catch archive on error event
  * - transaction
  */
+/*
 export const createProvisioningCredentials = async (req: Request, res: Response) => {
 
     const oryID = req.oryIdentity!.traits.id;
@@ -79,6 +189,7 @@ export const createProvisioningCredentials = async (req: Request, res: Response)
     return res.status(200).json({id: provisioningCredentials.id });
 
 }
+*/
 
 
 /**
@@ -89,6 +200,7 @@ export const createProvisioningCredentials = async (req: Request, res: Response)
  * change status
  * can only do this once
  */
+/*
 export const downloadProvisioningCredential = async (req: Request, res: Response) => {
 
     const oryID = req.oryIdentity!.traits.id;
@@ -211,14 +323,14 @@ export const downloadProvisioningCredential = async (req: Request, res: Response
         }
     });
 
-    logger.info('provisioning credentials have been created');
+    logger.info('provisioning credentials have been downloaded');
 
     res.set('Content-disposition', 'attachment; filename=credentials.zip');
     res.set('Content-Type', 'application/zip');
     res.status(200);
     archive.pipe(res);
 }
-
+*/
 
 /**
  * List previously issued provisioning credentials.

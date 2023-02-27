@@ -55,9 +55,10 @@ const downloadObject = async (req: Request, res: Response) => {
  * 
  * Will store in s3 or local filesystem depending on config.
  */
-router.post('/objects/:prefix/:suffix', express.raw({ type: '*/*', limit: '512mb' }), async (req: Request, res) => {
+router.post('/:team_id/objects/:prefix/:suffix', express.raw({ type: '*/*', limit: '512mb' }), async (req: Request, res) => {
 
-    const teamID = req.robotGatewayPayload!.team_id;
+    // const teamID = req.robotGatewayPayload!.team_id;
+    const teamID = req.params.team_id;
     const prefix = req.params.prefix;
     const suffix = req.params.suffix;
     const content = req.body;
@@ -133,9 +134,10 @@ router.post('/objects/:prefix/:suffix', express.raw({ type: '*/*', limit: '512mb
  * Note: this does not directly interface with blob storage, instead it checks
  * the record of it in Postgres. This assumes they are in sync.
  */
-router.head('/objects/:prefix/:suffix', async (req: Request, res) => {
+router.head('/:team_id/objects/:prefix/:suffix', async (req: Request, res) => {
 
-    const teamID = req.robotGatewayPayload!.team_id;
+    // const teamID = req.robotGatewayPayload!.team_id;
+    const teamID = req.params.team_id;
     const prefix = req.params.prefix;
     const suffix = req.params.suffix;
     const object_id = prefix + suffix;

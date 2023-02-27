@@ -80,9 +80,8 @@ router.get('/:role.json', mustBeRobot, updateRobotMeta, async (req: Request, res
  * 
  * TODO: 
  * - fix untidy url structure, put team id in header
- * - image size is 0
+ * - set image size
  * - update ostree commit and ref
- *  -confirm checksum check
  */
 router.put('/:team_id/api/v1/user_repo/targets', validate(targetsSchema, EValidationSource.Body), async (req, res) => {
 
@@ -91,10 +90,8 @@ router.put('/:team_id/api/v1/user_repo/targets', validate(targetsSchema, EValida
     const team_id = req.params.team_id;
     
     // validate checksum
-    // the checksum sent by meta-updater is the one from the last version of targets that we sent
-    // to it from the get call, not the checksum of the targets in this requests body
-
-    const targetsCheckSum = generateHash(toCanonical(clientTargetsMetadata), { hashDigest: EHashDigest.Sha256 });
+    const mostRecentTargetMetadata = await getTufMetadata(team_id, TUFRepo.image, TUFRole.targets, TUF_METADATA_LATEST);
+    const targetsCheckSum = generateHash(toCanonical(mostRecentTargetMetadata as object), { hashDigest: EHashDigest.Sha256 });
     
     if (targetsCheckSum !== clientChecksum) {
         logger.warn('a client is trying to upload a targets.json whose checksum is incorrect');
@@ -238,8 +235,6 @@ router.get('/:team_id/api/v1/user_repo/targets.json', async (req, res) => {
 
     const targetscheckSum = generateHash(toCanonical(latest as object), { hashDigest: EHashDigest.Sha256 });
 
-    console.log(targetscheckSum);
-    
     res.set('x-ats-role-checksum', targetscheckSum);
     return res.status(200).send(latest);
 

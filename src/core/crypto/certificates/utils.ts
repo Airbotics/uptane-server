@@ -109,8 +109,7 @@ export const generateCertificate = (myKeyPair: IKeyPair, expiresAt: Dayjs, opts?
     // set cert fields
     cert.serialNumber = `00${randomBytes(4).toString('hex')}`;
     cert.validity.notBefore = dayjs().toDate();
-    // cert.validity.notAfter = expiresAt.toDate();
-    cert.validity.notAfter = dayjs().add(5, 'year').toDate();
+    cert.validity.notAfter = expiresAt.toDate();
     cert.setExtensions(extensions);
     cert.setSubject(attrs);
     cert.setIssuer(opts ? opts.parentCert.subject.attributes : attrs);

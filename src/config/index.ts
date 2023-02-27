@@ -88,9 +88,9 @@ const config = {
     LOGS_DIR: '.logs',                                                          // local log directory
 
     // certs
-    // ROBOT_CERT_TTL: [10, 'year'],                                               // expiry of robot certs
-    // DEV_ROOT_CA_TTL: [20, 'year'],                                              // expiry of dev root cert
-    // DEV_GATEWAY_CA_TTL: [10, 'year'],                                           // expiry of dev gateway cert
+    ROBOT_CERT_TTL: [10, 'year'],                                               // expiry of robot certs
+    DEV_ROOT_CA_TTL: [20, 'year'],                                              // expiry of dev root cert
+    DEV_GATEWAY_CA_TTL: [10, 'year'],                                           // expiry of dev gateway cert
 
     ROOT_CA_TTL: [10, 'year'],                                                  // expiry of the root ca cert
 

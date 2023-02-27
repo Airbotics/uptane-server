@@ -6,20 +6,19 @@ import { ICertificate, IKeyPair } from '@airbotics-types';
 import { CertificateStatus, CertificateType } from '@prisma/client';
 import { dayjs } from '@airbotics-core/time';
 import { generateCertificate, generateCertificateSigningRequest } from './utils';
-// import { DEV_CERTS_BUCKET, DEV_ROOT_CA_CERT_OBJ_ID, DEV_ROOT_CA_KEY_ID } from '@airbotics-core/consts';
+import { DEV_CERTS_BUCKET, DEV_ROOT_CA_CERT_OBJ_ID, DEV_ROOT_CA_KEY_ID } from '@airbotics-core/consts';
 import { keyStorage } from '@airbotics-core/key-storage';
 
 
 export const getRootCertificate = async (): Promise<string | null> => {
-    // const certBuffer = await blobStorage.getObject(DEV_CERTS_BUCKET, '', DEV_ROOT_CA_CERT_OBJ_ID);
-    // return certBuffer.toString();
-    return null
+    const certBuffer = await blobStorage.getObject(DEV_CERTS_BUCKET, '', DEV_ROOT_CA_CERT_OBJ_ID);
+    return certBuffer.toString();
 }
 
 
 export const issueCertificate = async (teamId: string, keyPair: IKeyPair, certType: CertificateType, commonName: string, expiresAt: Dayjs): Promise<any> => {
 
-    /*
+    
     const rootKeyPair = await keyStorage.getKeyPair(DEV_ROOT_CA_KEY_ID);
 
     const rootCert = await blobStorage.getObject(DEV_CERTS_BUCKET, '', DEV_ROOT_CA_CERT_OBJ_ID);
@@ -48,12 +47,12 @@ export const issueCertificate = async (teamId: string, keyPair: IKeyPair, certTy
     await blobStorage.putObject(DEV_CERTS_BUCKET, teamId, certDb.id, forge.pki.certificateToPem(cert));
 
     return certDb.id;
-    */
+    
 }
 
 
 export const downloadCertificate = async (teamId: string, certId: string): Promise<ICertificate | null> => {
-    /*
+    
     const dbCert = await prisma.certificate.findUnique({
         where: {
             team_id_id: {
@@ -89,18 +88,13 @@ export const downloadCertificate = async (teamId: string, certId: string): Promi
         expiresAt: dayjs(dbCert.expires_at),
         serial: dbCert.serial
     };
-    */
-    return {
-        cert: 'certStr.toString()',
-        expiresAt: dayjs(),
-        serial: 'dbCert.serial'
-    };
+
 }
 
 
 export const revokeCertificate = async (serial: string, reason: string): Promise<boolean> => {
 
-    /*
+    
     const cert = await prisma.certificate.findUnique({
         where: {
             serial
@@ -129,14 +123,13 @@ export const revokeCertificate = async (serial: string, reason: string): Promise
             revoked_reason: reason
         }
     });
-    */
+    
 
     return true;
 }
 
 export const purgeExpiredCertificates = async (): Promise<any> => {
 
-    /*
     // prisma doesnt have a way to return affected rows on update many so we do a find
     // to get the ids first, then an update
 
@@ -155,7 +148,6 @@ export const purgeExpiredCertificates = async (): Promise<any> => {
 
         },
     });
-
 
     for (const cert of expiredCerts) {
         await blobStorage.deleteObject(DEV_CERTS_BUCKET, cert.team_id, cert.id);
@@ -181,5 +173,4 @@ export const purgeExpiredCertificates = async (): Promise<any> => {
         }
     });
 
-    */
 }

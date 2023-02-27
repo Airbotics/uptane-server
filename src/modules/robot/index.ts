@@ -3,7 +3,7 @@ import forge from 'node-forge';
 import { logger } from '@airbotics-core/logger';
 import { generateKeyPair, certificateManager } from '@airbotics-core/crypto';
 import { prisma } from '@airbotics-core/drivers';
-import { EKeyType, ROOT_BUCKET, ROOT_CA_CERT_OBJ_ID, ROOT_CA_KEY_ID } from '@airbotics-core/consts';
+import { EKeyType, DEV_CERTS_BUCKET, DEV_ROOT_CA_CERT_OBJ_ID, DEV_ROOT_CA_KEY_ID } from '@airbotics-core/consts';
 import { mustBeRobot, updateRobotMeta } from '@airbotics-middlewares';
 import dayjs, { ManipulateType } from 'dayjs';
 import config from 'src/config';
@@ -12,7 +12,7 @@ import { delay } from '@airbotics-core/utils';
 import { CertificateType } from '@prisma/client';
 import { keyStorage } from '@airbotics-core/key-storage';
 import { blobStorage } from '@airbotics-core/blob-storage';
-import { generateCertificate } from '@airbotics-core/crypto/certificates/temp';
+import { generateCertificate } from '@airbotics-core/crypto/certificates/utils';
 
 const router = express.Router();
 
@@ -36,7 +36,7 @@ router.post('/devices', async (req: Request, res) => {
         deviceId,
         ttl
     } = req.body;
-    
+
     // we prefer robot nomenclature over device
     const robotId = deviceId;
 
@@ -57,19 +57,28 @@ router.post('/devices', async (req: Request, res) => {
         return res.status(400).json({ code: 'device_already_registered' });
     }
 
-    /*
+    // create robot
+    await prisma.robot.create({
+        data: {
+            team_id,
+            id: robotId,
+            name: robotId
+        }
+    });
+
+
+
     // generate key pair for the cert, this will be thrown away
     const robotKeyPair = generateKeyPair({ keyType: EKeyType.Rsa });
 
-    // const certExpiresAt = dayjs().add(config.ROBOT_CERT_TTL[0] as number, config.ROBOT_CERT_TTL[1] as ManipulateType);
+    const certExpiresAt = dayjs().add(config.ROBOT_CERT_TTL[0] as number, config.ROBOT_CERT_TTL[1] as ManipulateType);
 
-    // const robotCertId = await certificateManager.issueCertificate(team_id, robotKeyPair, CertificateType.robot, robotId, certExpiresAt);
+    const robotCertId = await certificateManager.issueCertificate(team_id, robotKeyPair, CertificateType.robot, robotId, certExpiresAt);
 
-    const robotCertId = await certificateManager.issueCertificate(team_id, robotKeyPair, CertificateType.robot, robotId, dayjs().add(1, 'year'));
 
     // patiently wait for acm pca to issue, apologies client...
     // TODO plz fix
-    await delay(8000);
+    await delay(1000);
 
     // get robot cert
     const robotCert = await certificateManager.downloadCertificate(team_id, robotCertId);
@@ -90,44 +99,7 @@ router.post('/devices', async (req: Request, res) => {
         [forge.pki.certificateFromPem(robotCert.cert), forge.pki.certificateFromPem(rootCACert)],
         null,
         { algorithm: 'aes256' });
-
-
-    // create robot storing cert serial
-    await prisma.robot.create({
-        data: {
-            team_id,
-            id: robotId,
-            name: robotId
-        }
-    });
-    */
-    await prisma.robot.create({
-        data: {
-            team_id,
-            id: robotId,
-            name: robotId
-        }
-    });
-
-    const robotKeyPair = generateKeyPair({ keyType: EKeyType.Rsa });
-
-    // load root ca and key, used to sign provisioning cert
-    const rootCaKeyPair = await keyStorage.getKeyPair(ROOT_CA_KEY_ID);
-    const rootCaCertStr = await blobStorage.getObject(ROOT_BUCKET, '', ROOT_CA_CERT_OBJ_ID) as string;
-    const rootCaCert = forge.pki.certificateFromPem(rootCaCertStr);
-
-    // generate provisioning cert using root ca as parent
-    const opts = {
-        commonName: deviceId,
-        parentCert: rootCaCert,
-        parentKeyPair: rootCaKeyPair
-    };
-    const robotCert = generateCertificate(robotKeyPair, opts);
-
-    // bundle into pcks12, no encryption password set
-    const p12 = forge.pkcs12.toPkcs12Asn1(forge.pki.privateKeyFromPem(robotKeyPair.privateKey), [robotCert, rootCaCert], null, { algorithm: 'aes256' });
-
-
+    
     logger.info('robot has provisioned')
     return res.status(200).send(Buffer.from(forge.asn1.toDer(p12).getBytes(), 'binary'));
 

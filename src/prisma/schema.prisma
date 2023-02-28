@@ -142,6 +142,7 @@ model Image {
     id                  String          @id @default(uuid()) @unique
     team_id             String
     name                String                                  // human readable name
+    description         String?
     size                Int                                     // size of image in bytes
     sha256              String          @unique                 // sha256 hash of image
     hwids               String[]                                // types/ids of ecu hardware this image can be deployed to

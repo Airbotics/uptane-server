@@ -1,15 +1,15 @@
 import { Request, Response, NextFunction } from 'express';
-import { BadResponse, SuccessJsonResponse, NoContentResponse } from '@airbotics-core/network/responses';
+import { BadResponse, SuccessJsonResponse, NoContentResponse, SuccessMessageResponse } from '@airbotics-core/network/responses';
 import { logger } from '@airbotics-core/logger';
+import { RevocationReason } from '@aws-sdk/client-acm-pca';
+import { EcuTelemetry, RolloutRobotStatus } from '@prisma/client';
 import { prisma } from '@airbotics-core/drivers';
 import { getKeyStorageEcuKeyId } from '@airbotics-core/utils';
 import { keyStorage } from '@airbotics-core/key-storage';
 import { airEvent } from '@airbotics-core/events';
 import { EEventAction, EEventActorType, EEventResource } from '@airbotics-core/consts';
 import { certificateManager } from '@airbotics-core/crypto';
-import { RevocationReason } from '@aws-sdk/client-acm-pca';
-import { IRobotDetailRes, IRobotRes, IEcuTelemetryRes, IRobotRolloutRes } from 'src/types/responses';
-import { EcuTelemetry, RolloutRobotStatus } from '@prisma/client';
+import { IRobotDetailRes, IRobotRes, IEcuTelemetryRes, IRobotRolloutRes, IUpdateRobotDetailsBody } from '@airbotics-types';
 
 
 /**
@@ -41,10 +41,11 @@ export const listRobots = async (req: Request, res: Response, next: NextFunction
 
     const robotsSanitised: IRobotRes[] = robots.map(robot => ({
         id: robot.id,
-        name: robot.id, //TODO name
+        name: robot.name,
         status: robot.rollouts.length !== 0 ? robot.rollouts[0].status : RolloutRobotStatus.successful,
         group_count: robot._count.groups,
-        created_at: robot.created_at
+        created_at: robot.created_at,
+        last_seen_at: robot.last_seen_at
     }));
 
 
@@ -116,7 +117,9 @@ export const getRobot = async (req: Request, res: Response, next: NextFunction) 
 
     const robotSanitised: IRobotDetailRes = {
         id: robot.id,
-        name: robot.id, //TODO name
+        name: robot.name,
+        description: robot.description,
+        last_seen_at: robot.last_seen_at,
         created_at: robot.created_at,
         updated_at: robot.updated_at,
         status: robot.rollouts.length !== 0 ? robot.rollouts[0].status : RolloutRobotStatus.successful,
@@ -157,8 +160,55 @@ export const getRobot = async (req: Request, res: Response, next: NextFunction) 
         }
     };
 
-    logger.info('A user read a robots detail');
+    logger.info('a user has read a robots detail');
     return new SuccessJsonResponse(res, robotSanitised);
+
+}
+
+
+
+/**
+ * Delete a robot.
+ */
+export const updateRobotDetails = async (req: Request, res: Response, next: NextFunction) => {
+
+    const oryID = req.oryIdentity!.traits.id;
+    const teamID = req.headers['air-team-id']!;
+    const robotID = req.params.robot_id;
+
+    const {
+        name,
+        description
+    } = req.body as IUpdateRobotDetailsBody;
+
+    await prisma.robot.update({
+        where: {
+            team_id_id: {
+                team_id: teamID,
+                id: robotID
+            }
+        },
+        data: {
+            name,
+            description
+        }
+    });
+
+    airEvent.emit({
+        resource: EEventResource.Robot,
+        action: EEventAction.DetailsUpdated,
+        actor_type: EEventActorType.User,
+        actor_id: oryID,
+        team_id: teamID,
+        meta: {
+            id: robotID,
+            name,
+            description
+        }
+    });
+
+    logger.info('a user has updated a robots detail');
+    return new SuccessMessageResponse(res, 'robot has been updated');
 
 }
 
@@ -344,6 +394,9 @@ export const listRobotTelemetry = async (req: Request, res: Response, next: Next
         },
         include: {
             ecu: { select: { hwid: true } }
+        },
+        orderBy: {
+            created_at: 'desc'
         },
         skip: skip ? Number(skip): undefined,
         take: take ? Number(take): undefined

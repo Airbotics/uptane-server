@@ -1,6 +1,37 @@
 import { Dayjs } from 'dayjs';
 import { CertificateType } from '@prisma/client';
-import { EKeyType, ESignatureScheme, ETUFRole, RolloutTargetType  } from '@airbotics-core/consts';
+import { EKeyType, ESignatureScheme, ETUFRole, RolloutTargetType } from '@airbotics-core/consts';
+import {
+    ICreateCredentialsRes,
+    ICredentialsRes,
+    IEcuTelemetryRes,
+    IImageRobotRes,
+    IRobotDetailRes,
+    IRobotGroupRes,
+    IRobotRes,
+    IRobotRolloutRes,
+    IRolloutAffectedBotRes,
+    IRolloutDetailRes,
+    IRolloutRes,
+    IFleetOverview
+} from './responses';
+
+
+export {
+    ICreateCredentialsRes,
+    ICredentialsRes,
+    IEcuTelemetryRes,
+    IImageRobotRes,
+    IRobotDetailRes,
+    IRobotGroupRes,
+    IRobotRes,
+    IRobotRolloutRes,
+    IRolloutAffectedBotRes,
+    IRolloutDetailRes,
+    IRolloutRes,
+    IFleetOverview
+};
+
 
 /**
  * Provider interfaces
@@ -125,7 +156,6 @@ export interface ISignedTargetsTUF {
 
 
 
-
 export interface ISnapshotSignedTUF {
     _type: ETUFRole.Snapshot;
     version: number;
@@ -247,11 +277,12 @@ export interface IGroup {
 
 export interface IGroupRobot {
     robot_id: string;
-    created_at: Date;
-    ecus: {
-        id: string;
-        hwid: string;
-    }[]
+    name: string | null;
+    added_at: Date;
+    // ecus: {
+    //     id: string;
+    //     hwid: string;
+    // }[]
 }
 
 
@@ -259,17 +290,22 @@ export interface IGroupRobot {
 export interface ICreateRolloutBody {
     name: string;
     description: string;
-	hwid_img_map: { hw_id: string, img_id: string }[];
-	targeted_robots: {
-		type: RolloutTargetType;
-		group_id: string;
-		selected_bot_ids: string [];
-	}
+    hwid_img_map: { hw_id: string, img_id: string }[];
+    targeted_robots: {
+        type: RolloutTargetType;
+        group_id: string;
+        selected_bot_ids: string[];
+    }
 }
 
 
 export interface ICreateGroupBody {
     name: string;
-    description: string; 
+    description: string;
     robot_ids: string[];
+}
+
+export interface IUpdateRobotDetailsBody {
+    name?: string;
+    description?: string;
 }

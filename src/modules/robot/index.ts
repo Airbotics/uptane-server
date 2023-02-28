@@ -3,16 +3,14 @@ import forge from 'node-forge';
 import { logger } from '@airbotics-core/logger';
 import { generateKeyPair, certificateManager } from '@airbotics-core/crypto';
 import { prisma } from '@airbotics-core/drivers';
-import { EKeyType, DEV_CERTS_BUCKET, DEV_ROOT_CA_CERT_OBJ_ID, DEV_ROOT_CA_KEY_ID } from '@airbotics-core/consts';
+import { EKeyType } from '@airbotics-core/consts';
 import { mustBeRobot, updateRobotMeta } from '@airbotics-middlewares';
 import dayjs, { ManipulateType } from 'dayjs';
-import config from 'src/config';
+import config from '@airbotics-config';
 import { delay } from '@airbotics-core/utils';
 import { CertificateType } from '@prisma/client';
 import { aktualizrEvent, AktualizrEvent } from '@airbotics-core/events';
-import { keyStorage } from '@airbotics-core/key-storage';
-import { blobStorage } from '@airbotics-core/blob-storage';
-import { generateCertificate } from '@airbotics-core/crypto/certificates/utils';
+
 
 const router = express.Router();
 
@@ -67,7 +65,6 @@ router.post('/devices', async (req: Request, res) => {
     });
 
 
-
     // generate key pair for the cert, this will be thrown away
     const robotKeyPair = generateKeyPair({ keyType: EKeyType.Rsa });
 
@@ -99,7 +96,7 @@ router.post('/devices', async (req: Request, res) => {
         [forge.pki.certificateFromPem(robotCert.cert), forge.pki.certificateFromPem(rootCACert)],
         null,
         { algorithm: 'aes256' });
-    
+
     logger.info('robot has provisioned')
     return res.status(200).send(Buffer.from(forge.asn1.toDer(p12).getBytes(), 'binary'));
 
@@ -207,9 +204,9 @@ router.post('/events', mustBeRobot, updateRobotMeta, async (req: Request, res) =
         data: robotEvents
     });
 
-    for(const event of events)  {
-        aktualizrEvent.emit(event)
-    } 
+    for (const event of events) {
+        aktualizrEvent.emit(event);
+    }
 
     logger.info('ingested robot event');
     return res.status(200).end();

@@ -2,7 +2,9 @@ import { Request, Response, NextFunction } from 'express';
 import { BadResponse, SuccessJsonResponse } from '@airbotics-core/network/responses';
 import { logger } from '@airbotics-core/logger';
 import { prisma } from '@airbotics-core/drivers';
-import { IImageRobotRes } from 'src/types/responses';
+import { IImageRobotRes } from '@airbotics-types';
+import { airEvent } from '@airbotics-core/events';
+import { EEventAction, EEventActorType, EEventResource } from '@airbotics-core/consts';
 
 
 /**
@@ -63,6 +65,7 @@ export const getImage = async (req: Request, res: Response) => {
     const imageSanitised = {
         id: image.id,
         name: image.name,
+        description: image.description,
         size: image.size,
         sha256: image.sha256,
         hwids: image.hwids,
@@ -78,6 +81,74 @@ export const getImage = async (req: Request, res: Response) => {
 
 
 
+/**
+ * Update image detail.
+ */
+ export const updateImageDetails = async (req: Request, res: Response) => {
+
+    const oryID = req.oryIdentity!.traits.id;
+    const teamID = req.headers['air-team-id']!;
+    const imageID = req.params.image_id;
+
+    const {description} = req.body;
+
+    const image = await prisma.image.findUnique({
+        where: {
+            team_id_id: {
+                team_id: teamID,
+                id: imageID
+            }
+        },
+    });
+
+    if (!image) {
+        logger.warn('could not updateimage because it or the team does not exist');
+        return new BadResponse(res, 'Unable to update image');
+    }
+
+    const newImage = await prisma.image.update({
+        where: {
+            team_id_id: {
+                team_id: teamID,
+                id: imageID
+            }
+        },
+        data: {
+            description
+        }
+    });
+
+    airEvent.emit({
+        resource: EEventResource.Image,
+        action: EEventAction.DetailsUpdated,
+        actor_type: EEventActorType.User,
+        actor_id: oryID,
+        team_id: teamID,
+        meta: {
+            id: newImage.id
+        }
+    });
+
+    const imageSanitised = {
+        id: newImage.id,
+        name: newImage.name,
+        description: newImage.description,
+        size: newImage.size,
+        sha256: newImage.sha256,
+        hwids: newImage.hwids,
+        format: newImage.format,
+        created_at: newImage.created_at,
+        updated_at: newImage.updated_at
+    };
+
+    logger.info('A user update an image detail');
+    return new SuccessJsonResponse(res, imageSanitised);
+
+}
+
+/**
+ * 
+ */
 export const listRobotsWithImage = async (req: Request, res: Response) => {
 
     const teamID = req.headers['air-team-id']!;

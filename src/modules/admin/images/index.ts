@@ -2,7 +2,7 @@ import { EValidationSource, OryTeamRelations } from '@airbotics-core/consts';
 import express from 'express';
 import { mustBeAuthenticated, mustBeInTeam, validate } from '@airbotics-middlewares';
 import * as controller from './controller';
-import { imageIdSchema } from '../schemas';
+import { imageIdSchema, updateImageDetailsSchema } from '../schemas';
 
 const router = express.Router();
 
@@ -19,6 +19,13 @@ router.get('/images/:image_id',
     validate(imageIdSchema, EValidationSource.Path),
     controller.getImage);
 
+// update image details
+router.patch('/images/:image_id',
+    mustBeAuthenticated,
+    mustBeInTeam(OryTeamRelations.member),
+    validate(imageIdSchema, EValidationSource.Path),
+    validate(updateImageDetailsSchema, EValidationSource.Body),
+    controller.updateImageDetails);
 
 // get all robots that have image installed
 router.get('/images/:image_id/robots',

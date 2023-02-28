@@ -28,20 +28,29 @@ export const rolloutIdSchema = Joi.object({
     rollout_id: Joi.string().uuid().required(),
 });
 
+export const updateRobotDetailsSchema = Joi.object({
+    name: nameField.optional().allow(''),
+    description: nameField.optional().allow('')
+}).min(1);
+
 export const updateAccountSchema = Joi.object({
     first_name: nameField.optional(),
     last_name: nameField.optional()
 }).min(1);
 
+export const updateImageDetailsSchema = Joi.object({
+    description: nameField.required().allow('')
+})
+
 export const createGroupSchema = Joi.object({
     name: nameField.required(),
-    description: nameField,
-    robot_ids: Joi.array().items(robotIdField.required()).min(1).max(100)
+    description: nameField.optional().allow(''),
+    robot_ids: Joi.array().items(robotIdField)
 });
 
 export const updateGoupSchema = Joi.object({
     name: nameField.optional(),
-    description: nameField.optional()
+    description: nameField.optional().allow('')
 }).min(1);
 
 export const createTeamSchema = Joi.object({

@@ -6,7 +6,7 @@ import { IdentityApiGetIdentityRequest, RelationshipApiGetRelationshipsRequest, 
 import { EEventAction, EEventActorType, EEventResource, OryNamespaces, OryTeamRelations, TREEHUB_BUCKET } from '@airbotics-core/consts';
 import { SuccessMessageResponse, BadResponse, SuccessJsonResponse, NoContentResponse } from '@airbotics-core/network/responses';
 import { logger } from '@airbotics-core/logger';
-import { ITeamDetail } from '@airbotics-types';
+import { IFleetOverview, ITeamDetail } from '@airbotics-types';
 import { airEvent } from '@airbotics-core/events';
 import { certificateManager, generateKeyPair } from '@airbotics-core/crypto';
 import config from '@airbotics-config';
@@ -14,6 +14,7 @@ import { generateSignedRoot, generateSignedSnapshot, generateSignedTargets, gene
 import { blobStorage } from '@airbotics-core/blob-storage';
 import { keyStorage } from '@airbotics-core/key-storage';
 import { getKeyStorageEcuKeyId, getKeyStorageRepoKeyId } from '@airbotics-core/utils';
+import { dayjs } from '@airbotics-core/time';
 
 
 
@@ -226,7 +227,7 @@ export const createTeam = async (req: Request, res: Response, next: NextFunction
         });
 
         logger.info('created a team');
-        
+
         return new SuccessJsonResponse(res, newTeam);
 
     } catch (error) {
@@ -276,7 +277,7 @@ export const listTeams = async (req: Request, res: Response, next: NextFunction)
             }
         });
 
-        if(teams.length === 0) {
+        if (teams.length === 0) {
             return new NoContentResponse(res, 'User is not yet part of a team');
         }
 
@@ -289,7 +290,7 @@ export const listTeams = async (req: Request, res: Response, next: NextFunction)
                 num_members: team.num_members,
                 created_at: team.created_at
             }));
-    
+
             logger.info('A user read a list of their teams');
             return new SuccessJsonResponse(res, sanitisedTeams);
         }
@@ -343,7 +344,7 @@ export const listTeamMembers = async (req: Request, res: Response, next: NextFun
 
                 teamMembers.push({
                     id: identity.id,
-                    name: identity.traits.name.first + identity.traits.name.last,
+                    name: identity.traits.name.first + ' ' + identity.traits.name.last,
                     email: identity.traits.email,
                     role: relation.relation,
                     created_at: identity.created_at
@@ -511,7 +512,7 @@ export const deleteTeamMembers = async (req: Request, res: Response, next: NextF
 
 
     const oryID = req.oryIdentity!.traits.id;
-    
+
     airEvent.emit({
         resource: EEventResource.Team,
         action: EEventAction.MemberRemoved,
@@ -526,13 +527,81 @@ export const deleteTeamMembers = async (req: Request, res: Response, next: NextF
 }
 
 
-
-
-
 /**
- * DOES NOT YET DELETE ACCOUNT
- * 
- * At this stage we will direct users to contact us to confirm account deletion as this 
- * could potentially be a very damaaging action
- * 
+ * Get stats overview of the fleet.
  */
+export const getFleetOverview = async (req: Request, res: Response, next: NextFunction) => {
+
+    const teamID = req.headers['air-team-id']!;
+
+    const num_groups = await prisma.group.count({
+        where: {
+            team_id: teamID
+        }
+    });
+
+    const num_robots = await prisma.robot.count({
+        where: {
+            team_id: teamID
+        }
+    });
+
+    const num_images = await prisma.image.count({
+        where: {
+            team_id: teamID
+        }
+    });
+
+    const num_rollouts = await prisma.rollout.count({
+        where: {
+            team_id: teamID
+        }
+    });
+
+    // TODO ROBOT STATUS BREAKDOWN
+
+    const storage_usage = await prisma.object.aggregate({
+        _sum: {
+            size: true
+        },
+        where: {
+            team_id: teamID
+        }
+    });
+
+    const today = dayjs();
+    const last_week = dayjs().subtract(6, 'day');
+
+    const rollout_history: { date: string; count: number; }[] = await prisma.$queryRaw`SELECT 
+            date, count(id)
+        FROM
+            (
+                SELECT date::date 
+                FROM generate_series(${last_week.toDate()}, ${today.toDate()}, '1 day'::interval) date
+            ) d
+            LEFT JOIN rollouts
+            ON DATE_TRUNC('day', rollouts.created_at) = d.date 
+            AND rollouts.team_id=${teamID}
+        GROUP BY 
+            d.date 
+        ORDER BY 
+            d.date ASC`;
+
+
+    const stats: IFleetOverview = {
+        num_groups,
+        num_robots,
+        num_images,
+        num_rollouts,
+        storage_usage: storage_usage._sum.size || 0,
+        rollout_history: rollout_history.map((history: any) => ({ date: history.date, count: Number(history.count) })),
+        robot_status_breakdown: {
+            up_to_date: 0,
+            pending: 0,
+            underway: 0,
+        }
+    }
+
+    logger.info('a user has gotten a stats overview of their fleet');
+    return new SuccessJsonResponse(res, stats);
+}

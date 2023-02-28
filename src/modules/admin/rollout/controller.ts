@@ -2,14 +2,13 @@ import { Request, Response, NextFunction } from 'express';
 import { BadResponse, SuccessJsonResponse } from '@airbotics-core/network/responses';
 import { logger } from '@airbotics-core/logger';
 import { Ecu, Robot, Rollout, RolloutStatus } from '@prisma/client';
-import { ICreateRolloutBody } from 'src/types';
 import { RolloutTargetType } from '@airbotics-core/consts';
 import { SuccessMessageResponse } from '../../../core/network/responses';
 import { prisma } from '@airbotics-core/drivers';
 import { generateStaticDelta } from '@airbotics-core/generate-static-delta';
 import { airEvent } from '@airbotics-core/events';
 import { EEventAction, EEventActorType, EEventResource } from '@airbotics-core/consts';
-import { IRolloutAffectedBotRes, IRolloutDetailRes, IRolloutRes } from 'src/types/responses';
+import { IRolloutAffectedBotRes, IRolloutDetailRes, IRolloutRes, ICreateRolloutBody } from '@airbotics-types';
 
 
 /**

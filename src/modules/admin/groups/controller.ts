@@ -349,11 +349,12 @@ export const listRobotsInGroup = async (req: Request, res: Response, next: NextF
 
         const sanitisedGroupRobots: IGroupRobot[] = groupRobots.map(groupRobot => ({
             robot_id: groupRobot.robot_id,
-            created_at: groupRobot.created_at,
-            ecus: groupRobot.robot.ecus.map(ecu => ({
-                id: ecu.id,
-                hwid: ecu.hwid,
-            }))
+            name: groupRobot.robot.name,
+            added_at: groupRobot.created_at,
+            // ecus: groupRobot.robot.ecus.map(ecu => ({
+            //     id: ecu.id,
+            //     hwid: ecu.hwid,
+            // }))
         }));
 
         logger.info('A user read a list of a groups robots.');
@@ -444,11 +445,12 @@ export const addRobotToGroup = async (req: Request, res: Response, next: NextFun
 
         const sanitisedGroupRobot: IGroupRobot = {
             robot_id: groupRobot.robot_id,
-            created_at: groupRobot.created_at,
-            ecus: groupRobot.robot.ecus.map(ecu => ({
-                id: ecu.id,
-                hwid: ecu.hwid
-            }))
+            name: groupRobot.robot.name,
+            added_at: groupRobot.created_at,
+            // ecus: groupRobot.robot.ecus.map(ecu => ({
+            //     id: ecu.id,
+            //     hwid: ecu.hwid
+            // }))
         };
 
         logger.info('A user has added a robot a group in one of their teams.');

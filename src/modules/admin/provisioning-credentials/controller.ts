@@ -19,7 +19,7 @@ import config from '@airbotics-config';
 import { generateTufKey, getTufMetadata } from '@airbotics-core/tuf';
 import { keyStorage } from '@airbotics-core/key-storage';
 import { getKeyStorageRepoKeyId, toCanonical } from '@airbotics-core/utils';
-import { ICredentialsRes } from 'src/types/responses';
+import { ICredentialsRes } from '@airbotics-types';
 
 
 /**

@@ -6,16 +6,19 @@ import { CertificateStatus, ImageFormat, RolloutRobotStatus, RolloutStatus } fro
  */
 export interface IRobotRes {
     id: string;
-    name: string;
+    name: string | null;
     status: RolloutRobotStatus;
     group_count: number;
     created_at: Date;
+    last_seen_at: Date | null;
 };
 
 
 export interface IRobotDetailRes {
     id: string;
-    name: string;
+    name: string | null;
+    description: string | null;
+    last_seen_at: Date | null;
     status: RolloutRobotStatus;
     created_at: Date;
     updated_at: Date;
@@ -168,4 +171,21 @@ export interface ICredentialsRes {
     expires_at: Date;
     created_at: Date;
     revoked_at: Date | null;
+}
+
+export interface IFleetOverview {
+    num_groups: number;
+    num_robots: number;
+    num_images: number;
+    num_rollouts: number;
+    storage_usage: number;
+    rollout_history: {
+        date: string;
+        count: number;
+    }[];
+    robot_status_breakdown: {
+        up_to_date: number;
+        pending: number;
+        underway: number;
+    };
 }

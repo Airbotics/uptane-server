@@ -140,30 +140,24 @@ export const createRollout = async (req: Request, res: Response) => {
             throw ('Unknown robot target type for rollout');
         }
 
-        //create the records for RolloutRobot
-        const rolloutRobots = await tx.rolloutRobot.createMany({
-            data: potentiallyAffectedBots.map(bot => ({
-                rollout_id: rollout.id,
-                robot_id: bot.robot_id
-            }))
-        });
+        logger.info(potentiallyAffectedBots);
 
-        //prisma cant return records from create many
-        const rolloutRobotsIds = await tx.rolloutRobot.findMany({
-            where: {
-                rollout_id: rollout.id
-            }
-        });
-
-        const affectedEcus = potentiallyAffectedBots.flatMap(bot => bot.ecu_ids);
-
-        await tx.rolloutRobotEcu.createMany({
-            data: affectedEcus.map(ecu_id => ({
-                ecu_id: ecu_id,
-                rollout_robot_id: rolloutRobotsIds.find(elem => elem.robot_id)
-            }))
-        })
-
+        //For each of the potentially affected bots, add a RolloutRobot and n RolloutRobotEcus
+        for(const bot of potentiallyAffectedBots) {
+            await tx.rolloutRobot.create({
+                data: {
+                    rollout_id: rollout.id,
+                    robot_id: bot.robot_id,
+                    ecus: {
+                        createMany: {
+                            data: bot.ecu_ids.map(id => ({
+                                ecu_id: id
+                            }))
+                        }
+                    }
+                }
+            })
+        }
 
         return rollout;
 

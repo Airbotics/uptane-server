@@ -147,6 +147,7 @@ export interface ITargetsSignedTUF {
     expires: string;
     delegations?: any;
     targets: ITargetsImages;
+    custom?: any;
 }
 
 export interface ISignedTargetsTUF {

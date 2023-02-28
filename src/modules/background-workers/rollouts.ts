@@ -121,7 +121,7 @@ export const processRolloutsHelper = async () => {
 
                 //we need to generate new director metadata for the bot (ie is affected by the rollout)
                 else {
-                    await generateNewMetadata(team.id, rolloutBot.robot_id!, affectedEcus);
+                    await generateNewMetadata(team.id, rolloutBot.robot_id!, rolloutBot.id, affectedEcus);
                     await setRolloutBotStatus(rollout.id, rolloutBot.robot_id!, 'scheduled');
                 }
             }
@@ -148,10 +148,13 @@ const setRolloutBotStatus = async (rollout_id: string, robot_id: string, status:
 
 
 
-const generateNewMetadata = async (team_id: string, robot_id: string, affectedEcus: { ecu: Ecu, image: Image }[]) => {
+const generateNewMetadata = async (team_id: string, robot_id: string, correlationId: string, affectedEcus: { ecu: Ecu, image: Image }[]) => {
 
     // Lets generate the whole metadata file again
     const targetsImages: ITargetsImages = {};
+
+    //This is the rolloutRobot.id in our case, aktualizr will send this up with events and we can use it to update status'
+    const custom = { correlationId: correlationId }
 
     for (const affected of affectedEcus) {
 
@@ -171,6 +174,7 @@ const generateNewMetadata = async (team_id: string, robot_id: string, affectedEc
             }
         }
     }
+    
 
     //determine new metadata versions
     const newTargetsVersion = await getLatestMetadataVersion(team_id, TUFRepo.director, TUFRole.targets, robot_id) + 1;
@@ -183,7 +187,7 @@ const generateNewMetadata = async (team_id: string, robot_id: string, affectedEc
     const timestampKeyPair = await keyStorage.getKeyPair(getKeyStorageRepoKeyId(team_id, TUFRepo.director, TUFRole.timestamp));
 
     //Generate the new metadata
-    const targetsMetadata = generateSignedTargets(config.TUF_TTL.DIRECTOR.TARGETS, newTargetsVersion, targetsKeyPair, targetsImages);
+    const targetsMetadata = generateSignedTargets(config.TUF_TTL.DIRECTOR.TARGETS, newTargetsVersion, targetsKeyPair, targetsImages, custom);
     const snapshotMetadata = generateSignedSnapshot(config.TUF_TTL.DIRECTOR.SNAPSHOT, newSnapshotVersion, snapshotKeyPair, targetsMetadata);
     const timestampMetadata = generateSignedTimestamp(config.TUF_TTL.DIRECTOR.TIMESTAMP, newTimestampVersion, timestampKeyPair, snapshotMetadata);
 

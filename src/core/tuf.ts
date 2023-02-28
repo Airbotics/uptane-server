@@ -188,7 +188,7 @@ export const generateSignedRoot = (ttl: (number | string)[], version: number, ro
 /**
  * Generate sign targets metadata.
  */
-export const generateSignedTargets = (ttl: (number | string)[], version: number, targetsKeyPair: IKeyPair, targetsImages: ITargetsImages): ISignedTargetsTUF => {
+export const generateSignedTargets = (ttl: (number | string)[], version: number, targetsKeyPair: IKeyPair, targetsImages: ITargetsImages, custom?: any): ISignedTargetsTUF => {
 
     const signed: ITargetsSignedTUF = {
         _type: ETUFRole.Targets,
@@ -196,6 +196,10 @@ export const generateSignedTargets = (ttl: (number | string)[], version: number,
         version,
         targets: targetsImages,
     };
+
+    if(custom) {
+        signed['custom'] = custom;
+    }
 
     return signRole(signed, targetsKeyPair) as ISignedTargetsTUF;
 

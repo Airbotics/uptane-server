@@ -1,5 +1,7 @@
 import { EAktualizrEvent } from "@airbotics-core/consts";
+import { prisma } from "@airbotics-core/drivers";
 import { logger } from "@airbotics-core/logger";
+import { EcuStatus } from "@prisma/client";
 import { AktualizrEvent, aktualizrEvent } from ".";
 
 
@@ -12,11 +14,11 @@ export const rolloutEventHandler = ((event: AktualizrEvent) => {
         case EAktualizrEvent.CampaignPostponed: handleRolloutPostponed(event); break;
         case EAktualizrEvent.DevicePaused: handleRobotPaused(event); break;
         case EAktualizrEvent.DeviceResumed: handleRobotResumed(event); break;
-        case EAktualizrEvent.EcuDownloadStarted: handleEcuDownloadStarted(event); break;
-        case EAktualizrEvent.EcuDownloadCompleted: handleEcuDownloadCompleted(event); break;
-        case EAktualizrEvent.EcuInstallationStarted: handleEcuInstallationStarted(event); break;
-        case EAktualizrEvent.EcuInstallationApplied: handleEcuInstallationApplied(event); break;
-        case EAktualizrEvent.EcuInstallationCompleted: handleEcuInstallationCompleted(event); break;
+        case EAktualizrEvent.EcuDownloadStarted: handleEcuEvent(event, EcuStatus.download_started); break;
+        case EAktualizrEvent.EcuDownloadCompleted: handleEcuEvent(event, event.event.success ? EcuStatus.download_completed : EcuStatus.download_failed); break;
+        case EAktualizrEvent.EcuInstallationStarted: handleEcuEvent(event, EcuStatus.installation_started); break;
+        case EAktualizrEvent.EcuInstallationApplied: handleEcuEvent(event, EcuStatus.installation_applied); break;
+        case EAktualizrEvent.EcuInstallationCompleted: handleEcuEvent(event, event.event.success ? EcuStatus.installation_completed : EcuStatus.installation_failed); break;
         default: logger.error(`unable to handle AktualizrEvent. No handler for event type ${event.eventType.id}`)
     }    
 });
@@ -42,28 +44,41 @@ const handleRobotResumed = (event: AktualizrEvent) => {
     logger.info(`TODO: handling AktualizrEvent: ${event.eventType.id}`);
 }
 
-// ecu has started a download attempt for an image
-const handleEcuDownloadStarted = (event: AktualizrEvent) => {
-    logger.info(`TODO: handling AktualizrEvent: ${event.eventType.id}`);
-} 
+/**
+ * Update the ecu status in the RolloutRobotEcu table AND
+ * the Ecu itself to make it easier to quickly glance at the fleet health
+ * 
+ * The correlationId is the RolloutRobot id which is included as a custom field
+ * in the director targets.json during rollout processing
+ */
+const handleEcuEvent = async (event: AktualizrEvent, status: EcuStatus) => {
 
-// ecu has finished a download attempt for an image, may or may not be successful
-const handleEcuDownloadCompleted = (event: AktualizrEvent) => {
-    logger.info(`TODO: handling AktualizrEvent: ${event.eventType.id}`);
-} 
+    if(event.event.correlationId === null || event.event.ecu === null) {
+        logger.error(`Could not process ${event.eventType.id} event, ecu or correlation ID is missing!`);
+        return;
+    }
 
-// ecu has started to try and install the successfully downloaded image
-const handleEcuInstallationStarted = (event: AktualizrEvent) => {
-    logger.info(`TODO: handling AktualizrEvent: ${event.eventType.id}`);
-} 
+    await prisma.$transaction(async tx => {
 
-// ecu is happy with the image but may need a reboot to complete the update
-const handleEcuInstallationApplied = (event: AktualizrEvent) => {
-    logger.info(`TODO: handling AktualizrEvent: ${event.eventType.id}`);
-} 
+        await tx.rolloutRobotEcu.update({
+            where: {
+                rollout_robot_id_ecu_id: {
+                    rollout_robot_id: event.event.correlationId!,
+                    ecu_id: event.event.ecu!
+                }
+            },
+            data: {
+                status: status
+            }
+        });
 
-// ecu has rebooted if necessary and update is confirmed as running
-const handleEcuInstallationCompleted = (event: AktualizrEvent) => {
-    logger.info(`TODO: handling AktualizrEvent: ${event.eventType.id}`);
-    logger.info(`TODO: handling AktualizrEvent: ${event}`);
+        await tx.ecu.update({
+            where: { id: event.event.ecu! },
+            data: {
+                status: status
+            }
+        })
+
+    })
+
 }

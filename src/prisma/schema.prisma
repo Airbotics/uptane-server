@@ -227,6 +227,7 @@ model Ecu {
     hwid                String                              // hardware type/id of this ecu
     primary             Boolean                             // whether this ecu is the primary, only one per robot is supported
     image_id            String?                             // FK to whichever image is currently installed
+    status              EcuStatus       @default(installation_applied)
     created_at          DateTime        @default(now())
     updated_at          DateTime        @updatedAt
 
@@ -441,20 +442,26 @@ enum RolloutStatus {
     cancelled
 }
 
+enum RolloutTargetType {
+    group
+    hw_id_match
+    selected_bots
+}
+
 
 model Rollout {
-    id                  String          @id @default(uuid()) @unique
+    id                  String              @id @default(uuid()) @unique
     team_id             String
     name                String
     description         String
-    status              RolloutStatus   @default(preparing)
+    status              RolloutStatus       @default(preparing)
+    target_type         RolloutTargetType
 
-    created_at          DateTime        @default(now())
-    updated_at          DateTime        @default(now())
+    created_at          DateTime            @default(now())
+    updated_at          DateTime            @default(now())
 
-    team                Team            @relation(fields: [team_id], references: [id], onDelete: Cascade)
+    team                Team                @relation(fields: [team_id], references: [id], onDelete: Cascade)
 
-    cancelled           RolloutsCancelled[]
     robots              RolloutRobot[]
     hw_imgs             RolloutHardwareImage[]
 
@@ -463,19 +470,6 @@ model Rollout {
 }
 
 
-model RolloutsCancelled {
-    rollout_id          String          @unique
-    status              String
-
-    created_at          DateTime        @default(now())
-    updated_at          DateTime        @default(now())
-
-    rollout             Rollout         @relation(fields: [rollout_id], references: [id], onDelete: Cascade)
-
-
-    @@map("rollouts_cancelled")
-}
- 
 
 model RolloutHardwareImage {
     id                  String          @id @default(uuid()) @unique
@@ -503,14 +497,6 @@ enum RolloutRobotStatus {
     failed              // robot tried and failed to pull the update
 }
 
-enum RolloutEcuStatus {
-    pending
-    started
-    completed
-    applied
-}
-
-
 model RolloutRobot {
     id                  String              @id @default(uuid()) @unique
     rollout_id          String
@@ -525,10 +511,20 @@ model RolloutRobot {
     robot               Robot?              @relation(fields: [robot_id], references: [id], onDelete: SetNull)
 
     ecus                RolloutRobotEcu[]
-
     
     @@unique([rollout_id, robot_id])
     @@map("rollout_robots")
+}
+
+
+enum EcuStatus {
+    download_started
+    download_completed
+    download_failed
+    installation_started
+    installation_completed
+    installation_failed
+    installation_applied
 }
 
 
@@ -536,8 +532,8 @@ model RolloutRobotEcu {
     id                  String              @id @default(uuid()) @unique
     rollout_robot_id    String
     ecu_id              String?
-    download_status     RolloutEcuStatus    @default(pending)
-    install_status      RolloutEcuStatus    @default(pending)
+    status              EcuStatus?
+
 
     created_at          DateTime            @default(now())
     updated_at          DateTime            @default(now())

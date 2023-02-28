@@ -9,6 +9,7 @@ import { generateStaticDelta } from '@airbotics-core/generate-static-delta';
 import { airEvent } from '@airbotics-core/events';
 import { EEventAction, EEventActorType, EEventResource } from '@airbotics-core/consts';
 import { IRolloutAffectedBotRes, IRolloutDetailRes, IRolloutRes, ICreateRolloutBody } from '@airbotics-types';
+import { setEnvironmentData } from 'worker_threads';
 
 
 /**
@@ -41,6 +42,7 @@ export const createRollout = async (req: Request, res: Response) => {
                 team_id: teamId,
                 name: body.name,
                 description: body.description,
+                target_type: body.targeted_robots.type,
                 status: RolloutStatus.preparing
             }
         });
@@ -55,52 +57,113 @@ export const createRollout = async (req: Request, res: Response) => {
             }))
         });
 
-        //determine which robots are affected by the rollout
-        const robotIDs: string[] = [];
-        const botTargetType = body.targeted_robots.type;
+        //Determine the potentially affected bot_ids and their corresponding ecu_ids
+        let potentiallyAffectedBots: { robot_id: string, ecu_ids: string[] }[] = [];
 
-        if (botTargetType === RolloutTargetType.selected_bots) {
-            robotIDs.push(...body.targeted_robots.selected_bot_ids!);
-        }
+        if (body.targeted_robots.type === RolloutTargetType.selected_bots) {
 
-        else if (botTargetType === RolloutTargetType.group) {
-
-            const robotsInGroup = await tx.robotGroup.findMany({
+            const robots = await tx.robot.findMany({
                 where: {
-                    group_id: body.targeted_robots.group_id!
+                    id: { in: body.targeted_robots.selected_bot_ids }
                 },
                 include: {
-                    robot: { select: { id: true } }
+                    ecus: {
+                        select: { id: true },
+                        where: {
+                            hwid: { in: body.hwid_img_map.map(elem => elem.hw_id) }
+                        }
+                    }
                 }
             });
 
-            robotIDs.push(...robotsInGroup.map(botGrp => (botGrp.robot_id)));
+            potentiallyAffectedBots = robots.map(robot => ({
+                robot_id: robot.id,
+                ecu_ids: robot.ecus.map(ecu => ecu.id)
+            }))
         }
 
-        else if (botTargetType === RolloutTargetType.hw_id_match) {
+        else if (body.targeted_robots.type === RolloutTargetType.group) {
+
+            const robotGroups = await tx.robotGroup.findMany({
+                where: {
+                    group_id: body.targeted_robots.group_id
+                },
+                include: {
+                    robot: {
+                        include: {
+                            ecus: {
+                                select: { id: true },
+                                where: {
+                                    hwid: { in: body.hwid_img_map.map(elem => elem.hw_id) }
+                                }
+                            }
+                        }
+                    }
+                }
+            });
+
+            potentiallyAffectedBots = robotGroups.map(botGrp => ({
+                robot_id: botGrp.robot_id,
+                ecu_ids: botGrp.robot.ecus.map(ecu => ecu.id)
+            }))
+        }
+
+        else if (body.targeted_robots.type === RolloutTargetType.hw_id_match) {
 
             const hwIds = body.hwid_img_map.map(elem => (elem.hw_id));
 
-            const ecuRobots = await tx.ecu.findMany({
+            const robots = await tx.robot.findMany({
                 where: {
-                    hwid: { in: hwIds }
+                    ecus: {
+                        some: {
+                            hwid: { in: hwIds }
+                        }
+                    }
                 },
-                distinct: ['robot_id']
-            });
+                include: {
+                    ecus: {
+                        select: { id: true },
+                        where: {
+                            hwid: { in: body.hwid_img_map.map(elem => elem.hw_id) }
+                        }
+                    }
+                }
+            })
 
-            robotIDs.push(...ecuRobots.map(ecuBot => (ecuBot.robot_id)));
+            potentiallyAffectedBots = robots.map(robot => ({
+                robot_id: robot.id,
+                ecu_ids: robot.ecus.map(ecu => ecu.id)
+            }))
         }
 
         else {
             throw ('Unknown robot target type for rollout');
         }
 
-        await tx.rolloutRobot.createMany({
-            data: robotIDs.map(id => ({
+        //create the records for RolloutRobot
+        const rolloutRobots = await tx.rolloutRobot.createMany({
+            data: potentiallyAffectedBots.map(bot => ({
                 rollout_id: rollout.id,
-                robot_id: id
+                robot_id: bot.robot_id
             }))
         });
+
+        //prisma cant return records from create many
+        const rolloutRobotsIds = await tx.rolloutRobot.findMany({
+            where: {
+                rollout_id: rollout.id
+            }
+        });
+
+        const affectedEcus = potentiallyAffectedBots.flatMap(bot => bot.ecu_ids);
+
+        await tx.rolloutRobotEcu.createMany({
+            data: affectedEcus.map(ecu_id => ({
+                ecu_id: ecu_id,
+                rollout_robot_id: rolloutRobotsIds.find(elem => elem.robot_id)
+            }))
+        })
+
 
         return rollout;
 
@@ -268,7 +331,7 @@ type AffectedRobot = (Robot & {
     })[];
 })
 
-const computeAffectedHelper = (body:ICreateRolloutBody, robots: AffectedRobot[]): IRolloutAffectedBotRes[] =>  {
+const computeAffectedHelper = (body: ICreateRolloutBody, robots: AffectedRobot[]): IRolloutAffectedBotRes[] => {
 
     return robots.map(bot => ({
         id: bot.id,
@@ -344,8 +407,8 @@ export const computeAffected = async (req: Request, res: Response) => {
 
         const selectedRobots = await prisma.robot.findMany({
             where: {
-                id: { 
-                    in: body.targeted_robots.selected_bot_ids 
+                id: {
+                    in: body.targeted_robots.selected_bot_ids
                 }
             },
             include: {
@@ -361,3 +424,5 @@ export const computeAffected = async (req: Request, res: Response) => {
         return new SuccessJsonResponse(res, affected);
     }
 }
+
+

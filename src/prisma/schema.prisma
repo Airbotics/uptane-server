@@ -227,7 +227,7 @@ model Ecu {
     hwid                String                              // hardware type/id of this ecu
     primary             Boolean                             // whether this ecu is the primary, only one per robot is supported
     image_id            String?                             // FK to whichever image is currently installed
-    status              EcuStatus       @default(installation_applied)
+    status              EcuStatus       @default(installation_completed)
     created_at          DateTime        @default(now())
     updated_at          DateTime        @updatedAt
 
@@ -438,7 +438,7 @@ model RobotGroup {
 enum RolloutStatus {
     preparing
     launched
-    finished
+    completed
     cancelled
 }
 
@@ -487,12 +487,12 @@ model RolloutHardwareImage {
 }
 
 
-enum RolloutRobotStatus {
+enum RobotStatus {
     pending             // rollout created but worker hasn’t got around to processing
     skipped             // worker determined update is n/a for bot
     scheduled           // worker has created the latest targets.json in the director repo
     accepted            // robot has acknowledged the update
-    successful          // robot has successfully pulled the update
+    completed           // robot has successfully pulled the update
     cancelled           // the rollout was cancelled
     failed              // robot tried and failed to pull the update
 }
@@ -501,7 +501,7 @@ model RolloutRobot {
     id                  String              @id @default(uuid()) @unique
     rollout_id          String
     robot_id            String?
-    status              RolloutRobotStatus  @default(pending) 
+    status              RobotStatus         @default(pending) 
     result_desc         String?
 
     created_at          DateTime            @default(now())

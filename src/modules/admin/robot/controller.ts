@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { BadResponse, SuccessJsonResponse, NoContentResponse, SuccessMessageResponse } from '@airbotics-core/network/responses';
 import { logger } from '@airbotics-core/logger';
 import { RevocationReason } from '@aws-sdk/client-acm-pca';
-import { EcuTelemetry, RolloutRobotStatus } from '@prisma/client';
+import { EcuTelemetry, RobotStatus } from '@prisma/client';
 import { prisma } from '@airbotics-core/drivers';
 import { getKeyStorageEcuKeyId } from '@airbotics-core/utils';
 import { keyStorage } from '@airbotics-core/key-storage';
@@ -42,7 +42,7 @@ export const listRobots = async (req: Request, res: Response, next: NextFunction
     const robotsSanitised: IRobotRes[] = robots.map(robot => ({
         id: robot.id,
         name: robot.name,
-        status: robot.rollouts.length !== 0 ? robot.rollouts[0].status : RolloutRobotStatus.successful,
+        status: robot.rollouts.length !== 0 ? robot.rollouts[0].status : RobotStatus.completed,
         group_count: robot._count.groups,
         created_at: robot.created_at,
         last_seen_at: robot.last_seen_at
@@ -122,7 +122,7 @@ export const getRobot = async (req: Request, res: Response, next: NextFunction) 
         last_seen_at: robot.last_seen_at,
         created_at: robot.created_at,
         updated_at: robot.updated_at,
-        status: robot.rollouts.length !== 0 ? robot.rollouts[0].status : RolloutRobotStatus.successful,
+        status: robot.rollouts.length !== 0 ? robot.rollouts[0].status : RobotStatus.completed,
         agent_version: robot.agent_version,
         ecus_registered: robot.ecus_registered,
         groups: robot.groups.map(grp => ({ id: grp.group_id, name: grp.group.name })),

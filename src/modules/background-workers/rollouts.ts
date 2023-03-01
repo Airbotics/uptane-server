@@ -1,4 +1,4 @@
-import { Ecu, TUFRepo, TUFRole, Image, RolloutRobotStatus } from '@prisma/client';
+import { Ecu, TUFRepo, TUFRole, Image, RobotStatus, RolloutStatus } from '@prisma/client';
 import prisma from '@airbotics-core/drivers/postgres';
 import config from '@airbotics-config';
 import { logger } from '@airbotics-core/logger';
@@ -6,18 +6,26 @@ import { generateSignedSnapshot, generateSignedTargets, generateSignedTimestamp,
 import { ITargetsImages } from '@airbotics-types';
 import { keyStorage } from '@airbotics-core/key-storage';
 import { getKeyStorageRepoKeyId } from '@airbotics-core/utils';
+import { EcuStatus } from '@prisma/client';
 
 
 
 /**
- * Responsible for processing current rollouts. This will most likely be done in batches in due course.
- * A rollout is deemed in need of processsing if 1 or more robots associated with the rollout have not
- * had their director manifest updated OR if they are not eligible for the rollout
+ * Responsible for processing any pending robots associated with any ongoing rollouts. 
+ * This will most likely be done in batches in due course.
+ * The processing takes care of generating a new director targets.json for the robot if
+ * it has any ecus on board that match a hardware id of an image in the rollout.
+ * 
+ * If it a robot has no ecus that have matching hwids, it will be skipped and no new director
+ * targets.json will be generated.
+ * 
  * 
  * Edge cases
  * 
  * 1) Robot belongs to >1 unprocessed rollouts
- *      The oldest n will be marked as 'skipped', and only the latest will be processed
+ *      Should we
+ *          a) mark oldest n will be marked as 'skipped', and only the latest will be processed
+ *          b) create a n new targets.jsons for each rollout and mark them as scheduled
  * 
  * 2) An image assoicated with a rollout has been deleted. In the images delete endpoint logic should be:
  *      
@@ -35,20 +43,14 @@ import { getKeyStorageRepoKeyId } from '@airbotics-core/utils';
  * 
  * 
  */
-export const processRolloutsHelper = async () => {
+const processPending = async (teamIds: string[]) => {
 
-    const allTeams = await prisma.team.findMany({
-        select: { id: true }
-    });
-
-    logger.debug(`${allTeams.length} teams to process rollouts`);
-
-    for (const team of allTeams) {
+    for (const teamId of teamIds) {
 
         // check if any rollouts have a device in them that has yet to be processed
         const unprocessedRollouts = await prisma.rollout.findMany({
             where: {
-                team_id: team.id,
+                team_id: teamId,
                 status: 'launched',
                 robots: {
                     some: {
@@ -61,7 +63,7 @@ export const processRolloutsHelper = async () => {
             }
         });
 
-        logger.debug(`${unprocessedRollouts.length} rollouts to process for team: ${team.id}`);
+        logger.debug(`${unprocessedRollouts.length} rollouts to process for team: ${teamId}`);
 
         for (const rollout of unprocessedRollouts) {
 
@@ -93,7 +95,7 @@ export const processRolloutsHelper = async () => {
 
                 // robot has been deleted since rollout was created
                 if (!rolloutBot.robot) {
-                    await setRolloutBotStatus(rollout.id, rolloutBot.robot_id!, 'skipped');
+                    await setRobotStatus(rollout.id, rolloutBot.robot_id!, 'skipped');
                     continue;
                 }
 
@@ -116,13 +118,13 @@ export const processRolloutsHelper = async () => {
 
                 //robot is not affected by the rollout
                 if (affectedEcus.length === 0) {
-                    await setRolloutBotStatus(rollout.id, rolloutBot.robot_id!, 'skipped');
+                    await setRobotStatus(rollout.id, rolloutBot.robot_id!, 'skipped');
                 }
 
                 //we need to generate new director metadata for the bot (ie is affected by the rollout)
                 else {
-                    await generateNewMetadata(team.id, rolloutBot.robot_id!, rolloutBot.id, affectedEcus);
-                    await setRolloutBotStatus(rollout.id, rolloutBot.robot_id!, 'scheduled');
+                    await generateNewMetadata(teamId, rolloutBot.robot_id!, rolloutBot.id, affectedEcus);
+                    await setRobotStatus(rollout.id, rolloutBot.robot_id!, 'scheduled');
                 }
             }
         }
@@ -130,8 +132,59 @@ export const processRolloutsHelper = async () => {
 }
 
 
+/**
+ * Responseible for processing the following status'
+ * - RolloutRobot.status (overall robot status, aggregate of all RolloutRobotEcu.status)
+ * - Rollout.status  (overall rollout status, aggregate of all RolloutRobot.status)
+ * 
+ * TODO: We need to determine which failure/error status' are terminal. Only the happy path
+ * is accounted for in this logic. 
+ * 
+ */
+const processStatuses = async (teamIds: string[]) => {
+    
+    for (const teamId of teamIds) {
 
-const setRolloutBotStatus = async (rollout_id: string, robot_id: string, status: RolloutRobotStatus) => {
+        const ongoingRollouts = await prisma.rollout.findMany({
+            where: {
+                team_id: teamId,
+                status: 'launched'
+            },
+            include: {
+                robots: {
+                    include: {
+                        ecus: true
+                    }
+                }
+            },
+            orderBy: {
+                created_at: 'asc'
+            }
+        })
+
+        for (const rollout of ongoingRollouts) {
+
+            //can overall rollout status be updated?
+            if(rollout.robots.every(robot => (robot.status === RobotStatus.skipped || robot.status === RobotStatus.completed))) {
+                await setRolloutStatus(rollout.id, RolloutStatus.completed);
+                continue;
+            }
+
+            //can any of the RolloutRobot status be updated?
+            for (const robot of rollout.robots) {
+                if(robot.ecus.every(ecu => ecu.status === EcuStatus.installation_completed)) {
+                    await setRobotStatus(rollout.id, robot.id, RobotStatus.completed);
+                }
+            }
+        }
+    }
+}
+
+
+/**
+ * Helper to set the rolloutRobot status
+ */
+const setRobotStatus = async (rollout_id: string, robot_id: string, status: RobotStatus) => {
 
     await prisma.rolloutRobot.update({
         where: {
@@ -148,6 +201,28 @@ const setRolloutBotStatus = async (rollout_id: string, robot_id: string, status:
 
 
 
+/**
+ * Helper to set the overall rollout status
+ */
+const setRolloutStatus = async (rollout_id: string, status: RolloutStatus) => {
+
+    await prisma.rollout.update({
+        where: {
+            id: rollout_id
+        },
+        data: {
+            status: status
+        }
+    })
+}
+
+
+/**
+ * Helper to generate the new director targets.json for each affected robot
+ * 
+ * The custom field 'correlationId' represents the RobotRollout.id that is sent back
+ * by aktualizr events. 
+ */
 const generateNewMetadata = async (team_id: string, robot_id: string, correlationId: string, affectedEcus: { ecu: Ecu, image: Image }[]) => {
 
     // Lets generate the whole metadata file again
@@ -234,12 +309,22 @@ const generateNewMetadata = async (team_id: string, robot_id: string, correlatio
 }
 
 
+
 export const processRollouts = async () => {
 
     logger.info('rollouts processing started...');
 
     try {
-        await processRolloutsHelper();
+
+        const teamIds: string [] = (await prisma.team.findMany({
+            select: { id: true }
+        })).map(team => team.id);
+
+        logger.debug(`${teamIds.length} teams to process rollouts`);
+
+        await processPending(teamIds);
+        await processStatuses(teamIds);
+
         logger.info('rollouts processing completed!');
     } 
     catch(e) {

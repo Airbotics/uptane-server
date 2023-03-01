@@ -1,16 +1,15 @@
 # Images
 
+Images in Airbotics are full system images containing an operating system, drivers, application code and anything else your robot needs.
+
+![Image details.](../imgs/image-details.png)
+
 ## Building images
 
-Software images for Airbotics are built using [Yocto](https://www.yoctoproject.org/). They are full system images containing an operating system, drivers, application code and anything else your robot needs. They are based on [OSTree](https://www.yoctoproject.org/) to provide **incremental and atomic upgrades**.
+Software images for Airbotics are built using [Yocto](https://www.yoctoproject.org/). In theory other tools such as [NixOS](https://nixos.org/) or (Packer)[https://www.packer.io/] could be used but we don't currently have support for them.
 
+Images are based on [OSTree](https://www.yoctoproject.org/) to provide **incremental and atomic upgrades**. They cannot be modified once they have been uploaded to Airbotics, to make a modification you'll need to build a new one.
 <!-- you can read more about the advantages and disadvantages of ostree here -->
-
-Images cannot be modified once they have been uploaded to Airbotics, to make a modification you'll need to build a new one.
-
-Once an image has been built, signed and uploaded to Airbotics you will be able to see information about it on the dashboard.
-
-![Image description.](../imgs//image-description.png)
 
 
 ### Including meta-updater in your Yocto build
@@ -40,6 +39,10 @@ meta-updater
 supported boards
 storage - security, limit, stored in EU
 description -->
+
+<!-- source meta-updater/scripts/envsetup.sh qemux86-64 build distro= poky-sota-systemd -->
+
+<!-- bitbake core-image-minimal -->
 
 ## Storage
 

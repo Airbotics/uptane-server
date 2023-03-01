@@ -1,7 +1,7 @@
 # Architecture
 
 ## Backend
-For now, we're building a monolithic backend to perform all functions (Uptane director and image repository, ostree remote repository, etc.). This will likely change to a services/microservices model in time.
+We're building a monolithic backend to perform all functions (Uptane director and image repository, ostree remote repository, etc.). This will likely change to a services/microservices model in time.
 
 ## Dashboard
 The dashboard is web-based GUI to help administer your fleet.

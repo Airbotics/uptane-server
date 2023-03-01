@@ -142,7 +142,7 @@ const processPending = async (teamIds: string[]) => {
  * 
  */
 const processStatuses = async (teamIds: string[]) => {
-    
+
     for (const teamId of teamIds) {
 
         const ongoingRollouts = await prisma.rollout.findMany({
@@ -165,15 +165,37 @@ const processStatuses = async (teamIds: string[]) => {
         for (const rollout of ongoingRollouts) {
 
             //can overall rollout status be updated?
-            if(rollout.robots.every(robot => (robot.status === RolloutRobotStatus.skipped || robot.status === RolloutRobotStatus.completed))) {
+            if (rollout.robots.every(robot => (robot.status === RolloutRobotStatus.skipped || robot.status === RolloutRobotStatus.completed))) {
                 await setRolloutStatus(rollout.id, RolloutStatus.completed);
                 continue;
             }
 
             //can any of the RolloutRobot status be updated?
             for (const robot of rollout.robots) {
-                if(robot.ecus.every(ecu => ecu.status === EcuStatus.installation_completed)) {
-                    await setRobotStatus(rollout.id, robot.id, RolloutRobotStatus.completed);
+                const ecuStatus: (EcuStatus | null)[] = robot.ecus.map(ecu => ecu.status);
+                switch (robot.status) {
+                    case RolloutRobotStatus.scheduled:
+                        //at least one of the ecus has started to update
+                        if (!ecuStatus.includes(null)) {
+                            await setRobotStatus(rollout.id, robot.id, RolloutRobotStatus.accepted);
+                        }
+                        break;
+                    case RolloutRobotStatus.accepted: {
+                        //all ecus have reported to be running the new image
+                        if(ecuStatus.every(status => status === EcuStatus.installation_completed)) {
+                            await setRobotStatus(rollout.id, robot.id, RolloutRobotStatus.completed);
+                        }
+                        //one or more ecus have reported to haved failed to install the new image
+                        else if(ecuStatus.includes(EcuStatus.installation_failed)) {
+                            await setRobotStatus(rollout.id, robot.id, RolloutRobotStatus.failed);
+                        }
+                        break;
+                    }
+                    case RolloutRobotStatus.pending: break;     //worker hasnt created director metadata yet
+                    case RolloutRobotStatus.skipped: break;     //robot has no compatible ecus
+                    case RolloutRobotStatus.completed: break;   //this worker already marked the status as complete
+                    case RolloutRobotStatus.cancelled: break;   //user has cancelled the rollout
+                    case RolloutRobotStatus.failed: break;      //this worker already marked the status as failed
                 }
             }
         }
@@ -249,7 +271,7 @@ const generateNewMetadata = async (team_id: string, robot_id: string, correlatio
             }
         }
     }
-    
+
 
     //determine new metadata versions
     const newTargetsVersion = await getLatestMetadataVersion(team_id, TUFRepo.director, TUFRole.targets, robot_id) + 1;
@@ -316,7 +338,7 @@ export const processRollouts = async () => {
 
     try {
 
-        const teamIds: string [] = (await prisma.team.findMany({
+        const teamIds: string[] = (await prisma.team.findMany({
             select: { id: true }
         })).map(team => team.id);
 
@@ -326,8 +348,9 @@ export const processRollouts = async () => {
         await processStatuses(teamIds);
 
         logger.info('rollouts processing completed!');
-    } 
-    catch(e) {
+    }
+    catch (e) {
         logger.error('rollouts processing failed!');
+        logger.error(e);
     }
 }

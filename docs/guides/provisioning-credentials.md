@@ -2,6 +2,8 @@
 
 Provisioning credentials are zip files that contain various secrets that allow clients to authenticate with Airbotics, namely it allows users to sign and upload software images and for robots to provision themselves.
 
+![Provisioning credentials details.](../imgs/provisioning-credentials.png)
+
 > Note: Provisioning credentials contain secrets, please keep them safe.
 
 ## Creating a provisioning credential
@@ -23,13 +25,16 @@ You can view all credentials that have been issued to members of your team on th
 
 Each credential will have a status that are explained below:
 
-
 | Status    | Description                                                              |
 | ----------| ------------------------------------------------------------------------ |
 | `Issuing` | The credential is in the process of being issued and is not ready to be downloaded (this process should take ~10 seconds). |
 | `Issued`  | The credential has been downloaded by a user and may be used to authenticate with Airbotics.   |
 | `Expired` | The credential has expired and can no longer by used to authenticate with Airbotics.    |
-<!-- | `Revoked`           | The rollout has been scheduled for this robot.    | -->
+| `Revoked` | The credential has been revoked and can no longer by used to authenticate with Airbotics.    |
+
+## Revoking a provisioning credential
+
+A provisioning credential can be revoked from the dashboard by clicking 'revoke' on the credential you want to revoke
 
 
-![provisioning credentials.](../imgs/provisioning-credentials.png)
+> Note: This action may affect robots in the field.

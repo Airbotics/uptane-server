@@ -2,17 +2,12 @@
 
 In this page we introduce the main concepts you'll need to know about in order to use Airbotics.
 
-### Team
-
-A _team_ is a collection of members (users). All resources belong to teams, resources could be robots, TUF metadata, ECUs, manifests, software images, etc. etc.
+![Architecture block diagram.](../imgs/architecture-block-diagram.png)
 
 
 ### Robot 
 
-A _robot_ is a networked machine for which Airbotics could update software. It could be a robot, a drone, a vehicle, or really any collection of edge, computers that need to be managed together. > Note
-
-> Note: These are called vehicles in the Uptane spec.
-
+A _robot_ is a networked machine for which Airbotics could update software. It could be a robot, a drone, a vehicle, or really any collection of edge, computers that need to be managed together.
 
 ### Groups
 
@@ -28,11 +23,11 @@ There are two types of ECUs in Airbotics:
 
 - **Primary ECU**
 
-This is the “main” board on each robot, it communicates with the backend, fully verifies the integrity of all deployments, and downloads artifacts on behalf of other ECUs. There is always one and only one Primary ECU on each robot, any other ECUs are secondary ECUs. The primary ecu runs the Airbotics agent to mange communication with the backend.
+This is the “main” board on each robot, it communicates with the backend, fully verifies the integrity of all deployments, and downloads artifacts on behalf of other ECUs. There is always one and only one Primary ECU on each robot, any other ECUs are secondary ECUs. The primary ECU runs the Airbotics agent to mange communication with the backend.
 
 - **Secondary ECU**
 
-These are other (typically less powerful) computers on a robot. They do not communicate directly with the backend, and communicate with the Primary ECU instead. They still perform verification of deployments. Secondary ECUs may be powerful enough to run the airbotics agent in secondary mode, or if they are a smaller MCU, could include the airbotics library in its binary.
+These are other (typically less powerful) computers on a robot. They do not communicate directly with the backend, and communicate with the Primary ECU instead. They still perform verification of deployments. Secondary ECUs may be powerful enough to run the Airbotics agent in secondary mode, or if they are a smaller MCU, could include the Airbotics library in its binary.
 
 
 ### Airbotics agent
@@ -42,3 +37,8 @@ The _Airbotics agent_ is an open-source program that runs on ECUs and handles co
 ### Rollouts
 
 Artifacts are assigned to ECUs on robots through _rollouts_, i.e. they associate a set of artifacts for a set of ECUs. Rollouts are used by the director repository to determine if a robot's software is up-to-date or not.
+
+
+### Team
+
+A _team_ is a collection of members (users). All resources belong to teams, resources could be robots, TUF metadata, ECUs, manifests, software images, etc. etc.

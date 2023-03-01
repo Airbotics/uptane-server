@@ -17,7 +17,10 @@
 * [Quickstart](guides/quickstart.md)
 * [Provisioning credentials](guides/provisioning-credentials.md)
 * [Images](guides/images.md)
-* [Robots](guides/robots.md)
+* Robots
+    * [Overview](guides/robots/overview.md)
+    * [ECUs](guides/robots/ecus.md)
+    * [Telemetry](guides/robots/telemetry.md)
 * [Rollouts](guides/rollouts.md)
 * [Groups](guides/groups.md)
 * [Accounts](guides/accounts.md)

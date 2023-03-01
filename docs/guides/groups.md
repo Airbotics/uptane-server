@@ -1,6 +1,8 @@
 # Groups
 
-Airbotics is designed to work with large fleet sizes, to help support this robots can be collected together into _Groups_ so software changes can be rolled out to multiple robots at once.
+Groups are collections of robots that can be updated and managed together.
+
+![Group details.](../imgs/groups.png)
 
 Groups can have many uses cases depending on your application. For example:
 - A group of robots in a test facility / closed course for testing.

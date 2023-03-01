@@ -95,7 +95,7 @@ const processPending = async (teamIds: string[]) => {
 
                 // robot has been deleted since rollout was created
                 if (!rolloutBot.robot) {
-                    await setRobotStatus(rollout.id, rolloutBot.robot_id!, 'skipped');
+                    await setRolloutRobotStatus(rolloutBot.id, 'skipped');
                     continue;
                 }
 
@@ -118,13 +118,13 @@ const processPending = async (teamIds: string[]) => {
 
                 //robot is not affected by the rollout
                 if (affectedEcus.length === 0) {
-                    await setRobotStatus(rollout.id, rolloutBot.robot_id!, 'skipped');
+                    await setRolloutRobotStatus(rolloutBot.id, 'skipped');
                 }
 
                 //we need to generate new director metadata for the bot (ie is affected by the rollout)
                 else {
                     await generateNewMetadata(teamId, rolloutBot.robot_id!, rolloutBot.id, affectedEcus);
-                    await setRobotStatus(rollout.id, rolloutBot.robot_id!, 'scheduled');
+                    await setRolloutRobotStatus(rolloutBot.id, 'scheduled');
                 }
             }
         }
@@ -171,23 +171,23 @@ const processStatuses = async (teamIds: string[]) => {
             }
 
             //can any of the RolloutRobot status be updated?
-            for (const robot of rollout.robots) {
-                const ecuStatus: (EcuStatus | null)[] = robot.ecus.map(ecu => ecu.status);
-                switch (robot.status) {
+            for (const rolloutBot of rollout.robots) {
+                const ecuStatus: (EcuStatus | null)[] = rolloutBot.ecus.map(ecu => ecu.status);
+                switch (rolloutBot.status) {
                     case RolloutRobotStatus.scheduled:
                         //at least one of the ecus has started to update
                         if (!ecuStatus.includes(null)) {
-                            await setRobotStatus(rollout.id, robot.id, RolloutRobotStatus.accepted);
+                            await setRolloutRobotStatus(rolloutBot.id, RolloutRobotStatus.accepted);
                         }
                         break;
                     case RolloutRobotStatus.accepted: {
                         //all ecus have reported to be running the new image
                         if(ecuStatus.every(status => status === EcuStatus.installation_completed)) {
-                            await setRobotStatus(rollout.id, robot.id, RolloutRobotStatus.completed);
+                            await setRolloutRobotStatus(rolloutBot.id, RolloutRobotStatus.completed);
                         }
                         //one or more ecus have reported to haved failed to install the new image
                         else if(ecuStatus.includes(EcuStatus.installation_failed)) {
-                            await setRobotStatus(rollout.id, robot.id, RolloutRobotStatus.failed);
+                            await setRolloutRobotStatus(rolloutBot.id, RolloutRobotStatus.failed);
                         }
                         break;
                     }
@@ -206,14 +206,11 @@ const processStatuses = async (teamIds: string[]) => {
 /**
  * Helper to set the rolloutRobot status
  */
-const setRobotStatus = async (rollout_id: string, robot_id: string, status: RolloutRobotStatus) => {
+const setRolloutRobotStatus = async (id: string, status: RolloutRobotStatus) => {
 
     await prisma.rolloutRobot.update({
         where: {
-            rollout_id_robot_id: {
-                rollout_id: rollout_id,
-                robot_id: robot_id
-            }
+            id: id
         },
         data: {
             status: status

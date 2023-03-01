@@ -9,7 +9,7 @@ import {
     EKeyType,
     TUF_METADATA_INITIAL
 } from '@airbotics-core/consts';
-import { SuccessJsonResponse } from '@airbotics-core/network/responses';
+import { SuccessJsonResponse, SuccessMessageResponse } from '@airbotics-core/network/responses';
 import { logger } from '@airbotics-core/logger';
 import { prisma } from '@airbotics-core/drivers';
 import { dayjs } from '@airbotics-core/time';
@@ -20,6 +20,7 @@ import { generateTufKey, getTufMetadata } from '@airbotics-core/tuf';
 import { keyStorage } from '@airbotics-core/key-storage';
 import { getKeyStorageRepoKeyId, toCanonical } from '@airbotics-core/utils';
 import { ICredentialsRes } from '@airbotics-types';
+import { RevocationReason } from '@aws-sdk/client-acm-pca';
 
 
 /**
@@ -77,7 +78,7 @@ export const createProvisioningCredentials = async (req: Request, res: Response)
     });
 
     logger.info('provisioning credentials have been created');
-    return res.status(200).json({id: provisioningCredentials.id });
+    return res.status(200).json({ id: provisioningCredentials.id });
 
 }
 
@@ -93,7 +94,7 @@ export const downloadProvisioningCredential = async (req: Request, res: Response
 
     const oryID = req.oryIdentity!.traits.id;
     const teamID = req.headers['air-team-id']!;
-    const provisioningCredentialsId = req.params.id;
+    const provisioningCredentialsId = req.params.credentials_id;
 
     const provisioningCredentials = await prisma.provisioningCredentials.findUnique({
         where: {
@@ -114,6 +115,24 @@ export const downloadProvisioningCredential = async (req: Request, res: Response
         return res.status(400).send('could not create provisioning credentials');
     }
 
+    // check if the provisioning and client certs are ready
+    const provisioningCert = await certificateManager.downloadCertificate(teamID, provisioningCredentials.provisioning_cert_id);
+
+    if (!provisioningCert) {
+        return res.status(400).send('could not create provisioning credentials');
+    }
+
+    // const clientCert = await certificateManager.downloadCertificate(teamID, provisioningCredentials.client_cert_id);
+
+    // if(!clientCert) {
+    //     return res.status(400).end();
+    // }
+
+    // get provisioning and client key pairs
+    const provisioningKeyPair = await keyStorage.getKeyPair(provisioningCredentials.provisioning_cert_id);
+    const clientKeyPair = await keyStorage.getKeyPair(provisioningCredentials.client_cert_id);
+
+
     // get the root cert from storage
     const rootCACertStr = await certificateManager.getRootCertificate();
 
@@ -121,38 +140,16 @@ export const downloadProvisioningCredential = async (req: Request, res: Response
         return res.status(500).end();
     }
 
-    // get provisioning cert and key
-    const provisioningCert = await certificateManager.downloadCertificate(teamID, provisioningCredentials.provisioning_cert_id);
-
-    if(!provisioningCert) {
-        return res.status(400).send('could not create provisioning credentials');
-    }
-
-    const provisioningKeyPair = await keyStorage.getKeyPair(provisioningCredentials.provisioning_cert_id);
-
     // bundle into provisioning pcks12, no encryption password set
     const provisioningp12 = forge.pkcs12.toPkcs12Asn1(forge.pki.privateKeyFromPem(provisioningKeyPair.privateKey),
         [forge.pki.certificateFromPem(provisioningCert.cert), forge.pki.certificateFromPem(rootCACertStr)],
         null,
         { algorithm: 'aes256' });
 
-    /*
-    // get client cert and key
-    const clientCert = await certificateManager.downloadCertificate(teamID, provisioningCredentials.client_cert_id);
-
-    if(!clientCert) {
-        return res.status(400).end();
-    }
-
-    const clientKeyPair = await keyStorage.getKeyPair(provisioningCredentials.client_cert_id);
-
-    // bundle into client auth pcks12, no encryption password set
-    const clientp12 = forge.pkcs12.toPkcs12Asn1(forge.pki.privateKeyFromPem(clientKeyPair.privateKey),
-        [forge.pki.certificateFromPem(clientCert.cert), forge.pki.certificateFromPem(rootCACertStr)],
-        null,
-        { algorithm: 'aes256' });
-    */
-
+    // const clientp12 = forge.pkcs12.toPkcs12Asn1(forge.pki.privateKeyFromPem(clientKeyPair.privateKey),
+    //     [forge.pki.certificateFromPem(clientCert.cert), forge.pki.certificateFromPem(rootCACertStr)],
+    //     null,
+    //     { algorithm: 'aes256' });
 
     // get initial root metadata from image repo
     const rootMetadata = await getTufMetadata(teamID, TUFRepo.image, TUFRole.root, TUF_METADATA_INITIAL);
@@ -252,5 +249,73 @@ export const listProvisioningCredentials = async (req: Request, res: Response) =
 
     logger.info('a user has read a list of the provisioning credentials');
     return new SuccessJsonResponse(res, credentialsSanitised);
+
+}
+
+
+
+/**
+ * Revoke a provisioning credential.
+ */
+export const revokeProvisioningCredentials = async (req: Request, res: Response) => {
+    
+    const oryID = req.oryIdentity!.traits.id;
+    const teamID = req.headers['air-team-id']!;
+    const provisioningCredentialsId = req.params.credentials_id;
+
+    const provisioningCredentials = await prisma.provisioningCredentials.findUnique({
+        where: {
+            team_id_id: {
+                team_id: teamID,
+                id: provisioningCredentialsId
+            }
+        },
+        include: {
+            client_cert: true,
+            provisioning_cert: true
+        }
+    });
+
+    if (!provisioningCredentials) {
+        logger.warn('trying to revoke provisioning credentials that do not exist');
+        return res.status(400).send('could not revoke provisioning credentials');
+    }
+
+    if (provisioningCredentials!.status !== CertificateStatus.issued) {
+        logger.warn('trying to revoke provisioning credentials that have not been issued');
+        return res.status(400).send('could not revoke provisioning credentials');
+    }
+
+    // revoke the certificates
+    await certificateManager.revokeCertificate(provisioningCredentials.client_cert.serial, RevocationReason.PRIVILEGE_WITHDRAWN);
+    await certificateManager.revokeCertificate(provisioningCredentials.provisioning_cert.serial, RevocationReason.PRIVILEGE_WITHDRAWN);
+
+    // revoke the credential
+    await prisma.provisioningCredentials.update({
+        where: {
+            team_id_id: {
+                team_id: teamID,
+                id: provisioningCredentialsId
+            }
+        },
+        data: {
+            status: CertificateStatus.revoked,
+            revoked_at: dayjs().toDate(),
+        }
+    }); 
+    
+    airEvent.emit({
+        resource: EEventResource.ProvisioningCredentials,
+        action: EEventAction.Revoked,
+        actor_type: EEventActorType.User,
+        actor_id: oryID,
+        team_id: teamID,
+        meta: {
+            id: provisioningCredentials.id
+        }
+    });
+
+    logger.info('a user has revoked a provisioning credential');
+    return new SuccessMessageResponse(res, 'You have revoked that provisioning credential.');
 
 }

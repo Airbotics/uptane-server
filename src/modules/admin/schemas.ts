@@ -24,6 +24,10 @@ export const robotIdSchema = Joi.object({
     robot_id: robotIdField.required(),
 });
 
+export const provsioningCredentialsIdSchema = Joi.object({
+    credentials_id: Joi.string().required(),
+});
+
 export const rolloutIdSchema = Joi.object({
     rollout_id: Joi.string().uuid().required(),
 });

@@ -114,6 +114,7 @@ export const enum EEventResource {
 export const enum EEventAction {
     Created = 'created',
     Verified = 'verified',
+    Revoked = 'revoked',
     Issued = 'issued',
     LoggedIn = 'logged_in',
     DetailsUpdated = 'details_updated', // name, description, etc.

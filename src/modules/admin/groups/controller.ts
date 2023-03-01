@@ -3,7 +3,7 @@ import { BadResponse, SuccessJsonResponse, NoContentResponse } from '@airbotics-
 import { logger } from '@airbotics-core/logger';
 import prisma from '@airbotics-core/drivers/postgres';
 import { ICreateGroupBody, IGroup, IGroupRobot } from '@airbotics-types';
-import { airEvent } from '@airbotics-core/events';
+import { auditEvent } from '@airbotics-core/events';
 import { EEventAction, EEventActorType, EEventResource } from '@airbotics-core/consts';
 
 
@@ -48,17 +48,15 @@ export const createGroup = async (req: Request, res: Response, next: NextFunctio
             created_at: group.created_at
         }
 
-        airEvent.emit({
+        auditEvent.emit({
             resource: EEventResource.Group,
             action: EEventAction.Created,
             actor_type: EEventActorType.User,
             actor_id: oryId,
             team_id: teamId,
             meta: {
-                id: group.id,
+                group_id: group.id,
                 name,
-                description,
-                robot_ids: robot_ids
             }
         });
 
@@ -199,14 +197,14 @@ export const updateGroup = async (req: Request, res: Response, next: NextFunctio
             }
         });
 
-        airEvent.emit({
+        auditEvent.emit({
             resource: EEventResource.Group,
             action: EEventAction.DetailsUpdated,
             actor_type: EEventActorType.User,
             actor_id: oryID,
             team_id: teamID,
             meta: {
-                id: updatedGroup.id,
+                group_id: updatedGroup.id,
                 name,
                 description
             }
@@ -273,14 +271,14 @@ export const deleteGroup = async (req: Request, res: Response, next: NextFunctio
             }
         });
 
-        airEvent.emit({
+        auditEvent.emit({
             resource: EEventResource.Group,
             action: EEventAction.Deleted,
             actor_type: EEventActorType.User,
             actor_id: oryID,
             team_id: teamID,
             meta: {
-                id: group.id,
+                group_id: group.id,
             }
         });
 
@@ -431,7 +429,7 @@ export const addRobotToGroup = async (req: Request, res: Response, next: NextFun
             }
         });
 
-        airEvent.emit({
+        auditEvent.emit({
             resource: EEventResource.Group,
             action: EEventAction.RobotAdded,
             actor_type: EEventActorType.User,
@@ -522,7 +520,7 @@ export const removeRobotFromGroup = async (req: Request, res: Response, next: Ne
             }
         });
 
-        airEvent.emit({
+        auditEvent.emit({
             resource: EEventResource.Group,
             action: EEventAction.RobotRemoved,
             actor_type: EEventActorType.User,

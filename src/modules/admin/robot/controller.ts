@@ -6,7 +6,7 @@ import { EcuTelemetry, RolloutRobotStatus } from '@prisma/client';
 import { prisma } from '@airbotics-core/drivers';
 import { getKeyStorageEcuKeyId } from '@airbotics-core/utils';
 import { keyStorage } from '@airbotics-core/key-storage';
-import { airEvent } from '@airbotics-core/events';
+import { auditEvent } from '@airbotics-core/events';
 import { EComputedRobotStatus, EEventAction, EEventActorType, EEventResource } from '@airbotics-core/consts';
 import { certificateManager } from '@airbotics-core/crypto';
 import { IRobotDetailRes, IRobotRes, IEcuTelemetryRes, IRobotRolloutRes, IUpdateRobotDetailsBody } from '@airbotics-types';
@@ -203,7 +203,7 @@ export const updateRobotDetails = async (req: Request, res: Response, next: Next
         }
     });
 
-    airEvent.emit({
+    auditEvent.emit({
         resource: EEventResource.Robot,
         action: EEventAction.DetailsUpdated,
         actor_type: EEventActorType.User,
@@ -256,7 +256,7 @@ export const deleteRobot = async (req: Request, res: Response, next: NextFunctio
         // revoke certificate
         await certificateManager.revokeCertificate(robot.certificates[0].serial, RevocationReason.PRIVILEGE_WITHDRAWN);
 
-        airEvent.emit({
+        auditEvent.emit({
             resource: EEventResource.Robot,
             action: EEventAction.Deleted,
             actor_type: EEventActorType.User,
@@ -445,7 +445,7 @@ export const deleteRobotTelemetry = async (req: Request, res: Response, next: Ne
         }
     });
 
-    airEvent.emit({
+    auditEvent.emit({
         resource: EEventResource.RobotTelemetry,
         action: EEventAction.Deleted,
         actor_type: EEventActorType.User,

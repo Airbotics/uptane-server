@@ -22,6 +22,7 @@ const config = {
     PORT: process.env.PORT || 8001,                                             // port the server listens on
     NODE_ENV: NODE_ENV,                                                         // mode to run the server in, 'production' or 'development'
     MAX_JSON_REQUEST_SIZE: '100mb',                                             // max json size we accept
+    MAX_TREEHUB_REQUEST_SIZE: '2048mb',                                          // max binary size we accept for treehub objects, refs and summaries
     API_ORIGIN: 'http://localhost:8002',                                        // origin of the api (api.airbotics.io)
     GATEWAY_ORIGIN: 'https://localhost:8003',                                   // origin of the gateway (gateway.airbotics.io)
     CORS_ORIGIN: NODE_ENV==='production' ? ['https://dashboard.staging.airbotics.io', 'https://dashboard.airbotics.io'] : 'http://localhost:3000',

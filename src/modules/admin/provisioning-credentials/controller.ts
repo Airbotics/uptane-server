@@ -13,7 +13,7 @@ import { SuccessJsonResponse, SuccessMessageResponse } from '@airbotics-core/net
 import { logger } from '@airbotics-core/logger';
 import { prisma } from '@airbotics-core/drivers';
 import { dayjs } from '@airbotics-core/time';
-import { airEvent } from '@airbotics-core/events';
+import { auditEvent } from '@airbotics-core/events';
 import { generateKeyPair, certificateManager } from '@airbotics-core/crypto';
 import config from '@airbotics-config';
 import { generateTufKey, getTufMetadata } from '@airbotics-core/tuf';
@@ -65,14 +65,14 @@ export const createProvisioningCredentials = async (req: Request, res: Response)
         }
     });
 
-    airEvent.emit({
+    auditEvent.emit({
         resource: EEventResource.ProvisioningCredentials,
         action: EEventAction.Created,
         actor_type: EEventActorType.User,
         actor_id: oryID,
         team_id: teamID,
         meta: {
-            id: provisioningCredentials.id,
+            credentials_id: provisioningCredentials.id,
             name
         }
     });
@@ -202,14 +202,15 @@ export const downloadProvisioningCredential = async (req: Request, res: Response
         }
     });
 
-    airEvent.emit({
+    auditEvent.emit({
         resource: EEventResource.ProvisioningCredentials,
         action: EEventAction.Issued,
         actor_type: EEventActorType.User,
         actor_id: oryID,
         team_id: teamID,
         meta: {
-            id: provisioningCredentials.id
+            credentials_id: provisioningCredentials.id,
+            name: provisioningCredentials.name
         }
     });
 
@@ -304,14 +305,15 @@ export const revokeProvisioningCredentials = async (req: Request, res: Response)
         }
     }); 
     
-    airEvent.emit({
+    auditEvent.emit({
         resource: EEventResource.ProvisioningCredentials,
         action: EEventAction.Revoked,
         actor_type: EEventActorType.User,
         actor_id: oryID,
         team_id: teamID,
         meta: {
-            id: provisioningCredentials.id
+            credentials_id: provisioningCredentials.id,
+            name: provisioningCredentials.name
         }
     });
 

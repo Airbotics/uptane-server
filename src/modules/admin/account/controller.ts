@@ -4,7 +4,7 @@ import { SuccessMessageResponse, BadResponse } from '@airbotics-core/network/res
 import { ory } from '@airbotics-core/drivers';
 import config from '@airbotics-config';
 import { logger } from '@airbotics-core/logger';
-import { airEvent } from '@airbotics-core/events';
+import { auditEvent } from '@airbotics-core/events';
 import { EEventAction, EEventActorType, EEventResource } from '@airbotics-core/consts';
 
 
@@ -43,7 +43,7 @@ export const updateAccount = async (req: Request, res: Response) => {
 
         await ory.identities.updateIdentity(identityParms);
 
-        airEvent.emit({
+        auditEvent.emit({
             resource: EEventResource.Account,
             action: EEventAction.DetailsUpdated,
             actor_type: EEventActorType.User,
@@ -76,14 +76,14 @@ export const deleteAccount = async (req: Request, res: Response) => {
 
     const oryID = req.oryIdentity!.traits.id;
     
-    airEvent.emit({
-        resource: EEventResource.Account,
-        action: EEventAction.DetailsUpdated,
-        actor_type: EEventActorType.User,
-        actor_id: oryID,
-        team_id: null,
-        meta: null
-    });
+    // auditEvent.emit({
+    //     resource: EEventResource.Account,
+    //     action: EEventAction.Deleted,
+    //     actor_type: EEventActorType.User,
+    //     actor_id: oryID,
+    //     team_id: null,
+    //     meta: null
+    // });
 
     logger.info('a user has attempted to delete their account');
     return new BadResponse(res, 'Please contact admin@airbotics.io to delete your account');

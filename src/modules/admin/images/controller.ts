@@ -3,7 +3,7 @@ import { BadResponse, SuccessJsonResponse } from '@airbotics-core/network/respon
 import { logger } from '@airbotics-core/logger';
 import { prisma } from '@airbotics-core/drivers';
 import { IImageRobotRes } from '@airbotics-types';
-import { airEvent } from '@airbotics-core/events';
+import { auditEvent } from '@airbotics-core/events';
 import { EEventAction, EEventActorType, EEventResource } from '@airbotics-core/consts';
 
 
@@ -84,13 +84,13 @@ export const getImage = async (req: Request, res: Response) => {
 /**
  * Update image detail.
  */
- export const updateImageDetails = async (req: Request, res: Response) => {
+export const updateImageDetails = async (req: Request, res: Response) => {
 
     const oryID = req.oryIdentity!.traits.id;
     const teamID = req.headers['air-team-id']!;
     const imageID = req.params.image_id;
 
-    const {description} = req.body;
+    const { description } = req.body;
 
     const image = await prisma.image.findUnique({
         where: {
@@ -118,14 +118,15 @@ export const getImage = async (req: Request, res: Response) => {
         }
     });
 
-    airEvent.emit({
+    auditEvent.emit({
         resource: EEventResource.Image,
         action: EEventAction.DetailsUpdated,
         actor_type: EEventActorType.User,
         actor_id: oryID,
         team_id: teamID,
         meta: {
-            id: newImage.id
+            image_id: newImage.id,
+            description
         }
     });
 
@@ -147,7 +148,7 @@ export const getImage = async (req: Request, res: Response) => {
 }
 
 /**
- * 
+ * List robots that have this image installed on any of their ecus
  */
 export const listRobotsWithImage = async (req: Request, res: Response) => {
 
@@ -181,12 +182,3 @@ export const listRobotsWithImage = async (req: Request, res: Response) => {
     return new SuccessJsonResponse(res, ecusSanitised);
 
 }
-
-
-/**
- * Edgecase for deleting Image 
- * 
- * If the image is associated with a RolloutRobot that has a status of 'scheduled' or 'accepted',
- * a robot may be in the process of pulling the image and will need to be checked for.
- * 
- */

@@ -2,15 +2,28 @@ import { Request, Response, NextFunction } from 'express';
 import { BadResponse, SuccessJsonResponse, NoContentResponse, SuccessMessageResponse } from '@airbotics-core/network/responses';
 import { logger } from '@airbotics-core/logger';
 import { RevocationReason } from '@aws-sdk/client-acm-pca';
-import { EcuTelemetry, RobotStatus } from '@prisma/client';
+import { EcuTelemetry, RolloutRobotStatus } from '@prisma/client';
 import { prisma } from '@airbotics-core/drivers';
 import { getKeyStorageEcuKeyId } from '@airbotics-core/utils';
 import { keyStorage } from '@airbotics-core/key-storage';
 import { airEvent } from '@airbotics-core/events';
-import { EEventAction, EEventActorType, EEventResource } from '@airbotics-core/consts';
+import { EComputedRobotStatus, EEventAction, EEventActorType, EEventResource } from '@airbotics-core/consts';
 import { certificateManager } from '@airbotics-core/crypto';
 import { IRobotDetailRes, IRobotRes, IEcuTelemetryRes, IRobotRolloutRes, IUpdateRobotDetailsBody } from '@airbotics-types';
+import { EcuStatus } from '@prisma/client';
 
+
+const computeRobotStatus = (ecu_status: EcuStatus[]): EComputedRobotStatus => {
+    if(ecu_status.every(status => status === EcuStatus.installation_completed)) {
+        return EComputedRobotStatus.Updated;
+    }
+    else if(ecu_status.includes(EcuStatus.installation_failed || EcuStatus.download_failed)) {
+        return EComputedRobotStatus.Failed;
+    }
+    else {
+        return EComputedRobotStatus.Updating;
+    }
+}
 
 /**
  * Lists all robots in requesters team. 
@@ -28,10 +41,8 @@ export const listRobots = async (req: Request, res: Response, next: NextFunction
             created_at: 'desc'
         },
         include: {
-            rollouts: {
-                select: { status: true },
-                take: 1,
-                orderBy: { created_at: 'desc' }
+            ecus: {
+                select: { status: true},
             },
             _count: {
                 select: { groups: true }
@@ -39,10 +50,12 @@ export const listRobots = async (req: Request, res: Response, next: NextFunction
         }
     });
 
+    
+
     const robotsSanitised: IRobotRes[] = robots.map(robot => ({
         id: robot.id,
         name: robot.name,
-        status: robot.rollouts.length !== 0 ? robot.rollouts[0].status : RobotStatus.completed,
+        status: computeRobotStatus(robot.ecus.map(ecu =>  ecu.status)),
         group_count: robot._count.groups,
         created_at: robot.created_at,
         last_seen_at: robot.last_seen_at
@@ -85,11 +98,6 @@ export const getRobot = async (req: Request, res: Response, next: NextFunction) 
                     }
                 }
             },
-            rollouts: {
-                select: { status: true },
-                take: 1,
-                orderBy: { created_at: 'desc' }
-            },
             robot_manifests: {
                 take: 10,
                 orderBy: {
@@ -122,7 +130,7 @@ export const getRobot = async (req: Request, res: Response, next: NextFunction) 
         last_seen_at: robot.last_seen_at,
         created_at: robot.created_at,
         updated_at: robot.updated_at,
-        status: robot.rollouts.length !== 0 ? robot.rollouts[0].status : RobotStatus.completed,
+        status: computeRobotStatus(robot.ecus.map(ecu =>  ecu.status)),
         agent_version: robot.agent_version,
         ecus_registered: robot.ecus_registered,
         groups: robot.groups.map(grp => ({ id: grp.group_id, name: grp.group.name })),
@@ -134,6 +142,7 @@ export const getRobot = async (req: Request, res: Response, next: NextFunction) 
         ecus: robot.ecus.map(ecu => ({
             id: ecu.id,
             primary: ecu.primary,
+            status: ecu.status,
             hw_id: ecu.hwid,
             installed_image: ecu.installed_image ? {
                 id: ecu.installed_image.id,
@@ -168,7 +177,7 @@ export const getRobot = async (req: Request, res: Response, next: NextFunction) 
 
 
 /**
- * Delete a robot.
+ * Update a robots name and description
  */
 export const updateRobotDetails = async (req: Request, res: Response, next: NextFunction) => {
 

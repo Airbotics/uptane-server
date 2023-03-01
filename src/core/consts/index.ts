@@ -92,6 +92,13 @@ export const enum RolloutTargetType {
     selected_bots = 'selected_bots',
 }
 
+export const enum EComputedRobotStatus {
+    Updating = 'updating',
+    Failed = 'failed',
+    Updated = 'updated'
+}
+
+
 // event resources
 export const enum EEventResource {
     Account = 'account',

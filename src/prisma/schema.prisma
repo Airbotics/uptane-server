@@ -436,7 +436,7 @@ model RobotGroup {
 
 
 enum RolloutStatus {
-    preparing
+    prepared
     launched
     completed
     cancelled
@@ -454,7 +454,7 @@ model Rollout {
     team_id             String
     name                String
     description         String
-    status              RolloutStatus       @default(preparing)
+    status              RolloutStatus       @default(prepared)
     target_type         RolloutTargetType
 
     created_at          DateTime            @default(now())
@@ -487,7 +487,7 @@ model RolloutHardwareImage {
 }
 
 
-enum RobotStatus {
+enum RolloutRobotStatus {
     pending             // rollout created but worker hasn’t got around to processing
     skipped             // worker determined update is n/a for bot
     scheduled           // worker has created the latest targets.json in the director repo
@@ -501,7 +501,7 @@ model RolloutRobot {
     id                  String              @id @default(uuid()) @unique
     rollout_id          String
     robot_id            String?
-    status              RobotStatus         @default(pending) 
+    status              RolloutRobotStatus         @default(pending) 
     result_desc         String?
 
     created_at          DateTime            @default(now())

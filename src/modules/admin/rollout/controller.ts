@@ -43,7 +43,7 @@ export const createRollout = async (req: Request, res: Response) => {
                 name: body.name,
                 description: body.description,
                 target_type: body.targeted_robots.type,
-                status: RolloutStatus.preparing
+                status: RolloutStatus.prepared
             }
         });
 

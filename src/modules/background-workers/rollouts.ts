@@ -1,4 +1,4 @@
-import { Ecu, TUFRepo, TUFRole, Image, RobotStatus, RolloutStatus } from '@prisma/client';
+import { Ecu, TUFRepo, TUFRole, Image, RolloutRobotStatus, RolloutStatus } from '@prisma/client';
 import prisma from '@airbotics-core/drivers/postgres';
 import config from '@airbotics-config';
 import { logger } from '@airbotics-core/logger';
@@ -165,7 +165,7 @@ const processStatuses = async (teamIds: string[]) => {
         for (const rollout of ongoingRollouts) {
 
             //can overall rollout status be updated?
-            if(rollout.robots.every(robot => (robot.status === RobotStatus.skipped || robot.status === RobotStatus.completed))) {
+            if(rollout.robots.every(robot => (robot.status === RolloutRobotStatus.skipped || robot.status === RolloutRobotStatus.completed))) {
                 await setRolloutStatus(rollout.id, RolloutStatus.completed);
                 continue;
             }
@@ -173,7 +173,7 @@ const processStatuses = async (teamIds: string[]) => {
             //can any of the RolloutRobot status be updated?
             for (const robot of rollout.robots) {
                 if(robot.ecus.every(ecu => ecu.status === EcuStatus.installation_completed)) {
-                    await setRobotStatus(rollout.id, robot.id, RobotStatus.completed);
+                    await setRobotStatus(rollout.id, robot.id, RolloutRobotStatus.completed);
                 }
             }
         }
@@ -184,7 +184,7 @@ const processStatuses = async (teamIds: string[]) => {
 /**
  * Helper to set the rolloutRobot status
  */
-const setRobotStatus = async (rollout_id: string, robot_id: string, status: RobotStatus) => {
+const setRobotStatus = async (rollout_id: string, robot_id: string, status: RolloutRobotStatus) => {
 
     await prisma.rolloutRobot.update({
         where: {

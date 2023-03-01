@@ -1,4 +1,5 @@
-import { CertificateStatus, ImageFormat, RolloutRobotStatus, RolloutStatus } from "@prisma/client";
+import { EComputedRobotStatus } from "@airbotics-core/consts";
+import { CertificateStatus, EcuStatus, ImageFormat, RobotStatus, RolloutStatus } from "@prisma/client";
 
 
 /**
@@ -7,7 +8,7 @@ import { CertificateStatus, ImageFormat, RolloutRobotStatus, RolloutStatus } fro
 export interface IRobotRes {
     id: string;
     name: string | null;
-    status: RolloutRobotStatus;
+    status: EComputedRobotStatus,
     group_count: number;
     created_at: Date;
     last_seen_at: Date | null;
@@ -19,23 +20,24 @@ export interface IRobotDetailRes {
     name: string | null;
     description: string | null;
     last_seen_at: Date | null;
-    status: RolloutRobotStatus;
     created_at: Date;
     updated_at: Date;
     agent_version: string | null;
     ecus_registered: boolean;
+    status: EComputedRobotStatus;
     groups: {
         id: string;
         name: string;
-    }[],
+    }[];
     robot_manifests: {
         id: string,
         valid: boolean,
         created_at: Date
-    }[],
+    }[];
     ecus: {
         id: string;
         primary: boolean;
+        status: EcuStatus;
         hw_id: string;
         created_at: Date;
         updated_at: Date;
@@ -45,13 +47,13 @@ export interface IRobotDetailRes {
             format: ImageFormat
             size: number
         }
-    }[],
+    }[];
     latest_network_report?: {
         created_at: Date | null;
         hostname: string | null;
         local_ipv4: string | null;
         mac: string | null;
-    },
+    };
     certificates: {
         id: string;
         serial: string;
@@ -69,7 +71,7 @@ export interface IEcuTelemetryRes {
     ecu: {
         id: string;
         hw_id: string;
-    }
+    };
     event_type: string;
     success: boolean | null;
     device_time: Date;
@@ -85,13 +87,13 @@ export interface IRobotGroupRes {
 
 export interface IRobotRolloutRes {
     id: string;
-    status: RolloutRobotStatus;
+    status: RobotStatus;
     created_at: Date;
     rollout: {
         id: string;
         name: string;
         status: RolloutStatus;
-    }
+    };
 }
 
 
@@ -141,7 +143,7 @@ export interface IRolloutDetailRes {
     updated_at: Date;
     robots: {
         id: string,
-        status: RolloutRobotStatus
+        status: RobotStatus
     }[]
 }
 

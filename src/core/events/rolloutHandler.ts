@@ -53,6 +53,8 @@ const handleRobotResumed = (event: AktualizrEvent) => {
  */
 const handleEcuEvent = async (event: AktualizrEvent, status: EcuStatus) => {
 
+    logger.info(`handling AktualizrEvent: ${event.eventType.id}`);
+
     if(event.event.correlationId === null || event.event.ecu === null) {
         logger.error(`Could not process ${event.eventType.id} event, ecu or correlation ID is missing!`);
         return;

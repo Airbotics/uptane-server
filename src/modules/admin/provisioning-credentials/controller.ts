@@ -9,7 +9,7 @@ import {
     EKeyType,
     TUF_METADATA_INITIAL
 } from '@airbotics-core/consts';
-import { SuccessJsonResponse, SuccessMessageResponse } from '@airbotics-core/network/responses';
+import { BadResponse, InternalServerErrorResponse, SuccessJsonResponse, SuccessMessageResponse } from '@airbotics-core/network/responses';
 import { logger } from '@airbotics-core/logger';
 import { prisma } from '@airbotics-core/drivers';
 import { dayjs } from '@airbotics-core/time';
@@ -78,7 +78,7 @@ export const createProvisioningCredentials = async (req: Request, res: Response)
     });
 
     logger.info('provisioning credentials have been created');
-    return res.status(200).json({ id: provisioningCredentials.id });
+    return new SuccessJsonResponse(res, { id: provisioningCredentials.id });
 
 }
 
@@ -108,25 +108,25 @@ export const downloadProvisioningCredential = async (req: Request, res: Response
 
     if (!provisioningCredentials) {
         logger.warn('trying to download credentials that do not exist');
-        return res.status(400).send('could not create provisioning credentials');
+        return new BadResponse(res, 'Could not create provisioning credentials.');
     }
 
     if (provisioningCredentials.status !== CertificateStatus.issuing) {
         logger.warn('trying to download credentials that is not issuing');
-        return res.status(400).send('could not create provisioning credentials');
+        return new BadResponse(res, 'Could not create provisioning credentials.');
     }
 
     // check if the provisioning and client certs are ready
     const provisioningCert = await certificateManager.downloadCertificate(teamID, provisioningCredentials.provisioning_cert_id);
 
     if (!provisioningCert) {
-        return res.status(400).send('could not create provisioning credentials');
+        return new BadResponse(res, 'Could not create provisioning credentials.');
     }
 
     // const clientCert = await certificateManager.downloadCertificate(teamID, provisioningCredentials.client_cert_id);
 
     // if(!clientCert) {
-    //     return res.status(400).end();
+        // return new BadResponse(res, 'Could not create provisioning credentials.');
     // }
 
     // get provisioning and client key pairs
@@ -138,7 +138,7 @@ export const downloadProvisioningCredential = async (req: Request, res: Response
     const rootCACertStr = await certificateManager.getRootCertificate();
 
     if (!rootCACertStr) {
-        return res.status(500).end();
+        return new InternalServerErrorResponse(res);
     }
 
     // bundle into provisioning pcks12, no encryption password set
@@ -157,7 +157,7 @@ export const downloadProvisioningCredential = async (req: Request, res: Response
 
     if (!rootMetadata) {
         logger.warn('could not create provisioning credentials because no root metadata for the team exists');
-        return res.status(400).send('could not create provisioning credentials');
+        return new BadResponse(res, 'Could not create provisioning credentials.');
     }
 
     const targetsKeyPair = await keyStorage.getKeyPair(getKeyStorageRepoKeyId(teamID, TUFRepo.image, TUFRole.targets));
@@ -281,12 +281,12 @@ export const revokeProvisioningCredentials = async (req: Request, res: Response)
 
     if (!provisioningCredentials) {
         logger.warn('trying to revoke provisioning credentials that do not exist');
-        return res.status(400).send('could not revoke provisioning credentials');
+        return new BadResponse(res, 'Could not revoke provisioning credentials.');
     }
 
     if (provisioningCredentials!.status !== CertificateStatus.issued) {
         logger.warn('trying to revoke provisioning credentials that have not been issued');
-        return res.status(400).send('could not revoke provisioning credentials');
+        return new BadResponse(res, 'Could not revoke provisioning credentials.');
     }
 
     // revoke the certificates

@@ -22,7 +22,7 @@ router.get('/images/:image_id',
 // update image details
 router.patch('/images/:image_id',
     mustBeAuthenticated,
-    mustBeInTeam(OryTeamRelations.member),
+    mustBeInTeam(OryTeamRelations.admin),
     validate(imageIdSchema, EValidationSource.Path),
     validate(updateImageDetailsSchema, EValidationSource.Body),
     controller.updateImageDetails);

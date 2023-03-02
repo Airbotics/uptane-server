@@ -106,7 +106,7 @@ export const mustBeAuthenticated = async (req: Request, res: Response, next: Nex
         next();
 
     } catch (error) {
-        console.log(error);
+        // console.log(error);
         
         logger.warn('An unauthenticated user is trying to access a protected endpoint');
         return new UnauthorizedResponse(res);

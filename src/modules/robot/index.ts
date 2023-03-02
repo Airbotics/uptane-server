@@ -1,3 +1,5 @@
+import { CertificateType } from '@prisma/client';
+import dayjs, { ManipulateType } from 'dayjs';
 import express, { Request } from 'express';
 import forge from 'node-forge';
 import { logger } from '@airbotics-core/logger';
@@ -5,11 +7,10 @@ import { generateKeyPair, certificateManager } from '@airbotics-core/crypto';
 import { prisma } from '@airbotics-core/drivers';
 import { EKeyType } from '@airbotics-core/consts';
 import { mustBeRobot, updateRobotMeta } from '@airbotics-middlewares';
-import dayjs, { ManipulateType } from 'dayjs';
 import config from '@airbotics-config';
 import { delay } from '@airbotics-core/utils';
-import { CertificateType } from '@prisma/client';
 import { aktualizrEvent, AktualizrEvent } from '@airbotics-core/events';
+import { InternalServerErrorResponse, SuccessBinaryResponse, SuccessEmptyResponse } from '@airbotics-core/network/responses';
 
 
 const router = express.Router();
@@ -83,14 +84,14 @@ router.post('/devices', async (req: Request, res) => {
     const robotCert = await certificateManager.downloadCertificate(team_id, robotCertId);
 
     if (!robotCert) {
-        return res.status(500).end();
+        return new InternalServerErrorResponse(res);
     }
 
     // get root cert
     const rootCACert = await certificateManager.getRootCertificate();
 
     if (!rootCACert) {
-        return res.status(500).end();
+        return new InternalServerErrorResponse(res);
     }
 
     // bundle into pcks12, no encryption password set
@@ -100,7 +101,7 @@ router.post('/devices', async (req: Request, res) => {
         { algorithm: 'aes256' });
 
     logger.info('robot has provisioned')
-    return res.status(200).send(Buffer.from(forge.asn1.toDer(p12).getBytes(), 'binary'));
+    return new SuccessBinaryResponse(res, Buffer.from(forge.asn1.toDer(p12).getBytes(), 'binary'));
 
 });
 
@@ -126,7 +127,7 @@ router.put('/system_info', mustBeRobot, updateRobotMeta, async (req: Request, re
     });
 
     logger.info('ingested hardware info report');
-    return res.status(200).end();
+    return new SuccessEmptyResponse(res);
 
 });
 
@@ -141,16 +142,18 @@ router.post('/system_info/config', mustBeRobot, updateRobotMeta, async (req: Req
         robot_id
     } = req.robotGatewayPayload!;
 
+    const aktConfig = req.body;
+
     await prisma.aktualizrConfigReport.create({
         data: {
             team_id,
             robot_id,
-            config: req.body,
+            config: aktConfig
         }
     });
 
     logger.info('ingested aktualizr config report');
-    return res.status(200).end();
+    return new SuccessEmptyResponse(res);
 
 });
 
@@ -165,16 +168,18 @@ router.put('/core/installed', mustBeRobot, updateRobotMeta, async (req: Request,
         robot_id
     } = req.robotGatewayPayload!;
 
+    const packages = req.body;
+
     await prisma.installedPackagesReport.create({
         data: {
             team_id,
             robot_id,
-            packages: req.body,
+            packages: packages,
         }
     });
 
     logger.info('ingested installed packages report');
-    return res.status(200).end();
+    return new SuccessEmptyResponse(res);
 
 });
 
@@ -185,7 +190,6 @@ router.put('/core/installed', mustBeRobot, updateRobotMeta, async (req: Request,
  * Note: client sends an id which we could use as the id in the db
  */
 router.post('/events', mustBeRobot, updateRobotMeta, async (req: Request, res) => {
-
 
     const {
         team_id,
@@ -211,7 +215,7 @@ router.post('/events', mustBeRobot, updateRobotMeta, async (req: Request, res) =
     }
 
     logger.info('ingested robot event');
-    return res.status(200).end();
+    return new SuccessEmptyResponse(res);
 });
 
 
@@ -242,7 +246,7 @@ router.put('/system_info/network', mustBeRobot, updateRobotMeta, async (req: Req
     });
 
     logger.info('ingested robot network info');
-    return res.status(200).end();
+    return new SuccessEmptyResponse(res);
 });
 
 

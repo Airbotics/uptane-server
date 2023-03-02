@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import { logger } from '@airbotics-core/logger';
 import { auditEvent } from '@airbotics-core/events';
 import { EEventAction, EEventActorType, EEventResource } from '@airbotics-core/consts';
+import { SuccessEmptyResponse } from '@airbotics-core/network/responses';
 
 const router = express.Router();
 
@@ -24,8 +25,9 @@ router.post('/incoming-webhooks/after-registration', async (req: Request, res: R
     });
 
     logger.info('a user has registered an account');
-    return res.status(200).end();
+    return new SuccessEmptyResponse(res);
 });
+
 
 /**
  * A user has verified their account.
@@ -45,7 +47,7 @@ router.post('/incoming-webhooks/after-verification', async (req: Request, res: R
     });
 
     logger.info('a user has verified their account');
-    return res.status(200).end();
+    return new SuccessEmptyResponse(res);
 });
 
 
@@ -67,7 +69,7 @@ router.post('/incoming-webhooks/after-login', async (req: Request, res: Response
     });
 
     logger.info('a user has logged into their account');
-    return res.status(200).end();
+    return new SuccessEmptyResponse(res);
 });
 
 
@@ -89,7 +91,7 @@ router.post('/incoming-webhooks/before-recovery', async (req: Request, res: Resp
     });
 
     logger.info('a user has started to recover their account');
-    return res.status(200).end();
+    return new SuccessEmptyResponse(res);
 });
 
 
@@ -111,7 +113,7 @@ router.post('/incoming-webhooks/after-recovery', express.raw({ type: '*/*' }), a
     });
 
     logger.info('a user has recovered their account');
-    return res.status(200).end();
+    return new SuccessEmptyResponse(res);
 });
 
 

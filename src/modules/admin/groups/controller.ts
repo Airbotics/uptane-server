@@ -65,7 +65,7 @@ export const createGroup = async (req: Request, res: Response, next: NextFunctio
         return new SuccessJsonResponse(res, sanitisedGroup);
 
     } catch (error) {
-        console.log(error);
+        // console.log(error);
         
         next(error);
     }
@@ -258,12 +258,6 @@ export const deleteGroup = async (req: Request, res: Response, next: NextFunctio
             logger.error('A user tried to delete a group that does not exist');
             return new BadResponse(res, 'That group could not be found');
         }
-
-        if (group._count.robots !== 0) {
-            logger.error('A user tried to delete a group that was associated with one or more robots');
-            return new BadResponse(res, 'This group has robots in it, please remove them first.');
-        }
-
 
         await prisma.group.delete({
             where: {

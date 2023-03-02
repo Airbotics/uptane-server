@@ -11,8 +11,8 @@ import { getKeyStorageRepoKeyId, getKeyStorageEcuKeyId, toCanonical } from '@air
 import { generateSignedSnapshot, generateSignedTargets, generateSignedTimestamp, getLatestMetadataVersion } from '@airbotics-core/tuf';
 import { ManifestErrors } from '@airbotics-core/consts/errors';
 import { mustBeRobot, updateRobotMeta } from '@airbotics-middlewares';
-import { BadResponse } from '@airbotics-core/network/responses';
-import { SuccessMessageResponse } from '../../core/network/responses';
+import { BadResponse, NotFoundResponse, SuccessEmptyResponse, SuccessJsonResponse } from '@airbotics-core/network/responses';
+import { SuccessMessageResponse } from '@airbotics-core/network/responses';
 
 
 const router = express.Router();
@@ -122,7 +122,6 @@ export const robotManifestChecks = async (robotManifest: IRobotManifest, teamID:
                 const verified = verifySignature(toCanonical(robotManifest.signed.ecu_version_manifests[ecuSerial].signed), robotManifest.signed.ecu_version_manifests[ecuSerial].signatures[0].sig, ecuPubKeys[robotManifest.signed.primary_ecu_serial], { signatureScheme: config.TUF_SIGNATURE_SCHEME });
 
                 if (!verified) {
-                    console.log('breakding')
                     throw (ManifestErrors.InvalidReportSignature);
                 }
 
@@ -273,6 +272,7 @@ router.post('/ecus', mustBeRobot, updateRobotMeta, async (req: Request, res) => 
     });
 
     if (robot!.ecus_registered) {
+        // TODO return correct error code
         logger.warn('a robot is trying to register ecus more than once');
         res.status(400).end();
     }
@@ -368,7 +368,7 @@ router.post('/ecus', mustBeRobot, updateRobotMeta, async (req: Request, res) => 
     });
 
     logger.info('registered ecus for a robot');
-    res.status(200).end();
+    return new SuccessEmptyResponse(res);
 
 });
 
@@ -401,13 +401,13 @@ router.get('/:version.:role.json', mustBeRobot, updateRobotMeta, async (req: Req
 
     if (!metadata) {
         logger.warn(`could not download ${role} metadata because it does not exist`);
-        return res.status(404).end();
+        return new NotFoundResponse(res);
     }
 
     // check it hasnt expired
     // TODO
 
-    return res.status(200).send(metadata.value);
+    return new SuccessJsonResponse(res, metadata.value as object);
 
 });
 
@@ -442,7 +442,7 @@ router.get('/:role.json', mustBeRobot, updateRobotMeta, async (req: Request, res
 
     if (metadata.length === 0) {
         logger.warn(`could not download ${role} metadata because it does not exist`);
-        return res.status(404).end();
+        return new NotFoundResponse(res);
     }
 
     const mostRecentMetadata = metadata[0].value as Prisma.JsonObject;
@@ -451,7 +451,7 @@ router.get('/:role.json', mustBeRobot, updateRobotMeta, async (req: Request, res
     // TODO
 
     logger.debug(`a robot has fetched ${role} metdata`);
-    return res.status(200).send(mostRecentMetadata);
+    return new SuccessJsonResponse(res, mostRecentMetadata);
 
 });
 

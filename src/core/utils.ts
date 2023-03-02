@@ -1,5 +1,6 @@
-import { TUFRepo, TUFRole } from '@prisma/client';
+import { EcuStatus, TUFRepo, TUFRole } from '@prisma/client';
 import canonicalize from 'canonicalize';
+import { EComputedRobotStatus } from './consts';
 
 
 /**
@@ -38,7 +39,7 @@ export const base64ToHex = (str: string): string => Buffer.from(str, 'base64').t
  * From: 336fd3576177f3074188b444cb5c6f5147204a1f351d17b3ee87567c0ce333f9.commit
  * To: 35d4b1b202668be531aae6426de6cea7541ab308f2fc5b7a8f290985da36e750.commit
  */
-export const extractCommitsFromDelta = (prefix: string, suffix: string): {from: string; to: string;} => {
+export const extractCommitsFromDelta = (prefix: string, suffix: string): { from: string; to: string; } => {
 
     const delta_id = prefix + suffix;
 
@@ -56,3 +57,19 @@ export const extractCommitsFromDelta = (prefix: string, suffix: string): {from: 
  * Waits some milliseconds. Not pretty..
  */
 export const delay = (ms: number) => new Promise(resolve => setTimeout(resolve, ms));
+
+
+/**
+ * Returns the robot status.
+ * 
+ * This is a computed based on the statuses of its ECUs
+ */
+export const computeRobotStatus = (ecu_statuses: EcuStatus[]): EComputedRobotStatus => {
+    if (ecu_statuses.every(status => status === EcuStatus.installation_completed)) {
+        return EComputedRobotStatus.Updated;
+    } else if (ecu_statuses.includes(EcuStatus.installation_failed) || ecu_statuses.includes(EcuStatus.download_failed)) {
+        return EComputedRobotStatus.Failed;
+    } else {
+        return EComputedRobotStatus.Updating;
+    }
+}

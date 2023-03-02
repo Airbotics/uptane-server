@@ -3,6 +3,7 @@ import { logger } from '@airbotics-core/logger';
 import { prisma } from '@airbotics-core/drivers';
 import { mustBeRobot, updateRobotMeta } from '@airbotics-middlewares';
 import config from '@airbotics-config';
+import { BadResponse, SuccessBinaryResponse, SuccessEmptyResponse } from '@airbotics-core/network/responses';
 
 const router = express.Router();
 
@@ -24,11 +25,11 @@ const getRef = async (req: Request, res: Response) => {
 
     if (!ref) {
         logger.warn('could not get ostree ref because it does not exist');
-        return res.status(400).send('could not download ostree ref');
+        return new BadResponse(res, '');
     }
 
     res.set('content-type', 'text/plain');
-    return res.status(200).send(ref.commit);
+    return new SuccessBinaryResponse(res, ref.commit);
 
 }
 
@@ -53,7 +54,7 @@ router.post('/:team_id/refs/heads/:name', express.text({ type: '*/*', limit: con
 
     if (teamCount === 0) {
         logger.warn('could not upload ostree ref because team does not exist');
-        return res.status(400).send('could not upload ostree ref');
+        return new BadResponse(res, '');
     }
 
     // check object exists
@@ -65,7 +66,7 @@ router.post('/:team_id/refs/heads/:name', express.text({ type: '*/*', limit: con
 
     if (objectCount === 0) {
         logger.warn('could not upload ostree ref because the object it references does not exist');
-        return res.status(400).send('could not upload ostree ref');
+        return new BadResponse(res, '');
     }
 
     await prisma.ref.upsert({
@@ -88,7 +89,7 @@ router.post('/:team_id/refs/heads/:name', express.text({ type: '*/*', limit: con
     });
 
     logger.info('uploaded ostree ref');
-    return res.status(200).end();
+    return new SuccessEmptyResponse(res);
 });
 
 // get a ref

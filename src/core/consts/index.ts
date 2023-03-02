@@ -107,6 +107,7 @@ export const enum EEventResource {
     ImageRepoTargetsRole = 'image_repo_targets_role',
     ProvisioningCredentials = 'provisioning_credentials',
     Robot = 'robot',
+    RobotTelemetry = 'robot_telemetry',
     Rollout = 'rollout',
     Team = 'team',
     Image = 'image'
@@ -121,6 +122,7 @@ export const enum EEventResource {
 export const enum EEventAction {
     Created = 'created',
     Verified = 'verified',
+    Launched = 'launched',
     Revoked = 'revoked',
     Issued = 'issued',
     LoggedIn = 'logged_in',
@@ -130,8 +132,7 @@ export const enum EEventAction {
     Deleted = 'deleted',
     RobotAdded = 'robot_added',
     RobotRemoved = 'robot_removed',
-    Signed = 'signed',
-    MemberRemoved = 'member_removed'
+    // MemberRemoved = 'member_removed'
 }
 
 // types of actors that can make an event

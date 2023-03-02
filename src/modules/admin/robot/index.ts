@@ -56,4 +56,12 @@ router.get('/robots/:robot_id/telemetry',
     controller.listRobotTelemetry);
 
 
+//delete a robots telemetry
+router.delete('/robots/:robot_id/telemetry',
+    mustBeAuthenticated,
+    mustBeInTeam(OryTeamRelations.member),
+    validate(robotIdSchema, EValidationSource.Path),
+    controller.deleteRobotTelemetry);
+
+
 export default router;

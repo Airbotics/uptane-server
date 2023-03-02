@@ -5,6 +5,7 @@ import { prisma } from '@airbotics-core/drivers';
 import { blobStorage } from '@airbotics-core/blob-storage';
 import { mustBeRobot, updateRobotMeta } from '@airbotics-middlewares';
 import { TREEHUB_BUCKET } from '@airbotics-core/consts';
+import config from '@airbotics-config';
 
 const router = express.Router();
 
@@ -55,7 +56,7 @@ const downloadObject = async (req: Request, res: Response) => {
  * 
  * Will store in s3 or local filesystem depending on config.
  */
-router.post('/:team_id/objects/:prefix/:suffix', express.raw({ type: '*/*', limit: '512mb' }), async (req: Request, res) => {
+router.post('/:team_id/objects/:prefix/:suffix', express.raw({ type: '*/*', limit: config.MAX_TREEHUB_REQUEST_SIZE }), async (req: Request, res) => {
 
     // const teamID = req.robotGatewayPayload!.team_id;
     const teamID = req.params.team_id;

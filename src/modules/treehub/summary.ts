@@ -4,6 +4,7 @@ import { prisma } from '@airbotics-core/drivers';
 import { blobStorage } from '@airbotics-core/blob-storage';
 import { mustBeRobot, updateRobotMeta } from '@airbotics-middlewares';
 import { TREEHUB_BUCKET } from '@airbotics-core/consts';
+import config from '@airbotics-config';
 
 const router = express.Router();
 
@@ -32,7 +33,7 @@ const downloadSummary = async (req: Request, res: Response) => {
  * - check size in header matches size of request body.
  * - restrict allowable mime-types
  */
-router.put('/:team_id/summary', express.raw({ type: '*/*' }), async (req: Request, res: Response) => {
+router.put('/:team_id/summary', express.raw({ type: '*/*', limit: config.MAX_TREEHUB_REQUEST_SIZE }), async (req: Request, res: Response) => {
 
     const teamID = req.params.team_id;
     const content = req.body;

@@ -6,12 +6,13 @@ import { logger } from '@airbotics-core/logger';
 import { mustBeRobot, updateRobotMeta, validate } from '@airbotics-middlewares';
 import { generateHash, verifySignature } from '@airbotics-core/crypto';
 import { getKeyStorageRepoKeyId, toCanonical } from '@airbotics-core/utils';
-import { EHashDigest, ESignatureScheme, EValidationSource, TUF_METADATA_LATEST } from '@airbotics-core/consts';
+import { EEventAction, EEventActorType, EEventResource, EHashDigest, ESignatureScheme, EValidationSource, TUF_METADATA_LATEST } from '@airbotics-core/consts';
 import { dayjs } from '@airbotics-core/time';
 import { ISignedTargetsTUF } from '@airbotics-types';
 import { keyStorage } from '@airbotics-core/key-storage';
 import { generateSignedSnapshot, generateSignedTimestamp, getTufMetadata, getLatestMetadataVersion } from '@airbotics-core/tuf';
 import { targetsSchema } from './schemas';
+import { auditEvent } from '@airbotics-core/events';
 
 const router = express.Router();
 
@@ -84,25 +85,25 @@ router.put('/:team_id/api/v1/user_repo/targets', validate(targetsSchema, EValida
     const clientChecksum = req.header('x-ats-role-checksum');
     const clientTargetsMetadata = req.body as ISignedTargetsTUF;
     const team_id = req.params.team_id;
-    
+
     // validate checksum
     const mostRecentTargetMetadata = await getTufMetadata(team_id, TUFRepo.image, TUFRole.targets, TUF_METADATA_LATEST);
     const targetsCheckSum = generateHash(toCanonical(mostRecentTargetMetadata as object), { hashDigest: EHashDigest.Sha256 });
-    
+
     if (targetsCheckSum !== clientChecksum) {
         logger.warn('a client is trying to upload a targets.json whose checksum is incorrect');
         return res.status(412).json({ code: 'role_checksum_mismatch' });
     }
-    
+
 
     // validate signature
     // assuming only one signature is sent and rsa keys are used
     const targetsKeyPair = await keyStorage.getKeyPair(getKeyStorageRepoKeyId(team_id, TUFRepo.image, TUFRole.targets));
 
     const verified = verifySignature(
-        toCanonical(clientTargetsMetadata.signed), 
-        clientTargetsMetadata.signatures[0].sig, 
-        targetsKeyPair.publicKey, 
+        toCanonical(clientTargetsMetadata.signed),
+        clientTargetsMetadata.signatures[0].sig,
+        targetsKeyPair.publicKey,
         { signatureScheme: ESignatureScheme.RsassaPssSha256 }
     );
 
@@ -121,7 +122,7 @@ router.put('/:team_id/api/v1/user_repo/targets', validate(targetsSchema, EValida
         if (!mostRecentTarget) {
             mostRecentTargetKey = targetKey;
             mostRecentTarget = targets[targetKey];
-        } 
+        }
         else if (dayjs(targets[targetKey].custom.createdAt).isAfter(dayjs(mostRecentTarget.custom.createdAt))) {
             mostRecentTargetKey = targetKey;
             mostRecentTarget = targets[targetKey];
@@ -135,7 +136,7 @@ router.put('/:team_id/api/v1/user_repo/targets', validate(targetsSchema, EValida
         }
     });
 
-    if(exists) {
+    if (exists) {
         logger.warn('a client is trying to upload an image that already exists');
         return res.status(400).end();
     }
@@ -171,7 +172,7 @@ router.put('/:team_id/api/v1/user_repo/targets', validate(targetsSchema, EValida
     // perform db writes in transaction
     await prisma.$transaction(async tx => {
 
-        await tx.image.create({
+        const image = await tx.image.create({
             data: {
                 team_id,
                 id: mostRecentTargetKey!,
@@ -218,8 +219,23 @@ router.put('/:team_id/api/v1/user_repo/targets', validate(targetsSchema, EValida
             }
         });
 
+        auditEvent.emit({
+            resource: EEventResource.Image,
+            action: EEventAction.Created,
+            actor_type: EEventActorType.User,
+            actor_id: null,
+            team_id: team_id,
+            meta: {
+                image_id: image.id,
+                name: mostRecentTarget.custom.name,
+                format: ImageFormat.ostree,
+                sha256: mostRecentTarget.hashes.sha256
+            }
+        });
+
     });
 
+    logger.info('a new image has been created')
     res.set('x-ats-role-checksum', targetsCheckSum);
     res.set('x-ats-targets-role-size-limit', String(config.TUF_TARGETS_FILE_SIZE_LIMIT));
 

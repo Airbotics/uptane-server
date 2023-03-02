@@ -1,3 +1,4 @@
+import { EcuStatus } from '@prisma/client';
 import { Ecu, TUFRepo, TUFRole, Image, RolloutRobotStatus, RolloutStatus } from '@prisma/client';
 import prisma from '@airbotics-core/drivers/postgres';
 import config from '@airbotics-config';
@@ -6,7 +7,6 @@ import { generateSignedSnapshot, generateSignedTargets, generateSignedTimestamp,
 import { ITargetsImages } from '@airbotics-types';
 import { keyStorage } from '@airbotics-core/key-storage';
 import { getKeyStorageRepoKeyId } from '@airbotics-core/utils';
-import { EcuStatus } from '@prisma/client';
 
 
 

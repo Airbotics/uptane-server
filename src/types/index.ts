@@ -13,7 +13,8 @@ import {
     IRolloutAffectedBotRes,
     IRolloutDetailRes,
     IRolloutRes,
-    IFleetOverview
+    IFleetOverview,
+    IImageDetail
 } from './responses';
 
 
@@ -29,7 +30,8 @@ export {
     IRolloutAffectedBotRes,
     IRolloutDetailRes,
     IRolloutRes,
-    IFleetOverview
+    IFleetOverview,
+    IImageDetail
 };
 
 

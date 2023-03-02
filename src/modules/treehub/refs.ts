@@ -2,6 +2,7 @@ import express, { Request, Response } from 'express';
 import { logger } from '@airbotics-core/logger';
 import { prisma } from '@airbotics-core/drivers';
 import { mustBeRobot, updateRobotMeta } from '@airbotics-middlewares';
+import config from '@airbotics-config';
 
 const router = express.Router();
 
@@ -33,7 +34,7 @@ const getRef = async (req: Request, res: Response) => {
 
 
 // create a ref
-router.post('/:team_id/refs/heads/:name', express.text({ type: '*/*' }), async (req: Request, res: Response) => {
+router.post('/:team_id/refs/heads/:name', express.text({ type: '*/*', limit: config.MAX_TREEHUB_REQUEST_SIZE}), async (req: Request, res: Response) => {
 
     // const teamID = req.headers['air-team-id']!;
     const team_id = req.params.team_id;

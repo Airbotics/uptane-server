@@ -7,7 +7,7 @@ import { EEventAction, EEventActorType, EEventResource, OryNamespaces, OryTeamRe
 import { SuccessMessageResponse, BadResponse, SuccessJsonResponse, NoContentResponse } from '@airbotics-core/network/responses';
 import { logger } from '@airbotics-core/logger';
 import { IFleetOverview, ITeamDetail } from '@airbotics-types';
-import { airEvent } from '@airbotics-core/events';
+import { auditEvent } from '@airbotics-core/events';
 import { certificateManager, generateKeyPair } from '@airbotics-core/crypto';
 import config from '@airbotics-config';
 import { generateSignedRoot, generateSignedSnapshot, generateSignedTargets, generateSignedTimestamp } from '@airbotics-core/tuf';
@@ -215,7 +215,7 @@ export const createTeam = async (req: Request, res: Response, next: NextFunction
 
         });
 
-        airEvent.emit({
+        auditEvent.emit({
             resource: EEventResource.Team,
             action: EEventAction.Created,
             actor_type: EEventActorType.User,
@@ -231,7 +231,6 @@ export const createTeam = async (req: Request, res: Response, next: NextFunction
         return new SuccessJsonResponse(res, newTeam);
 
     } catch (error) {
-
         logger.error('A user was unable to create a new team');
         return new BadResponse(res, 'Unable to create a new team.')
     }
@@ -387,7 +386,7 @@ export const updateTeam = async (req: Request, res: Response, next: NextFunction
             }
         });
 
-        airEvent.emit({
+        auditEvent.emit({
             resource: EEventResource.Team,
             action: EEventAction.DetailsUpdated,
             actor_type: EEventActorType.User,
@@ -401,7 +400,7 @@ export const updateTeam = async (req: Request, res: Response, next: NextFunction
         const sanitisedTeam: ITeamDetail = {
             id: team.id,
             name: team.name,
-            role: 'admin',
+            role: OryTeamRelations.admin,
             num_members: team.num_members,
             created_at: team.created_at
         };
@@ -482,7 +481,7 @@ export const deleteTeam = async (req: Request, res: Response, next: NextFunction
 
     });
 
-    airEvent.emit({
+    auditEvent.emit({
         resource: EEventResource.Team,
         action: EEventAction.Deleted,
         actor_type: EEventActorType.User,
@@ -509,18 +508,16 @@ export const deleteTeam = async (req: Request, res: Response, next: NextFunction
 export const deleteTeamMembers = async (req: Request, res: Response, next: NextFunction) => {
 
     const teamID = req.headers['air-team-id']!;
-
-
     const oryID = req.oryIdentity!.traits.id;
 
-    airEvent.emit({
-        resource: EEventResource.Team,
-        action: EEventAction.MemberRemoved,
-        actor_type: EEventActorType.User,
-        actor_id: oryID,
-        team_id: teamID,
-        meta: null
-    });
+    // auditEvent.emit({
+    //     resource: EEventResource.Team,
+    //     action: EEventAction.MemberRemoved,
+    //     actor_type: EEventActorType.User,
+    //     actor_id: oryID,
+    //     team_id: teamID,
+    //     meta: null
+    // });
 
     logger.info('a user has attempted to remove a member from their team');
     return new BadResponse(res, 'You may not remove yourself from a team');
@@ -582,6 +579,7 @@ export const getFleetOverview = async (req: Request, res: Response, next: NextFu
             LEFT JOIN rollouts
             ON DATE_TRUNC('day', rollouts.created_at) = d.date 
             AND rollouts.team_id=${teamID}
+            AND rollouts.status='launched'
         GROUP BY 
             d.date 
         ORDER BY 
@@ -596,9 +594,9 @@ export const getFleetOverview = async (req: Request, res: Response, next: NextFu
         storage_usage: storage_usage._sum.size || 0,
         rollout_history: rollout_history.map((history: any) => ({ date: history.date, count: Number(history.count) })),
         robot_status_breakdown: {
-            up_to_date: 0,
-            pending: 0,
-            underway: 0,
+            failed: 0,
+            updated: 0,
+            updating: 0
         }
     }
 

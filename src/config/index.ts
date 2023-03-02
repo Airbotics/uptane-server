@@ -12,7 +12,6 @@ dotenv.config();
 const DEFAULT_CONN_STR = 'postgresql://user:password@localhost:5432/db?schema=public';
 const NODE_ENV = process.env.NODE_ENV || 'development';
 
-// NOTE: it would be nice to use something like TOML here, but we'll just keep it js for now
 const config = {
 
     // postgres
@@ -22,6 +21,7 @@ const config = {
     PORT: process.env.PORT || 8001,                                             // port the server listens on
     NODE_ENV: NODE_ENV,                                                         // mode to run the server in, 'production' or 'development'
     MAX_JSON_REQUEST_SIZE: '100mb',                                             // max json size we accept
+    MAX_TREEHUB_REQUEST_SIZE: '2048mb',                                          // max binary size we accept for treehub objects, refs and summaries
     API_ORIGIN: 'http://localhost:8002',                                        // origin of the api (api.airbotics.io)
     GATEWAY_ORIGIN: 'https://localhost:8003',                                   // origin of the gateway (gateway.airbotics.io)
     CORS_ORIGIN: NODE_ENV==='production' ? ['https://dashboard.staging.airbotics.io', 'https://dashboard.airbotics.io'] : 'http://localhost:3000',
@@ -74,7 +74,7 @@ const config = {
     // background workers
     USE_NODE_SCHEDULER: true,                                                   // whether to use the nodejs scheduler to run workers, for development
     WORKERS: {
-        ROLLOUTS_CRON: '*/10 * * * * *',                                         // how often to run the rollouts worker
+        ROLLOUTS_CRON: '*/10 * * * * *',                                        // how often to run the rollouts worker
         TUF_RESIGNER_CRON: '0 * * * *',                                         // how often to run the tuf resigner
         STATIC_DELTA_GENERATOR_CRON: '0 * * * *',                               // how often to run the static delta generator
         PROVISIONING_CREDS_EXPIRY_PURGER_CRON: '0 * * * *'                      // how often to run the worker to "purge" expired provisioning credentials
@@ -91,8 +91,6 @@ const config = {
     ROBOT_CERT_TTL: [10, 'year'],                                               // expiry of robot certs
     DEV_ROOT_CA_TTL: [20, 'year'],                                              // expiry of dev root cert
     DEV_GATEWAY_CA_TTL: [10, 'year'],                                           // expiry of dev gateway cert
-
-    ROOT_CA_TTL: [10, 'year'],                                                  // expiry of the root ca cert
 
 };
 

@@ -6,7 +6,7 @@ import { EcuTelemetry, RolloutRobotStatus } from '@prisma/client';
 import { prisma } from '@airbotics-core/drivers';
 import { getKeyStorageEcuKeyId } from '@airbotics-core/utils';
 import { keyStorage } from '@airbotics-core/key-storage';
-import { airEvent } from '@airbotics-core/events';
+import { auditEvent } from '@airbotics-core/events';
 import { EComputedRobotStatus, EEventAction, EEventActorType, EEventResource } from '@airbotics-core/consts';
 import { certificateManager } from '@airbotics-core/crypto';
 import { IRobotDetailRes, IRobotRes, IEcuTelemetryRes, IRobotRolloutRes, IUpdateRobotDetailsBody } from '@airbotics-types';
@@ -14,10 +14,10 @@ import { EcuStatus } from '@prisma/client';
 
 
 const computeRobotStatus = (ecu_status: EcuStatus[]): EComputedRobotStatus => {
-    if(ecu_status.every(status => status === EcuStatus.installation_completed)) {
+    if (ecu_status.every(status => status === EcuStatus.installation_completed)) {
         return EComputedRobotStatus.Updated;
     }
-    else if(ecu_status.includes(EcuStatus.installation_failed || EcuStatus.download_failed)) {
+    else if (ecu_status.includes(EcuStatus.installation_failed || EcuStatus.download_failed)) {
         return EComputedRobotStatus.Failed;
     }
     else {
@@ -42,7 +42,7 @@ export const listRobots = async (req: Request, res: Response, next: NextFunction
         },
         include: {
             ecus: {
-                select: { status: true},
+                select: { status: true },
             },
             _count: {
                 select: { groups: true }
@@ -50,12 +50,12 @@ export const listRobots = async (req: Request, res: Response, next: NextFunction
         }
     });
 
-    
+
 
     const robotsSanitised: IRobotRes[] = robots.map(robot => ({
         id: robot.id,
         name: robot.name,
-        status: computeRobotStatus(robot.ecus.map(ecu =>  ecu.status)),
+        status: computeRobotStatus(robot.ecus.map(ecu => ecu.status)),
         group_count: robot._count.groups,
         created_at: robot.created_at,
         last_seen_at: robot.last_seen_at
@@ -130,7 +130,7 @@ export const getRobot = async (req: Request, res: Response, next: NextFunction) 
         last_seen_at: robot.last_seen_at,
         created_at: robot.created_at,
         updated_at: robot.updated_at,
-        status: computeRobotStatus(robot.ecus.map(ecu =>  ecu.status)),
+        status: computeRobotStatus(robot.ecus.map(ecu => ecu.status)),
         agent_version: robot.agent_version,
         ecus_registered: robot.ecus_registered,
         groups: robot.groups.map(grp => ({ id: grp.group_id, name: grp.group.name })),
@@ -203,14 +203,14 @@ export const updateRobotDetails = async (req: Request, res: Response, next: Next
         }
     });
 
-    airEvent.emit({
+    auditEvent.emit({
         resource: EEventResource.Robot,
         action: EEventAction.DetailsUpdated,
         actor_type: EEventActorType.User,
         actor_id: oryID,
         team_id: teamID,
         meta: {
-            id: robotID,
+            robot_id: robotID,
             name,
             description
         }
@@ -256,14 +256,14 @@ export const deleteRobot = async (req: Request, res: Response, next: NextFunctio
         // revoke certificate
         await certificateManager.revokeCertificate(robot.certificates[0].serial, RevocationReason.PRIVILEGE_WITHDRAWN);
 
-        airEvent.emit({
+        auditEvent.emit({
             resource: EEventResource.Robot,
             action: EEventAction.Deleted,
             actor_type: EEventActorType.User,
             actor_id: oryID,
             team_id: teamID,
             meta: {
-                id: robot.id
+                robot_id: robot.id
             }
         });
 
@@ -345,7 +345,7 @@ export const listRobotGroups = async (req: Request, res: Response, next: NextFun
  * List the rollouts a robot is associated with
  */
 export const listRobotRollouts = async (req: Request, res: Response, next: NextFunction) => {
-    
+
     const {
         skip,
         take
@@ -356,15 +356,15 @@ export const listRobotRollouts = async (req: Request, res: Response, next: NextF
 
     const robotRollouts = await prisma.rolloutRobot.findMany({
         where: {
-            robot_id: robotId  
+            robot_id: robotId
         },
         include: {
             rollout: {
-                select: { id:true, name: true, status: true }
+                select: { id: true, name: true, status: true }
             }
         },
-        skip: skip ? Number(skip): undefined,
-        take: take ? Number(take): undefined
+        skip: skip ? Number(skip) : undefined,
+        take: take ? Number(take) : undefined
     })
 
     const rolloutRobotSanitised: IRobotRolloutRes[] = robotRollouts.map(botRollout => ({
@@ -372,7 +372,7 @@ export const listRobotRollouts = async (req: Request, res: Response, next: NextF
         status: botRollout.status,
         created_at: botRollout.created_at,
         rollout: botRollout.rollout
-    })) 
+    }))
 
 
     logger.info('A user read a page of robot rollouts');
@@ -382,7 +382,7 @@ export const listRobotRollouts = async (req: Request, res: Response, next: NextF
 
 
 /**
- * List the rollouts a robot is associated with
+ * Get telemetry for a robot.
  */
 export const listRobotTelemetry = async (req: Request, res: Response, next: NextFunction) => {
 
@@ -395,7 +395,7 @@ export const listRobotTelemetry = async (req: Request, res: Response, next: Next
     const robotId = req.params.robot_id;
 
     const ecuTele = await prisma.ecuTelemetry.findMany({
-        where:{
+        where: {
             ecu: {
                 robot_id: robotId
             },
@@ -407,8 +407,8 @@ export const listRobotTelemetry = async (req: Request, res: Response, next: Next
         orderBy: {
             created_at: 'desc'
         },
-        skip: skip ? Number(skip): undefined,
-        take: take ? Number(take): undefined
+        skip: skip ? Number(skip) : undefined,
+        take: take ? Number(take) : undefined
     })
 
     const ecuTeleSanitised: IEcuTelemetryRes[] = ecuTele.map(tele => ({
@@ -424,4 +424,38 @@ export const listRobotTelemetry = async (req: Request, res: Response, next: Next
 
     logger.info('A user read a page of ecu telemetry');
     return new SuccessJsonResponse(res, ecuTeleSanitised);
+}
+
+
+/**
+ * Delete telemetry for a robot.
+ */
+export const deleteRobotTelemetry = async (req: Request, res: Response, next: NextFunction) => {
+
+    const oryID = req.oryIdentity!.traits.id;
+    const teamId = req.headers['air-team-id']!;
+    const robotId = req.params.robot_id;
+
+    await prisma.ecuTelemetry.deleteMany({
+        where: {
+            ecu: {
+                robot_id: robotId
+            },
+            team_id: teamId
+        }
+    });
+
+    auditEvent.emit({
+        resource: EEventResource.RobotTelemetry,
+        action: EEventAction.Deleted,
+        actor_type: EEventActorType.User,
+        actor_id: oryID,
+        team_id: teamId,
+        meta: {
+            robot_id: robotId
+        }
+    });
+
+    logger.info('a user has deleted telemetry for a robot');
+    return new SuccessMessageResponse(res, 'You have deleted telemetry for that robot');
 }

@@ -82,6 +82,7 @@ model Team {
     robot_groups        RobotGroup[]
     rollouts            Rollout[]
     certificates        Certificate[]
+    audit_events        AuditEvent[]
 
     @@map("teams")
 }
@@ -431,6 +432,23 @@ model RobotGroup {
     @@map("robot_groups")
 }
 
+// audit trail
+model AuditEvent {
+    id                  String          @id @default(uuid()) @unique
+    actor_type          String                                  // user, robot, or airbotics-bot (could be an enum but we leave it as freeform)
+    actor_id            String?                                 // user id in ory
+    team_id             String?                                 // optional FK to team
+    resource            String                                  // could be an enum but we leave it as freeform
+    action              String                                  // could be an enum but we leave it as freeform
+    meta                Json?                                   // optional metadata for this action
+    created_at          DateTime        @default(now())
+ 
+    team                Team?           @relation(fields: [team_id], references: [id], onDelete: Cascade)
+    
+    @@unique([id, team_id])
+    @@map("audit_events")
+}
+
 
 // ---------------- ROLLOUTS ---------------- //
 
@@ -448,6 +466,26 @@ enum RolloutTargetType {
     selected_bots
 }
 
+enum RolloutRobotStatus {
+    pending             // rollout created but worker hasn’t got around to processing
+    skipped             // worker determined update is n/a for bot
+    scheduled           // worker has created the latest targets.json in the director repo
+    accepted            // robot has acknowledged the update
+    completed           // robot has successfully pulled the update
+    cancelled           // the rollout was cancelled
+    failed              // robot tried and failed to pull the update
+}
+
+
+enum EcuStatus {
+    download_started
+    download_completed
+    download_failed
+    installation_started
+    installation_completed
+    installation_failed
+    installation_applied
+}
 
 model Rollout {
     id                  String              @id @default(uuid()) @unique
@@ -471,6 +509,7 @@ model Rollout {
 
 
 
+// TODO add a team id here
 model RolloutHardwareImage {
     id                  String          @id @default(uuid()) @unique
     rollout_id          String
@@ -487,16 +526,7 @@ model RolloutHardwareImage {
 }
 
 
-enum RolloutRobotStatus {
-    pending             // rollout created but worker hasn’t got around to processing
-    skipped             // worker determined update is n/a for bot
-    scheduled           // worker has created the latest targets.json in the director repo
-    accepted            // robot has acknowledged the update
-    completed           // robot has successfully pulled the update
-    cancelled           // the rollout was cancelled
-    failed              // robot tried and failed to pull the update
-}
-
+// TODO add a team id here
 model RolloutRobot {
     id                  String              @id @default(uuid()) @unique
     rollout_id          String
@@ -517,17 +547,7 @@ model RolloutRobot {
 }
 
 
-enum EcuStatus {
-    download_started
-    download_completed
-    download_failed
-    installation_started
-    installation_completed
-    installation_failed
-    installation_applied
-}
-
-
+// TODO add a team id here
 model RolloutRobotEcu {
     id                  String              @id @default(uuid()) @unique
     rollout_robot_id    String

@@ -6,7 +6,7 @@ import { RolloutTargetType } from '@airbotics-core/consts';
 import { SuccessMessageResponse } from '../../../core/network/responses';
 import { prisma } from '@airbotics-core/drivers';
 import { generateStaticDelta } from '@airbotics-core/generate-static-delta';
-import { airEvent } from '@airbotics-core/events';
+import { auditEvent } from '@airbotics-core/events';
 import { EEventAction, EEventActorType, EEventResource } from '@airbotics-core/consts';
 import { IRolloutAffectedBotRes, IRolloutDetailRes, IRolloutRes, ICreateRolloutBody } from '@airbotics-types';
 import { setEnvironmentData } from 'worker_threads';
@@ -140,6 +140,7 @@ export const createRollout = async (req: Request, res: Response) => {
             throw ('Unknown robot target type for rollout');
         }
 
+
         //For each of the potentially affected bots, add a RolloutRobot and n RolloutRobotEcus
         for (const bot of potentiallyAffectedBots) {
             await tx.rolloutRobot.create({
@@ -161,13 +162,16 @@ export const createRollout = async (req: Request, res: Response) => {
 
     });
 
-    airEvent.emit({
+    auditEvent.emit({
         resource: EEventResource.Rollout,
         action: EEventAction.Created,
         actor_type: EEventActorType.User,
         actor_id: oryId,
         team_id: teamId,
-        meta: null
+        meta: {
+            rollout_id: createdRollout.id,
+            name: createdRollout.name
+        }
     });
 
     const rolloutSantised: IRolloutRes = {
@@ -177,7 +181,7 @@ export const createRollout = async (req: Request, res: Response) => {
         status: createdRollout.status,
         created_at: createdRollout.created_at,
         updated_at: createdRollout.updated_at
-    }
+    };
 
     logger.info('created rollout');
 
@@ -199,11 +203,12 @@ export const createRollout = async (req: Request, res: Response) => {
  */
 export const launchRollout = async (req: Request, res: Response) => {
 
+    const oryId = req.oryIdentity!.traits.id;
     const rolloutId = req.params.rollout_id;
     const teamId = req.headers['air-team-id']!;
 
     try {
-        await prisma.rollout.update({
+        const rollout = await prisma.rollout.update({
             data: {
                 status: 'launched'
             },
@@ -212,6 +217,17 @@ export const launchRollout = async (req: Request, res: Response) => {
                     id: rolloutId,
                     team_id: teamId
                 }
+            }
+        });
+        auditEvent.emit({
+            resource: EEventResource.Rollout,
+            action: EEventAction.Launched,
+            actor_type: EEventActorType.User,
+            actor_id: oryId,
+            team_id: teamId,
+            meta: {
+                rollout_id: rollout.id,
+                name: rollout.name
             }
         });
     }

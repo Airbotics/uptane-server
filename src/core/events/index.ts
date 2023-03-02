@@ -1,14 +1,15 @@
 import { EAktualizrEvent, EEventAction, EEventActorType, EEventResource } from '@airbotics-core/consts';
 import { logger } from '@airbotics-core/logger';
 import EventEmitter from 'events';
-import { rolloutEventHandler } from './rolloutHandler';
+import { rolloutEventHandler } from './rollout-handler';
+import { auditEventHandler } from './audit-event-handler';
 
 /**
  * Notes:
  * - If an action is done on an account then the team_id will be null.
  * - If an action is done by the airbotics-bot then the actor_id will be null.
  */
-export interface AirEvent {
+export interface AuditEvent {
     team_id: string | null; 
     actor_type: EEventActorType;
     actor_id: string | null;
@@ -35,20 +36,26 @@ export interface AktualizrEvent {
 
 class AirEventEmitter<T> {
 
+    private topic: string;
     private emitter: EventEmitter = new EventEmitter();
 
-    public addListener(listener: (event: T) => void, eventType: string = 'default') {
-        this.emitter.addListener(eventType, listener);
+    constructor(topic: string) {
+        this.topic = topic;
     }
 
-    public emit(val: T, eventType: string = 'default') {
-        this.emitter.emit(eventType, val);
+    public addListener(listener: (event: T) => void) {
+        this.emitter.addListener(this.topic, listener);
+    }
+
+    public emit(val: T) {
+        this.emitter.emit(this.topic, val);
     }
 
 }
 
-export const airEvent = new AirEventEmitter<AirEvent>();
+export const auditEvent = new AirEventEmitter<AuditEvent>('audit');
+auditEvent.addListener(auditEventHandler);
 
-export const aktualizrEvent = new AirEventEmitter<AktualizrEvent>();
+export const aktualizrEvent = new AirEventEmitter<AktualizrEvent>('agent');
 
 aktualizrEvent.addListener(rolloutEventHandler);

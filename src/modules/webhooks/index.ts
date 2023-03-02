@@ -1,6 +1,6 @@
 import express, { Request, Response } from 'express';
 import { logger } from '@airbotics-core/logger';
-import { airEvent } from '@airbotics-core/events';
+import { auditEvent } from '@airbotics-core/events';
 import { EEventAction, EEventActorType, EEventResource } from '@airbotics-core/consts';
 
 const router = express.Router();
@@ -8,10 +8,13 @@ const router = express.Router();
 
 /**
  * A user has registered.
+ * 
+ * TODO
+ * - add metadata from ory
  */
-router.post('/incoming-webhooks/after-registration', express.raw({ type: '*/*' }), async (req: Request, res: Response) => {
+router.post('/incoming-webhooks/after-registration', async (req: Request, res: Response) => {
 
-    airEvent.emit({
+    auditEvent.emit({
         resource: EEventResource.Account,
         action: EEventAction.Created,
         actor_type: EEventActorType.User,
@@ -26,10 +29,13 @@ router.post('/incoming-webhooks/after-registration', express.raw({ type: '*/*' }
 
 /**
  * A user has verified their account.
+ * 
+ * TODO
+ * - add metadata from ory
  */
-router.post('/incoming-webhooks/after-verification', express.raw({ type: '*/*' }), async (req: Request, res: Response) => {
+router.post('/incoming-webhooks/after-verification', async (req: Request, res: Response) => {
 
-    airEvent.emit({
+    auditEvent.emit({
         resource: EEventResource.Account,
         action: EEventAction.Verified,
         actor_type: EEventActorType.User,
@@ -45,10 +51,13 @@ router.post('/incoming-webhooks/after-verification', express.raw({ type: '*/*' }
 
 /**
  * A user has logged in.
+ * 
+ * TODO
+ * - add metadata from ory
  */
-router.post('/incoming-webhooks/after-login', express.raw({ type: '*/*' }), async (req: Request, res: Response) => {
+router.post('/incoming-webhooks/after-login', async (req: Request, res: Response) => {
 
-    airEvent.emit({
+    auditEvent.emit({
         resource: EEventResource.Account,
         action: EEventAction.LoggedIn,
         actor_type: EEventActorType.User,
@@ -61,12 +70,16 @@ router.post('/incoming-webhooks/after-login', express.raw({ type: '*/*' }), asyn
     return res.status(200).end();
 });
 
+
 /**
  * A user starts to recover their password.
+ * 
+ * TODO
+ * - add metadata from ory
  */
-router.post('/incoming-webhooks/before-recovery', express.raw({ type: '*/*' }), async (req: Request, res: Response) => {
+router.post('/incoming-webhooks/before-recovery', async (req: Request, res: Response) => {
 
-    airEvent.emit({
+    auditEvent.emit({
         resource: EEventResource.Account,
         action: EEventAction.AccountRecoveredStarted,
         actor_type: EEventActorType.User,
@@ -79,12 +92,16 @@ router.post('/incoming-webhooks/before-recovery', express.raw({ type: '*/*' }), 
     return res.status(200).end();
 });
 
+
 /**
  * A user has recovered their password.
+ * 
+ * TODO
+ * - add metadata from ory
  */
 router.post('/incoming-webhooks/after-recovery', express.raw({ type: '*/*' }), async (req: Request, res: Response) => {
 
-    airEvent.emit({
+    auditEvent.emit({
         resource: EEventResource.Account,
         action: EEventAction.AccountRecoveredFinished,
         actor_type: EEventActorType.User,

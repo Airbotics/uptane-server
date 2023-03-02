@@ -231,7 +231,6 @@ export const createTeam = async (req: Request, res: Response, next: NextFunction
         return new SuccessJsonResponse(res, newTeam);
 
     } catch (error) {
-
         logger.error('A user was unable to create a new team');
         return new BadResponse(res, 'Unable to create a new team.')
     }
@@ -580,6 +579,7 @@ export const getFleetOverview = async (req: Request, res: Response, next: NextFu
             LEFT JOIN rollouts
             ON DATE_TRUNC('day', rollouts.created_at) = d.date 
             AND rollouts.team_id=${teamID}
+            AND rollouts.status='launched'
         GROUP BY 
             d.date 
         ORDER BY 
@@ -594,9 +594,9 @@ export const getFleetOverview = async (req: Request, res: Response, next: NextFu
         storage_usage: storage_usage._sum.size || 0,
         rollout_history: rollout_history.map((history: any) => ({ date: history.date, count: Number(history.count) })),
         robot_status_breakdown: {
-            up_to_date: 0,
-            pending: 0,
-            underway: 0,
+            failed: 0,
+            updated: 0,
+            updating: 0
         }
     }
 

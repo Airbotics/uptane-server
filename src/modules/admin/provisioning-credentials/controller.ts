@@ -92,6 +92,7 @@ export const createProvisioningCredentials = async (req: Request, res: Response)
  */
 export const downloadProvisioningCredential = async (req: Request, res: Response) => {
 
+    
     const oryID = req.oryIdentity!.traits.id;
     const teamID = req.headers['air-team-id']!;
     const provisioningCredentialsId = req.params.credentials_id;
@@ -220,6 +221,7 @@ export const downloadProvisioningCredential = async (req: Request, res: Response
     res.set('Content-Type', 'application/zip');
     res.status(200);
     archive.pipe(res);
+
 }
 
 

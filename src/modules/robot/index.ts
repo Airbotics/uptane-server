@@ -40,6 +40,8 @@ router.post('/devices', async (req: Request, res) => {
 
     const team_id = req.header('air-client-id')!;
 
+    // TODO check provisioning credentials is issued
+
     // check robot is not already provisioned
     const robot = await prisma.robot.findUnique({
         where: {

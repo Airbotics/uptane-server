@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { BadResponse, SuccessJsonResponse } from '@airbotics-core/network/responses';
 import { logger } from '@airbotics-core/logger';
 import { prisma } from '@airbotics-core/drivers';
-import { IImageRobotRes } from '@airbotics-types';
+import { IImageRobotRes, IImageDetail } from '@airbotics-types';
 import { auditEvent } from '@airbotics-core/events';
 import { EEventAction, EEventActorType, EEventResource } from '@airbotics-core/consts';
 
@@ -62,7 +62,7 @@ export const getImage = async (req: Request, res: Response) => {
         return new BadResponse(res, 'Unable to get image');
     }
 
-    const imageSanitised = {
+    const imageSanitised: IImageDetail= {
         id: image.id,
         name: image.name,
         description: image.description,
@@ -70,8 +70,7 @@ export const getImage = async (req: Request, res: Response) => {
         sha256: image.sha256,
         hwids: image.hwids,
         format: image.format,
-        created_at: image.created_at,
-        updated_at: image.updated_at
+        created_at: image.created_at
     };
 
     logger.info('A user gotten an image detail');
@@ -142,10 +141,11 @@ export const updateImageDetails = async (req: Request, res: Response) => {
         updated_at: newImage.updated_at
     };
 
-    logger.info('A user update an image detail');
+    logger.info('a user has updated an image detail');
     return new SuccessJsonResponse(res, imageSanitised);
 
 }
+
 
 /**
  * List robots that have this image installed on any of their ecus
@@ -178,7 +178,7 @@ export const listRobotsWithImage = async (req: Request, res: Response) => {
         }
     }))
 
-    logger.info('A user read a list of robots that have an image installed');
+    logger.info('a user read a list of robots that have an image installed');
     return new SuccessJsonResponse(res, ecusSanitised);
 
 }

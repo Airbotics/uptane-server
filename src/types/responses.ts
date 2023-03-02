@@ -1,5 +1,5 @@
-import { EComputedRobotStatus } from "@airbotics-core/consts";
-import { CertificateStatus, EcuStatus, ImageFormat, RobotStatus, RolloutStatus } from "@prisma/client";
+import { CertificateStatus, EcuStatus, ImageFormat, RolloutRobotStatus, RolloutStatus } from '@prisma/client';
+import { EComputedRobotStatus} from '@airbotics-core/consts';
 
 
 /**
@@ -87,7 +87,7 @@ export interface IRobotGroupRes {
 
 export interface IRobotRolloutRes {
     id: string;
-    status: RobotStatus;
+    status: RolloutRobotStatus;
     created_at: Date;
     rollout: {
         id: string;
@@ -116,7 +116,16 @@ export interface IImageRobotRes {
     }
 }
 
-
+export interface IImageDetail {
+    id: string;
+    name: string;
+    size: number;
+    sha256: string;
+    hwids: string[];
+    created_at: Date;
+    description: string | null;
+    format: ImageFormat;
+}
 
 
 
@@ -143,7 +152,7 @@ export interface IRolloutDetailRes {
     updated_at: Date;
     robots: {
         id: string,
-        status: RobotStatus
+        status: RolloutRobotStatus
     }[]
 }
 
@@ -186,8 +195,8 @@ export interface IFleetOverview {
         count: number;
     }[];
     robot_status_breakdown: {
-        up_to_date: number;
-        pending: number;
-        underway: number;
+        failed: number;
+        updated: number;
+        updating: number;
     };
 }

@@ -81,5 +81,5 @@ export const createRolloutSchema = Joi.object({
 
 export const provCredentialsSchema = Joi.object({
     name: Joi.string().required().min(2),
-    expires_at: Joi.number().required().min(new Date().getDate())
+    expires_at: Joi.number().required().min(new Date().getTime())
 });

@@ -140,10 +140,8 @@ export const createRollout = async (req: Request, res: Response) => {
             throw ('Unknown robot target type for rollout');
         }
 
-        logger.info(potentiallyAffectedBots);
-
         //For each of the potentially affected bots, add a RolloutRobot and n RolloutRobotEcus
-        for(const bot of potentiallyAffectedBots) {
+        for (const bot of potentiallyAffectedBots) {
             await tx.rolloutRobot.create({
                 data: {
                     rollout_id: rollout.id,
@@ -285,7 +283,11 @@ export const getRollout = async (req: Request, res: Response) => {
         },
         include: {
             robots: {
-                select: { id: true, status: true }
+                include: {
+                    robot: {
+                        select: { id: true, name: true }
+                    }
+                }
             }
         }
     })
@@ -302,9 +304,10 @@ export const getRollout = async (req: Request, res: Response) => {
         status: rollout.status,
         created_at: rollout.created_at,
         updated_at: rollout.updated_at,
-        robots: rollout.robots.map(bot => ({
-            id: bot.id,
-            status: bot.status
+        robots: rollout.robots.map(rolloutBot => ({
+            id: rolloutBot.robot_id,
+            name: rolloutBot.robot ? rolloutBot.robot.name : null, 
+            status: rolloutBot.status
         }))
     };
 

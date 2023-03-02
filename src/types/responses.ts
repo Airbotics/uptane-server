@@ -136,7 +136,7 @@ export interface IImageDetail {
 export interface IRolloutRes {
     id: string;
     name: string;
-    description: string;
+    description: string | null;
     status: RolloutStatus;
     created_at: Date;
     updated_at: Date;
@@ -146,7 +146,7 @@ export interface IRolloutRes {
 export interface IRolloutDetailRes {
     id: string;
     name: string;
-    description: string;
+    description: string | null;
     status: RolloutStatus;
     created_at: Date;
     updated_at: Date;
@@ -154,6 +154,10 @@ export interface IRolloutDetailRes {
         id: string | null;
         name: string | null;
         status: RolloutRobotStatus;
+        ecus: {
+            id: string,
+            status: EcuStatus | null
+        }[]
     }[]
 }
 

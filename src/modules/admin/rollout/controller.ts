@@ -301,7 +301,10 @@ export const getRollout = async (req: Request, res: Response) => {
             robots: {
                 include: {
                     robot: {
-                        select: { id: true, name: true }
+                        select: { id: true, name: true}
+                    },
+                    ecus: {
+                        select: { status: true, ecu_id: true }
                     }
                 }
             }
@@ -323,7 +326,11 @@ export const getRollout = async (req: Request, res: Response) => {
         robots: rollout.robots.map(rolloutBot => ({
             id: rolloutBot.robot_id,
             name: rolloutBot.robot ? rolloutBot.robot.name : null, 
-            status: rolloutBot.status
+            status: rolloutBot.status,
+            ecus: rolloutBot.ecus.map(ecu => ({
+                id: ecu.ecu_id!,
+                status: ecu.status
+            }))
         }))
     };
 

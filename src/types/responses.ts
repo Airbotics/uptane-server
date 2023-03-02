@@ -151,8 +151,9 @@ export interface IRolloutDetailRes {
     created_at: Date;
     updated_at: Date;
     robots: {
-        id: string,
-        status: RolloutRobotStatus
+        id: string | null;
+        name: string | null;
+        status: RolloutRobotStatus;
     }[]
 }
 

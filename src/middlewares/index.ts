@@ -4,7 +4,7 @@ import { FrontendApiToSessionRequest, PermissionApiCheckPermissionRequest } from
 import {prisma} from '@airbotics-core/drivers';
 import { ory } from '@airbotics-core/drivers';
 import { BadResponse, ForbiddenResponse, UnauthorizedResponse, ValidationResponse } from '@airbotics-core/network/responses';
-import { OryTeamRelations, EValidationSource } from '@airbotics-core/consts';
+import { OryTeamRelations, EValidationSource, OryNamespaces } from '@airbotics-core/consts';
 import { logger } from '@airbotics-core/logger';
 
 
@@ -130,7 +130,7 @@ export const mustBeInTeam = (relation: OryTeamRelations) => {
         try {
 
             const permCheckParams: PermissionApiCheckPermissionRequest = {
-                namespace: 'teams',
+                namespace: OryNamespaces.teams,
                 object: teamID,
                 relation: relation,
                 subjectId: oryID

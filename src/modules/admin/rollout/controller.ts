@@ -299,7 +299,11 @@ export const getRollout = async (req: Request, res: Response) => {
         },
         include: {
             robots: {
-                select: { id: true, status: true }
+                include: {
+                    robot: {
+                        select: { id: true, name: true }
+                    }
+                }
             }
         }
     })
@@ -316,9 +320,10 @@ export const getRollout = async (req: Request, res: Response) => {
         status: rollout.status,
         created_at: rollout.created_at,
         updated_at: rollout.updated_at,
-        robots: rollout.robots.map(bot => ({
-            id: bot.id,
-            status: bot.status
+        robots: rollout.robots.map(rolloutBot => ({
+            id: rolloutBot.robot_id,
+            name: rolloutBot.robot ? rolloutBot.robot.name : null, 
+            status: rolloutBot.status
         }))
     };
 

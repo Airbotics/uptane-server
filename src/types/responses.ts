@@ -1,4 +1,4 @@
-import { CertificateStatus, EcuStatus, ImageFormat, RolloutRobotStatus, RolloutStatus } from '@prisma/client';
+import { CertificateStatus, EcuStatus, ImageFormat, RolloutRobotStatus, RolloutStatus, RolloutTargetType } from '@prisma/client';
 import { EComputedRobotStatus} from '@airbotics-core/consts';
 
 
@@ -147,6 +147,7 @@ export interface IRolloutDetailRes {
     id: string;
     name: string;
     description: string | null;
+    target_type: RolloutTargetType;
     status: RolloutStatus;
     created_at: Date;
     updated_at: Date;

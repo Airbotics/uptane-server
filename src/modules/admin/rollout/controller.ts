@@ -321,6 +321,7 @@ export const getRollout = async (req: Request, res: Response) => {
         name: rollout.name,
         description: rollout.description,
         status: rollout.status,
+        target_type: rollout.target_type,
         created_at: rollout.created_at,
         updated_at: rollout.updated_at,
         robots: rollout.robots.map(rolloutBot => ({

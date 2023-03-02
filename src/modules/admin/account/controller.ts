@@ -67,9 +67,16 @@ export const updateAccount = async (req: Request, res: Response) => {
 
 
 /**
- * This has been written with multi player in mind.
+ * This has been written with multi player in mind. Also deleted related teams according
+ * to the following
  * 
+ * For each team the user is related to:
  * 
+ * - If they are not an admin of any team = delete the user
+ * - If they are an admin of any team
+ *      - there are no other members or admins (except themselves) = delete team and account
+ *      - there are other admins = delete account only
+ *      - user is the only admin but there are other members = delete neither team or account
  * 
  */
 export const deleteAccount = async (req: Request, res: Response) => {
@@ -133,25 +140,21 @@ export const deleteAccount = async (req: Request, res: Response) => {
         }
         await ory.identities.deleteIdentity(deleteParams);
 
-        return new NoContentResponse(res, 'Your account has been deleted!');
-
-
     } catch (error) {
         return new BadResponse(res, error);
     }
 
+    auditEvent.emit({
+        resource: EEventResource.Account,
+        action: EEventAction.Deleted,
+        actor_type: EEventActorType.User,
+        actor_id: oryID,
+        team_id: null,
+        meta: null
+    });
 
+    logger.info('a user has deleted their account');
+    return new NoContentResponse(res, 'Your account has been deleted!');
 
-    // auditEvent.emit({
-    //     resource: EEventResource.Account,
-    //     action: EEventAction.Deleted,
-    //     actor_type: EEventActorType.User,
-    //     actor_id: oryID,
-    //     team_id: null,
-    //     meta: null
-    // });
-
-    logger.info('a user has attempted to delete their account');
-    return new BadResponse(res, 'Please contact admin@airbotics.io to delete your account');
 
 }

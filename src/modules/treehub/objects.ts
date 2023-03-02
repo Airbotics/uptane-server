@@ -6,6 +6,7 @@ import { blobStorage } from '@airbotics-core/blob-storage';
 import { mustBeRobot, updateRobotMeta } from '@airbotics-middlewares';
 import { TREEHUB_BUCKET } from '@airbotics-core/consts';
 import config from '@airbotics-config';
+import { BadResponse, InternalServerErrorResponse, NotFoundResponse, SuccessEmptyResponse } from '@airbotics-core/network/responses';
 
 const router = express.Router();
 
@@ -30,7 +31,7 @@ const downloadObject = async (req: Request, res: Response) => {
 
     if (!object) {
         logger.warn('could not get ostree object because it does not exist');
-        return res.status(404).end();
+        return new NotFoundResponse(res);
     }
 
     try {
@@ -43,7 +44,7 @@ const downloadObject = async (req: Request, res: Response) => {
         // db and blob storage should be in sync
         // if an object exists in db but not blob storage something has gone wrong, bail on this request
         logger.error('ostree object in postgres and blob storage are out of sync');
-        return res.status(500).end();
+        return new InternalServerErrorResponse(res);
     }
 
 
@@ -70,7 +71,7 @@ router.post('/:team_id/objects/:prefix/:suffix', express.raw({ type: '*/*', limi
     // if content-length was not sent, or it is zero, or it is not a number return 400
     if (!size || size === 0 || isNaN(size)) {
         logger.warn('could not upload ostree object because content-length header was not sent');
-        return res.status(400).end();
+        return new BadResponse(res, '');
     }
 
     const teamCount = await prisma.team.count({
@@ -81,7 +82,7 @@ router.post('/:team_id/objects/:prefix/:suffix', express.raw({ type: '*/*', limi
 
     if (teamCount === 0) {
         logger.warn('could not upload ostree object because team does not exist');
-        return res.status(400).send('could not upload ostree object');
+        return new BadResponse(res, '');
     }
 
 
@@ -154,10 +155,10 @@ router.head('/:team_id/objects/:prefix/:suffix', async (req: Request, res) => {
     });
 
     if (!object) {
-        return res.status(404).end();
+        return new NotFoundResponse(res);
     }
 
-    return res.status(200).end();
+    return new SuccessEmptyResponse(res);
 
 });
 

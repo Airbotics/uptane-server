@@ -5,6 +5,7 @@ import { blobStorage } from '@airbotics-core/blob-storage';
 import { mustBeRobot, updateRobotMeta } from '@airbotics-middlewares';
 import { TREEHUB_BUCKET } from '@airbotics-core/consts';
 import config from '@airbotics-config';
+import { BadResponse, NotFoundResponse, SuccessBinaryResponse, SuccessEmptyResponse } from '@airbotics-core/network/responses';
 
 const router = express.Router();
 
@@ -17,10 +18,10 @@ const downloadSummary = async (req: Request, res: Response) => {
         const content = await blobStorage.getObject(TREEHUB_BUCKET, team_id, 'summary');
 
         res.set('content-type', 'application/octet-stream');
-        return res.status(200).send(content);
+        return new SuccessBinaryResponse(res, content);
 
     } catch (error) {
-        return res.status(404).end();
+        return new NotFoundResponse(res);
     }
 
 }
@@ -43,7 +44,7 @@ router.put('/:team_id/summary', express.raw({ type: '*/*', limit: config.MAX_TRE
     // if content-length was not sent, or it is zero, or it is not a number return 400
     if (!size || size === 0 || isNaN(size)) {
         logger.warn('could not upload ostree summary because content-length header was not sent');
-        return res.status(400).end();
+        return new BadResponse(res, '');
     }
 
     const teamCount = await prisma.team.count({
@@ -54,13 +55,13 @@ router.put('/:team_id/summary', express.raw({ type: '*/*', limit: config.MAX_TRE
 
     if (teamCount === 0) {
         logger.warn('could not upload ostree summary because team does not exist');
-        return res.status(400).send('could not upload ostree summary');
+        return new BadResponse(res, '');
     }
 
     await blobStorage.putObject(TREEHUB_BUCKET,  teamID, 'summary', content);
 
     logger.info('uploaded ostree summary');
-    return res.status(200).end();
+    return new SuccessEmptyResponse(res);
 
 });
 

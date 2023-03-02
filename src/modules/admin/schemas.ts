@@ -1,5 +1,6 @@
-import { RolloutTargetType } from '@airbotics-core/consts';
 import Joi from 'joi';
+import { RolloutTargetType } from '@airbotics-core/consts';
+import config from '@airbotics-config';
 
 /**
  * fields used in multiple schemas
@@ -43,7 +44,7 @@ export const updateAccountSchema = Joi.object({
 }).min(1);
 
 export const updateImageDetailsSchema = Joi.object({
-    description: nameField.required().allow('')
+    description: nameField.optional().allow('')
 })
 
 export const createGroupSchema = Joi.object({
@@ -61,17 +62,21 @@ export const createTeamSchema = Joi.object({
     name: nameField.required(),
 });
 
+export const updateTeamSchema = Joi.object({
+    name: nameField.required(),
+});
+
 export const createRolloutSchema = Joi.object({
     name: Joi.string().required(),
-    description: Joi.string().required(),
+    description: nameField.optional().allow(''),
     hwid_img_map: Joi.array().items(Joi.object({
-        hw_id: Joi.string().required(), 
-        img_id: Joi.string().required() 
+        hw_id: Joi.string().required(),
+        img_id: Joi.string().required()
     })).min(1),
     targeted_robots: Joi.object({
         type: Joi.string().valid(
-            RolloutTargetType.group, 
-            RolloutTargetType.hw_id_match, 
+            RolloutTargetType.group,
+            RolloutTargetType.hw_id_match,
             RolloutTargetType.selected_bots
         ).required(),
         group_id: Joi.string().allow(''),
@@ -81,5 +86,5 @@ export const createRolloutSchema = Joi.object({
 
 export const provCredentialsSchema = Joi.object({
     name: Joi.string().required().min(2),
-    expires_at: Joi.number().required().min(new Date().getTime())
+    expires_at: Joi.number().required().min(new Date().getTime()).max(config.ROOT_CA_EXIRY)
 });

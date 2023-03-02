@@ -3,6 +3,7 @@ import { prisma } from '@airbotics-core/drivers';
 import { logger } from '@airbotics-core/logger';
 import { OSTREE_CONFIG } from '@airbotics-core/consts';
 import { mustBeRobot, updateRobotMeta } from '@airbotics-middlewares';
+import { BadResponse, SuccessBinaryResponse } from '@airbotics-core/network/responses';
 
 const router = express.Router();
 
@@ -19,11 +20,11 @@ const getConfig = async (req: Request, res: Response) => {
 
     if (teamCount === 0) {
         logger.warn('could not get ostree config because team does not exist');
-        return res.status(400).end();
+        return new BadResponse(res, '');
     }
 
     res.set('content-type', 'text/plain');
-    return res.status(200).send(OSTREE_CONFIG);
+    return new SuccessBinaryResponse(res, OSTREE_CONFIG);
     
 }
 

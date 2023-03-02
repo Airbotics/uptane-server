@@ -1,5 +1,4 @@
-import { EcuStatus } from '@prisma/client';
-import { Ecu, TUFRepo, TUFRole, Image, RolloutRobotStatus, RolloutStatus } from '@prisma/client';
+import { EcuStatus, Ecu, TUFRepo, TUFRole, Image, RolloutRobotStatus, RolloutStatus } from '@prisma/client';
 import prisma from '@airbotics-core/drivers/postgres';
 import config from '@airbotics-config';
 import { logger } from '@airbotics-core/logger';
@@ -51,10 +50,10 @@ const processPending = async (teamIds: string[]) => {
         const unprocessedRollouts = await prisma.rollout.findMany({
             where: {
                 team_id: teamId,
-                status: 'launched',
+                status: RolloutStatus.launched,
                 robots: {
                     some: {
-                        status: 'pending'
+                        status: RolloutRobotStatus.pending
                     }
                 }
             },
@@ -71,7 +70,7 @@ const processPending = async (teamIds: string[]) => {
             const rolloutRobots = await prisma.rolloutRobot.findMany({
                 where: {
                     rollout_id: rollout.id,
-                    status: 'pending'
+                    status: RolloutRobotStatus.pending
                 },
                 include: {
                     robot: {
@@ -95,7 +94,7 @@ const processPending = async (teamIds: string[]) => {
 
                 // robot has been deleted since rollout was created
                 if (!rolloutBot.robot) {
-                    await setRolloutRobotStatus(rolloutBot.id, 'skipped');
+                    await setRolloutRobotStatus(rolloutBot.id, RolloutRobotStatus.skipped);
                     continue;
                 }
 
@@ -118,13 +117,13 @@ const processPending = async (teamIds: string[]) => {
 
                 //robot is not affected by the rollout
                 if (affectedEcus.length === 0) {
-                    await setRolloutRobotStatus(rolloutBot.id, 'skipped');
+                    await setRolloutRobotStatus(rolloutBot.id, RolloutRobotStatus.skipped);
                 }
 
                 //we need to generate new director metadata for the bot (ie is affected by the rollout)
                 else {
                     await generateNewMetadata(teamId, rolloutBot.robot_id!, rolloutBot.id, affectedEcus);
-                    await setRolloutRobotStatus(rolloutBot.id, 'scheduled');
+                    await setRolloutRobotStatus(rolloutBot.id, RolloutRobotStatus.scheduled);
                 }
             }
         }

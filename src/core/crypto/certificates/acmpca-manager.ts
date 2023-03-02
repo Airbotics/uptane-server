@@ -34,7 +34,7 @@ export const getRootCertificate = async (): Promise<string | null> => {
         return response.Certificate!;
 
     } catch (error) {
-        console.log(error)
+        // console.log(error)
         return null;
     }
 }

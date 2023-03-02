@@ -13,6 +13,7 @@ import { keyStorage } from '@airbotics-core/key-storage';
 import { generateSignedSnapshot, generateSignedTimestamp, getTufMetadata, getLatestMetadataVersion } from '@airbotics-core/tuf';
 import { targetsSchema } from './schemas';
 import { auditEvent } from '@airbotics-core/events';
+import { InternalServerErrorResponse, NotFoundResponse, SuccessEmptyResponse, SuccessJsonResponse } from '@airbotics-core/network/responses';
 
 const router = express.Router();
 
@@ -32,13 +33,13 @@ router.get('/:version.root.json', mustBeRobot, async (req: Request, res) => {
 
     if (!metadata) {
         logger.warn('a robot is trying to get a tuf metadata role that does not exist')
-        return res.status(404).end();
+        return new NotFoundResponse(res);
     }
 
     const checkSum = generateHash(toCanonical(metadata as object), { hashDigest: EHashDigest.Sha256 });
 
     res.set('x-ats-role-checksum', checkSum);
-    return res.status(200).send(metadata);
+    return new SuccessJsonResponse(res, metadata);
 
 });
 
@@ -58,13 +59,13 @@ router.get('/:role.json', mustBeRobot, updateRobotMeta, async (req: Request, res
 
     if (!metadata) {
         logger.warn('a robot is trying to get a tuf metadata role that does not exist')
-        return res.status(404).end();
+        return new NotFoundResponse(res);
     }
 
     const checkSum = generateHash(toCanonical(metadata as object), { hashDigest: EHashDigest.Sha256 });
 
     res.set('x-ats-role-checksum', checkSum);
-    return res.status(200).send(metadata);
+    return new SuccessJsonResponse(res, metadata);
 
 });
 
@@ -239,7 +240,7 @@ router.put('/:team_id/api/v1/user_repo/targets', validate(targetsSchema, EValida
     res.set('x-ats-role-checksum', targetsCheckSum);
     res.set('x-ats-targets-role-size-limit', String(config.TUF_TARGETS_FILE_SIZE_LIMIT));
 
-    return res.status(200).end();
+    return new SuccessEmptyResponse(res);
 
 });
 
@@ -257,13 +258,13 @@ router.get('/:team_id/api/v1/user_repo/targets.json', async (req, res) => {
 
     if (!latest) {
         logger.warn('trying to download latest targets metadata for image but it does not exist');
-        return res.status(500).end();
+        return new InternalServerErrorResponse(res);
     }
 
     const targetscheckSum = generateHash(toCanonical(latest as object), { hashDigest: EHashDigest.Sha256 });
 
     res.set('x-ats-role-checksum', targetscheckSum);
-    return res.status(200).send(latest);
+    return new SuccessJsonResponse(res, latest);
 
 });
 

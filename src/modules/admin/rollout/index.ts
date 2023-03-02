@@ -11,9 +11,9 @@ const router = express.Router();
 router.post('/rollouts',
     mustBeAuthenticated,
     mustBeInTeam(OryTeamRelations.admin),
+    validate(rolloutIdSchema, EValidationSource.Path),
     validate(createRolloutSchema, EValidationSource.Body),
     controller.createRollout);
-
 
 // list rollouts
 router.get('/rollouts',
@@ -21,13 +21,12 @@ router.get('/rollouts',
     mustBeInTeam(OryTeamRelations.admin),
     controller.listRollouts);
 
-
 //launch a rollout
 router.post('/rollouts/:rollout_id/launch',
     mustBeAuthenticated,
     mustBeInTeam(OryTeamRelations.admin),
+    validate(rolloutIdSchema, EValidationSource.Path),
     controller.launchRollout);
-
 
 // get rollout detail
 router.get('/rollouts/:rollout_id',
@@ -36,10 +35,10 @@ router.get('/rollouts/:rollout_id',
     validate(rolloutIdSchema, EValidationSource.Path),
     controller.getRollout);
 
-
+// compute robots affected by a rollout
 router.post('/rollouts/compute-affected',
     mustBeAuthenticated,
-    mustBeInTeam(OryTeamRelations.member),
+    mustBeInTeam(OryTeamRelations.admin),
     validate(createRolloutSchema, EValidationSource.Body),
     controller.computeAffected);
 

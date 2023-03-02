@@ -60,7 +60,7 @@ router.get('/deltas/:prefix/:suffix/:file', mustBeRobot, async (req: Request, re
         // db and blob storage should be in sync
         // if an delta exists in db but not blob storage something has gone wrong, bail on this request
         logger.error('ostree delta in postgres and blob storage are out of sync');
-        return res.status(500).end();
+        return new InternalServerErrorResponse(res);
     }
     */
 

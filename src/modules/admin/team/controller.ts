@@ -3,7 +3,7 @@ import { RevocationReason } from '@aws-sdk/client-acm-pca';
 import { ory, prisma } from '@airbotics-core/drivers';
 import { TUFRepo, TUFRole } from '@prisma/client';
 import { IdentityApiGetIdentityRequest, RelationshipApiGetRelationshipsRequest, RelationshipApiPatchRelationshipsRequest } from '@ory/client';
-import { EEventAction, EEventActorType, EEventResource, OryNamespaces, OryTeamRelations, TREEHUB_BUCKET } from '@airbotics-core/consts';
+import { EComputedRobotStatus, EEventAction, EEventActorType, EEventResource, OryNamespaces, OryTeamRelations, TREEHUB_BUCKET } from '@airbotics-core/consts';
 import { SuccessMessageResponse, BadResponse, SuccessJsonResponse, NoContentResponse } from '@airbotics-core/network/responses';
 import { logger } from '@airbotics-core/logger';
 import { IFleetOverview, ITeamDetail } from '@airbotics-types';
@@ -13,7 +13,7 @@ import config from '@airbotics-config';
 import { generateSignedRoot, generateSignedSnapshot, generateSignedTargets, generateSignedTimestamp } from '@airbotics-core/tuf';
 import { blobStorage } from '@airbotics-core/blob-storage';
 import { keyStorage } from '@airbotics-core/key-storage';
-import { getKeyStorageEcuKeyId, getKeyStorageRepoKeyId } from '@airbotics-core/utils';
+import { getKeyStorageEcuKeyId, getKeyStorageRepoKeyId, computeRobotStatus } from '@airbotics-core/utils';
 import { dayjs } from '@airbotics-core/time';
 
 
@@ -438,7 +438,7 @@ export const deleteTeam = async (req: Request, res: Response, next: NextFunction
 
     if (teamCount === 0) {
         logger.warn('could not delete a team because it does not exist');
-        return res.status(400).send('could not delete team');
+        return new BadResponse(res, 'Could not delete team.');
     }
 
     await prisma.$transaction(async tx => {
@@ -555,7 +555,30 @@ export const getFleetOverview = async (req: Request, res: Response, next: NextFu
         }
     });
 
-    // TODO ROBOT STATUS BREAKDOWN
+    // TODO optimise this to use sql instead of ts
+const robots = await prisma.robot.findMany({
+    where: {
+        team_id: teamID
+    },
+    include: {
+        ecus: true
+    }
+});
+
+let numRobotsUpdating = 0;
+let numRobotsUpdated = 0;
+let numRobotsFailed = 0;
+
+for (const robot of robots) {
+    const status = computeRobotStatus(robot.ecus.map(e => e.status));
+    switch (status) {
+        case EComputedRobotStatus.Updating: numRobotsUpdating += 1; break;
+        case EComputedRobotStatus.Updated: numRobotsUpdated += 1; break;
+        case EComputedRobotStatus.Failed: numRobotsFailed += 1; break;
+    }
+}
+
+
 
     const storage_usage = await prisma.object.aggregate({
         _sum: {
@@ -594,9 +617,9 @@ export const getFleetOverview = async (req: Request, res: Response, next: NextFu
         storage_usage: storage_usage._sum.size || 0,
         rollout_history: rollout_history.map((history: any) => ({ date: history.date, count: Number(history.count) })),
         robot_status_breakdown: {
-            failed: 0,
-            updated: 0,
-            updating: 0
+            failed: numRobotsFailed,
+            updated: numRobotsUpdated,
+            updating: numRobotsUpdating
         }
     }
 

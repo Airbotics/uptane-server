@@ -98,13 +98,13 @@ model ProvisioningCredentials {
     status              CertificateStatus   @default(issuing)   // combination of status as certs
     expires_at          DateTime                                // will be the same as certs
     revoked_at          DateTime?                               // will be the same as certs
-    client_cert_id      String
-    provisioning_cert_id     String
+    client_cert_id      String          @unique
+    provisioning_cert_id     String     @unique
 
     team                Team            @relation(fields: [team_id], references: [id], onDelete: Cascade)
 
-    client_cert         Certificate     @relation(name: "client", fields: [team_id, client_cert_id], references: [team_id, id], onDelete: Cascade)
-    provisioning_cert   Certificate     @relation(name: "prov", fields: [team_id, provisioning_cert_id], references: [team_id, id], onDelete: Cascade)
+    client_cert         Certificate     @relation(name: "client", fields: [client_cert_id], references: [id], onDelete: Cascade)
+    provisioning_cert   Certificate     @relation(name: "prov", fields: [provisioning_cert_id], references: [id], onDelete: Cascade)
 
     @@unique([team_id, id])
     @@unique([team_id, client_cert_id])
@@ -116,8 +116,8 @@ model ProvisioningCredentials {
 
 // a record of certs that we have issued
 model Certificate {
-    id                  String          @default(uuid())
-    team_id             String
+    id                  String          @id @default(uuid()) @unique
+    team_id             String?
     serial              String          @unique
     acm_arn             String?
     created_at          DateTime        @default(now())
@@ -130,22 +130,21 @@ model Certificate {
 
     client_creds        ProvisioningCredentials? @relation("client")
     provisioning_creds  ProvisioningCredentials? @relation("prov")
-    team                Team            @relation(fields: [team_id], references: [id], onDelete: Cascade)
+    team                Team?           @relation(fields: [team_id], references: [id], onDelete: Cascade)
     robot               Robot?          @relation(fields: [robot_id], references: [id], onDelete: Cascade)
 
-    @@id([team_id, id])
     @@map("certificates")
 }
 
 
 // images stored in image repo
 model Image {
-    id                  String          @id @default(uuid()) @unique
+    id                  String          @default(uuid())
     team_id             String
     name                String                                  // human readable name
     description         String?
     size                Int                                     // size of image in bytes
-    sha256              String          @unique                 // sha256 hash of image
+    sha256              String                                  // sha256 hash of image
     hwids               String[]                                // types/ids of ecu hardware this image can be deployed to
     status              UploadStatus                            // uploading or uploaded
     format              ImageFormat                             // type of image (binary or ostree)
@@ -157,7 +156,8 @@ model Image {
     ecus                Ecu[]
     rollout_image       RolloutHardwareImage[]
 
-    @@unique([team_id, id])
+    @@id([team_id, id])
+    @@unique([team_id, sha256])
     @@map("images")
 }
 
@@ -513,12 +513,13 @@ model Rollout {
 model RolloutHardwareImage {
     id                  String          @id @default(uuid()) @unique
     rollout_id          String
+    team_id             String?
     hw_id               String
     image_id            String?
 
     created_at          DateTime        @default(now())
 
-    image               Image?          @relation(fields: [image_id], references: [id], onDelete: SetNull)
+    image               Image?          @relation(fields: [team_id, image_id], references: [team_id, id], onDelete: SetNull)
     rollout             Rollout         @relation(fields: [rollout_id], references: [id], onDelete: Cascade)
     
     @@unique([rollout_id, hw_id, image_id])

@@ -16,7 +16,7 @@ export class FsBlobProvider implements IBlobStorageProvider {
         fs.writeFileSync(filePath, content);
         return true;
     }
-    
+
     async getObject(bucketId: string, teamId: string, objectId: string): Promise<Buffer | string> {
         const filePath = path.resolve(path.join(config.BLOB_FS_STORAGE_DIR, bucketId, teamId, objectId));
         return fs.readFileSync(filePath);
@@ -32,9 +32,9 @@ export class FsBlobProvider implements IBlobStorageProvider {
         const filePath = path.resolve(path.join(config.BLOB_FS_STORAGE_DIR, bucketId, teamId));
         try {
             fs.rmdirSync(filePath, { recursive: true });
-        } catch(e) {
-            console.log(e);
-        }finally {
+        } catch (e) {
+            // console.log(e);
+        } finally {
             return true;
         }
     }

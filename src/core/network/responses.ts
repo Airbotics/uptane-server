@@ -25,9 +25,15 @@ export class SuccessMessageResponse {
     }
 }
 
-export class AcceptedMessageResponse {
-    constructor(res: Response, message: string) {
-        return res.status(EStatusCodes.Accepted).json({ message });
+export class SuccessBinaryResponse {
+    constructor(res: Response, data: Buffer | string) {
+        return res.status(EStatusCodes.Ok).send(data);
+    }
+}
+
+export class SuccessEmptyResponse {
+    constructor(res: Response) {
+        return res.status(EStatusCodes.Ok).end();
     }
 }
 
@@ -37,6 +43,11 @@ export class SuccessJsonResponse {
     }
 }
 
+export class AcceptedMessageResponse {
+    constructor(res: Response, message: string) {
+        return res.status(EStatusCodes.Accepted).json({ message });
+    }
+}
 
 export class NoContentResponse {
     constructor(res: Response, message: string) {

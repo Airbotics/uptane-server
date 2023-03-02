@@ -2,28 +2,14 @@ import { Request, Response, NextFunction } from 'express';
 import { BadResponse, SuccessJsonResponse, NoContentResponse, SuccessMessageResponse } from '@airbotics-core/network/responses';
 import { logger } from '@airbotics-core/logger';
 import { RevocationReason } from '@aws-sdk/client-acm-pca';
-import { EcuTelemetry, RolloutRobotStatus } from '@prisma/client';
 import { prisma } from '@airbotics-core/drivers';
-import { getKeyStorageEcuKeyId } from '@airbotics-core/utils';
+import { getKeyStorageEcuKeyId, computeRobotStatus } from '@airbotics-core/utils';
 import { keyStorage } from '@airbotics-core/key-storage';
 import { auditEvent } from '@airbotics-core/events';
-import { EComputedRobotStatus, EEventAction, EEventActorType, EEventResource } from '@airbotics-core/consts';
+import { EEventAction, EEventActorType, EEventResource } from '@airbotics-core/consts';
 import { certificateManager } from '@airbotics-core/crypto';
 import { IRobotDetailRes, IRobotRes, IEcuTelemetryRes, IRobotRolloutRes, IUpdateRobotDetailsBody } from '@airbotics-types';
-import { EcuStatus } from '@prisma/client';
 
-
-const computeRobotStatus = (ecu_status: EcuStatus[]): EComputedRobotStatus => {
-    if (ecu_status.every(status => status === EcuStatus.installation_completed)) {
-        return EComputedRobotStatus.Updated;
-    }
-    else if (ecu_status.includes(EcuStatus.installation_failed || EcuStatus.download_failed)) {
-        return EComputedRobotStatus.Failed;
-    }
-    else {
-        return EComputedRobotStatus.Updating;
-    }
-}
 
 /**
  * Lists all robots in requesters team. 

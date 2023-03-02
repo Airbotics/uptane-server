@@ -2,7 +2,7 @@ import { Request, Response, NextFunction } from 'express';
 import { RevocationReason } from '@aws-sdk/client-acm-pca';
 import { ory, prisma } from '@airbotics-core/drivers';
 import { TUFRepo, TUFRole } from '@prisma/client';
-import { IdentityApiGetIdentityRequest, RelationshipApiGetRelationshipsRequest, RelationshipApiPatchRelationshipsRequest } from '@ory/client';
+import { IdentityApiGetIdentityRequest, RelationshipApiDeleteRelationshipsRequest, RelationshipApiGetRelationshipsRequest, RelationshipApiPatchRelationshipsRequest } from '@ory/client';
 import { EEventAction, EEventActorType, EEventResource, OryNamespaces, OryTeamRelations, TREEHUB_BUCKET } from '@airbotics-core/consts';
 import { SuccessMessageResponse, BadResponse, SuccessJsonResponse, NoContentResponse } from '@airbotics-core/network/responses';
 import { logger } from '@airbotics-core/logger';
@@ -419,20 +419,16 @@ export const updateTeam = async (req: Request, res: Response, next: NextFunction
 /**
  * Delete a team
  * 
- * - Deletes team in db, this cascades to all resources.
- * - Deletes all objects in blob storage.
- * - Deletes keys, images and treehub objects associated with this team.
- * 
- * TODO
- * - remove team members in ory
+ * Users helper function as it may be shared with account deletion
  */
 export const deleteTeam = async (req: Request, res: Response, next: NextFunction) => {
 
-    const teamID = req.headers['air-team-id']!;
+    const teamId = req.headers['air-team-id']!;
+    const oryId = req.oryIdentity!.traits.id;
 
     const teamCount = await prisma.team.count({
         where: {
-            id: teamID
+            id: teamId
         }
     });
 
@@ -441,6 +437,27 @@ export const deleteTeam = async (req: Request, res: Response, next: NextFunction
         return res.status(400).send('could not delete team');
     }
 
+    await deleteTeamHelper(teamId, oryId);
+
+    logger.info('a user deleted a team');
+    return new NoContentResponse(res, 'The team has been deleted')
+}
+
+
+/**
+ * Delete a team
+ * 
+ * - Deletes team in db, this cascades to all resources.
+ * - Deletes all objects in blob storage.
+ * - Deletes keys, images and treehub objects associated with this team.
+ * - Deletes relationships in Ory
+ * 
+ * May be called directly by a users request to delete a team
+ * OR when an admin of a team tries to delete their account
+ 
+*/
+export const deleteTeamHelper = async (teamID: string, oryId: string) => {
+    
     await prisma.$transaction(async tx => {
 
         // delete team in db
@@ -467,6 +484,7 @@ export const deleteTeam = async (req: Request, res: Response, next: NextFunction
 
         // delete all objects beginning with their team id in the treehub bucket
         await blobStorage.deleteTeamObjects(TREEHUB_BUCKET, teamID);
+        
 
         // delete tuf keys
         await keyStorage.deleteKeyPair(getKeyStorageRepoKeyId(teamID, TUFRepo.image, TUFRole.root));
@@ -479,19 +497,25 @@ export const deleteTeam = async (req: Request, res: Response, next: NextFunction
         await keyStorage.deleteKeyPair(getKeyStorageRepoKeyId(teamID, TUFRepo.director, TUFRole.snapshot));
         await keyStorage.deleteKeyPair(getKeyStorageRepoKeyId(teamID, TUFRepo.director, TUFRole.timestamp));
 
+
+        //finally delete all ory relationships with matching team_id
+        const relationsParams: RelationshipApiDeleteRelationshipsRequest = {
+            namespace: OryNamespaces.teams,
+            object: team.id
+        }
+
+        await ory.relations.deleteRelationships(relationsParams)
+
     });
 
     auditEvent.emit({
         resource: EEventResource.Team,
         action: EEventAction.Deleted,
         actor_type: EEventActorType.User,
-        actor_id: req.oryIdentity!.traits.id,
-        team_id: teamID,
-        meta: null
+        actor_id: null,
+        team_id: null,
+        meta: {team_id: teamID, ory_id: oryId}
     });
-
-    logger.info('a user deleted a team');
-    return new NoContentResponse(res, 'The team has been deleted')
 }
 
 

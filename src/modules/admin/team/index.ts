@@ -43,9 +43,9 @@ router.delete('/teams/members/:member_id',
     
 // get fleet stats
 router.get('/fleet-overview',
-mustBeAuthenticated,
-mustBeInTeam(OryTeamRelations.admin),
-controller.getFleetOverview);
+    mustBeAuthenticated,
+    mustBeInTeam(OryTeamRelations.admin),
+    controller.getFleetOverview);
 
 /*
 //list a team invites

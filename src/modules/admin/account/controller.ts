@@ -1,12 +1,13 @@
 import { Request, Response } from 'express';
-import { IdentityApiUpdateIdentityRequest } from '@ory/client';
-import { SuccessMessageResponse, BadResponse } from '@airbotics-core/network/responses';
+import { IdentityApiDeleteIdentityRequest, IdentityApiUpdateIdentityRequest, RelationshipApiGetRelationshipsRequest } from '@ory/client';
+import { SuccessMessageResponse, BadResponse, NoContentResponse } from '@airbotics-core/network/responses';
 import { ory } from '@airbotics-core/drivers';
 import config from '@airbotics-config';
 import { logger } from '@airbotics-core/logger';
 import { auditEvent } from '@airbotics-core/events';
-import { EEventAction, EEventActorType, EEventResource } from '@airbotics-core/consts';
-
+import { EEventAction, EEventActorType, EEventResource, OryNamespaces, OryTeamRelations } from '@airbotics-core/consts';
+import prisma from '@airbotics-core/drivers/postgres';
+import { deleteTeamHelper } from '../team/controller';
 
 /**
  * Updates the account details of a user.
@@ -66,16 +67,81 @@ export const updateAccount = async (req: Request, res: Response) => {
 
 
 /**
- * DOES NOT YET DELETE ACCOUNT
+ * This has been written with multi player in mind.
  * 
- * At this stage we will direct users to contact us to confirm account deletion as this 
- * could potentially be a very damaaging action
+ * 
  * 
  */
 export const deleteAccount = async (req: Request, res: Response) => {
 
     const oryID = req.oryIdentity!.traits.id;
-    
+
+    try {
+
+        const userTeamParams: RelationshipApiGetRelationshipsRequest = {
+            namespace: OryNamespaces.teams,
+            subjectId: oryID
+        }
+
+        const userTeamRelations = (await ory.relations.getRelationships(userTeamParams)).data;
+
+        if (!userTeamRelations.relation_tuples) throw ('Could not determine users team relations');
+
+        const teamsUserIsAdmin = userTeamRelations.relation_tuples.filter(rel => rel.relation === OryTeamRelations.admin);
+
+        let teamsToDelete: string[] = [];
+
+        //user is an admin of 1 or more teams
+        if (teamsUserIsAdmin.length !== 0) {
+
+            for (const team of teamsUserIsAdmin) {
+
+                //For each team the user is an admin of, get relations of other team members and admins
+                const fullTeamParams: RelationshipApiGetRelationshipsRequest = {
+                    namespace: OryNamespaces.teams,
+                    object: team.object
+                }
+                const fullTeamRelations = (await ory.relations.getRelationships(fullTeamParams)).data;
+
+                if (!fullTeamRelations.relation_tuples) throw ('Could not determine full team relations');
+
+                //Count how many other admins and members the team has
+                //checks are greater than one because - admin includes current user and member includes the subject_set relation of all_admins <member> team
+                const otherAdminsInTeam = fullTeamRelations.relation_tuples.filter(rel => rel.relation === OryTeamRelations.admin).length > 1;
+                const otherMembersInTeam = fullTeamRelations.relation_tuples.filter(rel => rel.relation === OryTeamRelations.member).length > 1;
+
+                //no other admins in team but also no other members so safe to delete team
+                if (!otherAdminsInTeam && !otherMembersInTeam) {
+                    teamsToDelete.push(team.object);
+                }
+
+                //user is the only admin left in a team that still has members, not safe to delete account or team.
+                else if (!otherAdminsInTeam && otherMembersInTeam) {
+                    throw ('You cannot delete your account while you are the only admin in a team that has other members!')
+                }
+            }
+        }
+
+        //delete any teams (if any)
+        for(const teamId of teamsToDelete) {
+            await deleteTeamHelper(teamId, oryID)
+        }
+
+        //Finally delete the account
+        const deleteParams: IdentityApiDeleteIdentityRequest = {
+            id: oryID
+        }
+        await ory.identities.deleteIdentity(deleteParams);
+
+        return new NoContentResponse(res, 'Your account has been deleted!');
+
+
+    } catch (error) {
+        return new BadResponse(res, error);
+    }
+
+
+
     // auditEvent.emit({
     //     resource: EEventResource.Account,
     //     action: EEventAction.Deleted,

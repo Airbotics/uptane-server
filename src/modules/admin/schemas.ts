@@ -60,6 +60,7 @@ export const updateGoupSchema = Joi.object({
 
 export const createTeamSchema = Joi.object({
     name: nameField.required(),
+    invite_code: nameField.required(),
 });
 
 export const updateTeamSchema = Joi.object({

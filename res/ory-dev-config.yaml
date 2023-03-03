@@ -1,0 +1,176 @@
+cookies:
+  domain: happy-panini-fxyyyptasv.projects.oryapis.com
+  path: /
+  same_site: Lax
+courier:
+  smtp:
+    from_name: airbotics-dev via Ory
+  templates:
+    recovery:
+      invalid:
+        email:
+          body: {}
+      valid:
+        email:
+          body: {}
+    recovery_code:
+      invalid:
+        email:
+          body: {}
+      valid:
+        email:
+          body: {}
+    verification:
+      invalid:
+        email:
+          body: {}
+      valid:
+        email:
+          body: {}
+    verification_code:
+      invalid:
+        email:
+          body: {}
+      valid:
+        email:
+          body: {}
+feature_flags:
+  cacheable_sessions: false
+identity:
+  default_schema_id: 700927498a3ad6cf23c86c99b9ad483bed7e98d6c4eaff5b3370b6a10e714d7ce0a1b5f306ebcae5bb80418fe6e2b9c533c81059ba77e16e54c997f5351e878b
+  schemas:
+  - id: preset://email
+    url: base64://ewogICIkaWQiOiAiaHR0cHM6Ly9zY2hlbWFzLm9yeS5zaC9wcmVzZXRzL2tyYXRvcy9pZGVudGl0eS5lbWFpbC5zY2hlbWEuanNvbiIsCiAgIiRzY2hlbWEiOiAiaHR0cDovL2pzb24tc2NoZW1hLm9yZy9kcmFmdC0wNy9zY2hlbWEjIiwKICAidGl0bGUiOiAiUGVyc29uIiwKICAidHlwZSI6ICJvYmplY3QiLAogICJwcm9wZXJ0aWVzIjogewogICAgInRyYWl0cyI6IHsKICAgICAgInR5cGUiOiAib2JqZWN0IiwKICAgICAgInByb3BlcnRpZXMiOiB7CiAgICAgICAgImVtYWlsIjogewogICAgICAgICAgInR5cGUiOiAic3RyaW5nIiwKICAgICAgICAgICJmb3JtYXQiOiAiZW1haWwiLAogICAgICAgICAgInRpdGxlIjogIkUtTWFpbCIsCiAgICAgICAgICAib3J5LnNoL2tyYXRvcyI6IHsKICAgICAgICAgICAgImNyZWRlbnRpYWxzIjogewogICAgICAgICAgICAgICJwYXNzd29yZCI6IHsKICAgICAgICAgICAgICAgICJpZGVudGlmaWVyIjogdHJ1ZQogICAgICAgICAgICAgIH0sCiAgICAgICAgICAgICAgIndlYmF1dGhuIjogewogICAgICAgICAgICAgICAgImlkZW50aWZpZXIiOiB0cnVlCiAgICAgICAgICAgICAgfSwKICAgICAgICAgICAgICAidG90cCI6IHsKICAgICAgICAgICAgICAgICJhY2NvdW50X25hbWUiOiB0cnVlCiAgICAgICAgICAgICAgfQogICAgICAgICAgICB9LAogICAgICAgICAgICAicmVjb3ZlcnkiOiB7CiAgICAgICAgICAgICAgInZpYSI6ICJlbWFpbCIKICAgICAgICAgICAgfSwKICAgICAgICAgICAgInZlcmlmaWNhdGlvbiI6IHsKICAgICAgICAgICAgICAidmlhIjogImVtYWlsIgogICAgICAgICAgICB9CiAgICAgICAgICB9LAogICAgICAgICAgIm1heExlbmd0aCI6IDMyMAogICAgICAgIH0KICAgICAgfSwKICAgICAgInJlcXVpcmVkIjogWwogICAgICAgICJlbWFpbCIKICAgICAgXSwKICAgICAgImFkZGl0aW9uYWxQcm9wZXJ0aWVzIjogZmFsc2UKICAgIH0KICB9Cn0K
+  - id: 700927498a3ad6cf23c86c99b9ad483bed7e98d6c4eaff5b3370b6a10e714d7ce0a1b5f306ebcae5bb80418fe6e2b9c533c81059ba77e16e54c997f5351e878b
+    url: https://storage.googleapis.com/bac-gcs-production/700927498a3ad6cf23c86c99b9ad483bed7e98d6c4eaff5b3370b6a10e714d7ce0a1b5f306ebcae5bb80418fe6e2b9c533c81059ba77e16e54c997f5351e878b.json
+oauth2_provider: {}
+selfservice:
+  allowed_return_urls: []
+  default_browser_return_url: /ui/welcome
+  flows:
+    error:
+      ui_url: http://localhost:3000/error
+    login:
+      after:
+        hooks: []
+        oidc:
+          hooks: []
+        password:
+          hooks:
+          - hook: require_verified_address
+        webauthn:
+          hooks: []
+      before:
+        hooks: []
+      lifespan: 30m0s
+      ui_url: http://localhost:3000/login
+    logout:
+      after: {}
+    recovery:
+      after:
+        hooks:
+        - hook: revoke_active_sessions
+      before:
+        hooks: []
+      enabled: true
+      lifespan: 30m0s
+      notify_unknown_recipients: true
+      ui_url: http://localhost:3000/recovery
+      use: code
+    registration:
+      after:
+        hooks: []
+        oidc:
+          hooks:
+          - hook: session
+        password:
+          hooks: []
+        webauthn:
+          hooks: []
+      before:
+        hooks: []
+      enabled: true
+      lifespan: 30m0s
+      ui_url: http://localhost:3000/registration
+    settings:
+      after:
+        hooks: []
+        password:
+          hooks: []
+        profile:
+          hooks: []
+      before:
+        hooks: []
+      lifespan: 30m0s
+      privileged_session_max_age: 15m0s
+      required_aal: highest_available
+      ui_url: http://localhost:3000/settings
+    verification:
+      after:
+        hooks: []
+      before:
+        hooks: []
+      enabled: true
+      lifespan: 30m0s
+      notify_unknown_recipients: true
+      ui_url: http://localhost:3000/verification
+      use: code
+  methods:
+    code:
+      config:
+        lifespan: 15m0s
+      enabled: true
+    link:
+      config:
+        base_url: ""
+        lifespan: 15m0s
+      enabled: true
+    lookup_secret:
+      enabled: false
+    oidc:
+      config:
+        providers: []
+      enabled: false
+    password:
+      config:
+        haveibeenpwned_enabled: true
+        identifier_similarity_check_enabled: true
+        ignore_network_errors: true
+        max_breaches: 1
+        min_password_length: 8
+      enabled: true
+    profile:
+      enabled: true
+    totp:
+      config:
+        issuer: airbotics-dev
+      enabled: false
+    webauthn:
+      config:
+        passwordless: false
+        rp:
+          display_name: airbotics-dev
+          id: happy-panini-fxyyyptasv.projects.oryapis.com
+          origin: https://happy-panini-fxyyyptasv.projects.oryapis.com
+      enabled: false
+serve:
+  admin:
+    base_url: https://happy-panini-fxyyyptasv.projects.oryapis.com/
+    request_log:
+      disable_for_health: true
+  public:
+    base_url: https://happy-panini-fxyyyptasv.projects.oryapis.com/
+    cors:
+      enabled: false
+    request_log:
+      disable_for_health: true
+session:
+  cookie:
+    domain: happy-panini-fxyyyptasv.projects.oryapis.com
+    name: ory_session_happypaninifxyyyptasv
+    path: /
+    persistent: false
+    same_site: Lax
+  lifespan: 72h0m0s
+  whoami:
+    required_aal: highest_available

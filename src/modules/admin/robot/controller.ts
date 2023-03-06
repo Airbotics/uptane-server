@@ -17,6 +17,7 @@ import { IRobotDetailRes, IRobotRes, IEcuTelemetryRes, IRobotRolloutRes, IUpdate
 export const listRobots = async (req: Request, res: Response, next: NextFunction) => {
 
     const teamID = req.headers['air-team-id'];
+    const { skip, take } = req.query;
 
     // get robots
     const robots = await prisma.robot.findMany({
@@ -33,7 +34,9 @@ export const listRobots = async (req: Request, res: Response, next: NextFunction
             _count: {
                 select: { groups: true }
             }
-        }
+        },
+        skip: skip ? Number(skip) : undefined,
+        take: take ? Number(take) : undefined
     });
 
 
@@ -276,14 +279,9 @@ export const deleteRobot = async (req: Request, res: Response, next: NextFunctio
  */
 export const listRobotGroups = async (req: Request, res: Response, next: NextFunction) => {
 
-    const oryID = req.oryIdentity!.traits.id;
     const teamID = req.headers['air-team-id']!;
     const robotID = req.params.robot_id;
-
-    // const {
-    //     skip,
-    //     take
-    // } = req.query;
+    const { skip, take } = req.query;
 
     try {
 
@@ -300,8 +298,8 @@ export const listRobotGroups = async (req: Request, res: Response, next: NextFun
                     orderBy: {
                         created_at: 'desc'
                     },
-                    // skip: skip ? Number(skip) : undefined,
-                    // take: take ? Number(take) : undefined
+                    skip: skip ? Number(skip) : undefined,
+                    take: take ? Number(take) : undefined
                 },
             }
         })
@@ -332,13 +330,10 @@ export const listRobotGroups = async (req: Request, res: Response, next: NextFun
  */
 export const listRobotRollouts = async (req: Request, res: Response, next: NextFunction) => {
 
-    const {
-        skip,
-        take
-    } = req.query;
-
     const teamId = req.headers['air-team-id']!;
     const robotId = req.params.robot_id;
+    const { skip, take } = req.query;
+
 
     const robotRollouts = await prisma.rolloutRobot.findMany({
         where: {
@@ -372,13 +367,10 @@ export const listRobotRollouts = async (req: Request, res: Response, next: NextF
  */
 export const listRobotTelemetry = async (req: Request, res: Response, next: NextFunction) => {
 
-    const {
-        skip,
-        take
-    } = req.query;
-
     const teamId = req.headers['air-team-id']!;
     const robotId = req.params.robot_id;
+    const { skip, take } = req.query;
+
 
     const ecuTele = await prisma.ecuTelemetry.findMany({
         where: {

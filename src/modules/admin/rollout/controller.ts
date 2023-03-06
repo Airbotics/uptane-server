@@ -252,6 +252,7 @@ export const launchRollout = async (req: Request, res: Response) => {
 export const listRollouts = async (req: Request, res: Response) => {
 
     const teamId = req.headers['air-team-id'];
+    const { skip, take } = req.query;
 
     const rollouts = await prisma.rollout.findMany({
         where: {
@@ -259,7 +260,9 @@ export const listRollouts = async (req: Request, res: Response) => {
         },
         orderBy: {
             created_at: 'desc'
-        }
+        },
+        skip: skip ? Number(skip) : undefined,
+        take: take ? Number(take) : undefined
     })
 
     const rolloutSanitised: IRolloutRes[] = rollouts.map(rollout => ({
@@ -445,5 +448,3 @@ export const computeAffected = async (req: Request, res: Response) => {
         return new SuccessJsonResponse(res, affected);
     }
 }
-
-

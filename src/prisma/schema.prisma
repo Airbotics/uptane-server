@@ -130,16 +130,18 @@ model Certificate {
 
     client_creds        ProvisioningCredentials? @relation("client")
     provisioning_creds  ProvisioningCredentials? @relation("prov")
-    team                Team?           @relation(fields: [team_id], references: [id], onDelete: Cascade)
-    robot               Robot?          @relation(fields: [robot_id], references: [id], onDelete: Cascade)
+    team                Team?           @relation(fields: [team_id], references: [id], onDelete: SetNull)
+    robot               Robot?          @relation(fields: [robot_id], references: [id], onDelete: SetNull)
 
+    @@unique([team_id, id])
     @@map("certificates")
 }
 
 
 // images stored in image repo
 model Image {
-    id                  String          @default(uuid())
+    id                  String          @id @default(uuid()) @unique
+    target_id           String                                  //hwid-sha
     team_id             String
     name                String                                  // human readable name
     description         String?
@@ -156,7 +158,9 @@ model Image {
     ecus                Ecu[]
     rollout_image       RolloutHardwareImage[]
 
-    @@id([team_id, id])
+
+    @@unique([team_id, id])
+    @@unique([team_id, target_id])
     @@unique([team_id, sha256])
     @@map("images")
 }
@@ -181,15 +185,14 @@ model TufMetadata {
     // @@unique([team_id, repo, role, version], where: {repo: TUFRepo.image})
     // @@unique([team_id, repo, role, version, robot_id], where: {repo: TUFRepo.director})
     //Keep an eye on issue here: https://github.com/prisma/prisma/issues/6974
+    
+    @@unique([team_id, id])
     @@map("tuf_metadata")
 }
 
 
 // robots on which Airbotics will update software
 // these are called vehicles in the Update spec
-// TODO
-// - add provisioned field denoting whether it is provisioned
-// - add a list of certificates
 model Robot {
     id                  String          @id @default(uuid()) @unique
     team_id             String
@@ -233,8 +236,8 @@ model Ecu {
     updated_at          DateTime        @updatedAt
 
     team                Team            @relation(fields: [team_id], references: [id], onDelete: Cascade)
-    robot               Robot           @relation(fields: [team_id, robot_id], references: [team_id, id], onDelete: Cascade)
-    installed_image     Image?          @relation(fields: [team_id, image_id], references: [team_id, id], onDelete: Cascade)
+    robot               Robot           @relation(fields: [robot_id], references: [id], onDelete: Cascade)
+    installed_image     Image?          @relation(fields: [image_id], references: [id], onDelete: SetNull)
    
     telemetry           EcuTelemetry[]
     rollouts            RolloutRobotEcu[]
@@ -509,17 +512,15 @@ model Rollout {
 
 
 
-// TODO add a team id here
 model RolloutHardwareImage {
     id                  String          @id @default(uuid()) @unique
     rollout_id          String
-    team_id             String?
     hw_id               String
     image_id            String?
 
     created_at          DateTime        @default(now())
 
-    image               Image?          @relation(fields: [team_id, image_id], references: [team_id, id], onDelete: SetNull)
+    image               Image?          @relation(fields: [image_id], references: [id], onDelete: SetNull)
     rollout             Rollout         @relation(fields: [rollout_id], references: [id], onDelete: Cascade)
     
     @@unique([rollout_id, hw_id, image_id])
@@ -527,7 +528,6 @@ model RolloutHardwareImage {
 }
 
 
-// TODO add a team id here
 model RolloutRobot {
     id                  String              @id @default(uuid()) @unique
     rollout_id          String
@@ -548,13 +548,11 @@ model RolloutRobot {
 }
 
 
-// TODO add a team id here
 model RolloutRobotEcu {
     id                  String              @id @default(uuid()) @unique
     rollout_robot_id    String
     ecu_id              String?
     status              EcuStatus?
-
 
     created_at          DateTime            @default(now())
     updated_at          DateTime            @default(now())

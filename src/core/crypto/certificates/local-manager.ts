@@ -111,7 +111,7 @@ export const revokeCertificate = async (serial: string, reason: string): Promise
         throw new Error();
     }
 
-    await blobStorage.deleteObject(DEV_CERTS_BUCKET, cert.team_id, cert.id);
+    await blobStorage.deleteObject(DEV_CERTS_BUCKET, cert.team_id!, cert.id);
 
     await prisma.certificate.update({
         where: {
@@ -150,7 +150,7 @@ export const purgeExpiredCertificates = async (): Promise<any> => {
     });
 
     for (const cert of expiredCerts) {
-        await blobStorage.deleteObject(DEV_CERTS_BUCKET, cert.team_id, cert.id);
+        await blobStorage.deleteObject(DEV_CERTS_BUCKET, cert.team_id!, cert.id);
 
     }
 

@@ -13,6 +13,7 @@ import { EEventAction, EEventActorType, EEventResource } from '@airbotics-core/c
 export const listImages = async (req: Request, res: Response) => {
 
     const teamID = req.headers['air-team-id'];
+    const { skip, take } = req.query;
 
     const images = await prisma.image.findMany({
         where: {
@@ -20,7 +21,9 @@ export const listImages = async (req: Request, res: Response) => {
         },
         orderBy: {
             created_at: 'desc'
-        }
+        },
+        skip: skip ? Number(skip) : undefined,
+        take: take ? Number(take) : undefined
     });
 
     const imagesSanitised = images.map(image => ({
@@ -154,6 +157,7 @@ export const listRobotsWithImage = async (req: Request, res: Response) => {
 
     const teamID = req.headers['air-team-id']!;
     const imageID = req.params.image_id;
+    const { skip, take } = req.query;
 
     const ecus = await prisma.ecu.findMany({
         where: {
@@ -162,7 +166,9 @@ export const listRobotsWithImage = async (req: Request, res: Response) => {
         },
         include: {
             robot: true
-        }
+        },
+        skip: skip ? Number(skip) : undefined,
+        take: take ? Number(take) : undefined
     })
 
     const ecusSanitised: IImageRobotRes[] = ecus.map(ecu => ({

@@ -25,14 +25,14 @@ It is important to note that creating a rollout will not trigger your fleet to s
 
 
 ## Monitoring a rollout
-Launched rollouts can be monitored from the Rollout Detail page. From here you can see the overall status of the rollout and a summary of the affected robots and their current status in relation to the rollout. If you notice any errors from any ECUs, you can expect the ECU telemetry data on the Robot Detail page. 
+Launched rollouts can be monitored from the Rollout Detail page. From here you can see the overall status of the rollout and a summary of the affected robots and their current status in relation to the rollout. If you notice any errors from any ECUs, you can inspect the ECU telemetry data on the Robot Detail page. 
 
 ![Rollout details.](../imgs/rollouts.png)
 
 
 ## Rollout status
 The rollout status shows the **overall** status of the rollout. 
-An rollout status can be one of the following:
+A rollout status can be one of the following:
 
 | Action      | Description                                                                                                     |
 | ------------| ----------------------------------------------------------------------------------------------------------------|

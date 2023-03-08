@@ -16,15 +16,15 @@ In Airbotics there are two types of ECUs:
 An ECU update status allows you to see the status of each of the ECUs on a robot.
 An ECU can have one of the following status:
 
-| Status                  | Description                                                                         |
-| ------------------------|-------------------------------------------------------------------------------------|
-| `DownloadStarted`       | ECU is currently downloading an OSTree Image                                        |
-| `DownloadCompleted`     | ECU successfully downloaded an OSTree Image                                         |
-| `DownloadFailed`        |  ECU failed to download an OSTree Image                                             |
-| `InstallationStarted`   | ECU is currently installing an OSTree Image                                         |
-| `InstallationCompleted` | ECU successfully installed an OSTree Image but is not running it (reboot required)  |
-| `InstallationFailed`    | ECU failed to install an OSTree Image                                               |
-| `InstallationApplied`   | ECU successfully installed and is running an OSTree Image                           |
+| Status                  | Description                                                                          |
+| ------------------------|--------------------------------------------------------------------------------------|
+| `DownloadStarted`       | ECU is currently downloading an OSTree Image.                                        |
+| `DownloadCompleted`     | ECU successfully downloaded an OSTree Image.                                         |
+| `DownloadFailed`        | ECU failed to download an OSTree Image.                                              |
+| `InstallationStarted`   | ECU is currently installing an OSTree Image.                                         |
+| `InstallationFailed`    | ECU failed to install an OSTree Image.                                               |
+| `InstallationApplied`   | ECU successfully installed an OSTree Image but is not running it (reboot required).  |
+| `InstallationCompleted` | ECU successfully installed and is running an OSTree Image.                           |
 
 
 

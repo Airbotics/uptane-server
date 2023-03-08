@@ -6,12 +6,20 @@ In this guide we'll take Airbotics Cloud for a spin, we will:
 - We'll then make a new version of the image and push it again.
 - Finally, we'll use the dashboard to update the device to the new version "over-the-air".
 
-To complete this guide you'll need:
+
+## Prerequisites
 - A Linux-based machine with plenty of storage, compute and memory.
+    - ~100GB disk space
+    - At least 8GB of RAM
 - An account with Airbotics, you can create one [here](https://dashboard.airbotics.io/register).
+- QEMU - `sudo apt install qemu`
+- Androids [repo](https://source.android.com/docs/setup/download#installing-repo) tool -  `sudo apt install repo` or follow the instructions from repo link if an official package available from your Linux distribution isn't avaiable.
+- Yocto dependencies - `sudo apt install gawk wget git diffstat unzip texinfo gcc-multilib build-essential chrpath socat cpio python python3 python3-pip python3-pexpect python-dev xz-utils debianutils iputils-ping cpu-checker default-jre parted`
 - A large coffee.
 
 Let's go! 🚀
+
+
 
 ## 1. Download your provisioning credentials
 
@@ -28,12 +36,28 @@ Now we'll build a full system image using [Yocto](https://www.yoctoproject.org/)
 
 For this guide we'll build a basic image on top of the referenece distribution [Poky](https://www.yoctoproject.org/software-item/poky/), we will build it without vim and later create a new version that does contain vim.
 
-To integrate with Airbotics you will need to add the [meta-updater](https://github.com/uptane/meta-updater) layer, this contains the agent, OSTree, and other magic. After this guide, you can add more layers with everything your robot needs by creating your own or importing [pre-built](https://layers.openembedded.org/layerindex/branch/master/layers/) ones.
+In the interest of moving quickly we'll make use of the [updater-repo](https://github.com/advancedtelematic/updater-repo) from Advanced Telematic. This repo can be used to gather all of the yocto layers we'll need to build an image for Airbotics.
 
+Set up a project directory and then sync the required yocto layers.
 
-In the `conf/local.conf` of the meta-updater layer you will need to modify the `SOTA_PACKED_CREDENTIALS` value to be the absolute path pointing to wherever you download your credentials.
+```
+mkdir airbotics-quickstart
+cd airbotics-quickstart
+repo init -u https://github.com/advancedtelematic/updater-repo.git -m dunfell.xml
+repo sync -j8
+```
 
-At this point you can build the image with:
+At this point you should have all the required yocto layers on your host machine, including [meta-updater](https://github.com/uptane/meta-updater) which contains the agent, OSTree, and other magic.  After this guide, you can add more layers with everything your robot needs by creating your own or importing [pre-built](https://layers.openembedded.org/layerindex/branch/master/layers/) ones.
+
+Meta-updater includes a helper script to set up the envirnoment. From your project root run `source meta-updater/scripts/envsetup.sh qemux86-64`. We are going to build an image for the QEMU emulator.
+
+You should now find yourself in the `airbotics-quickstart/build` directory.
+
+From here we will need to edit `airbotics-quickstart/build/conf/local.conf` and tell yocto where to look for our `credentials.zip` we downloaded in step 1. Open the conf file and add `SOTA_PACKED_CREDENTIALS` value to be the absolute path pointing to wherever you download your credentials.
+
+For example `SOTA_PACKED_CREDENTIALS=<absolute-path-to-credentials>/credentials.zip`
+
+At this point we are finally ready to build the image with:
 
 ```
 bitbake core-image-minimal
@@ -49,7 +73,7 @@ When the image finishes building meta-updater will sign upload it to Airbotics. 
 
 ## 3. Flash your image to a robot
 
-Now that we have a shiny new image with everything our robot needs we'll flash it to our "robot". To simplify things, we'll use the [QEMU](https://www.qemu.org/) emulator instead of a physical board.
+Now that we have a shiny new image with everything our robot needs we'll flash it to our "robot". To simplify things, we're using the [QEMU](https://www.qemu.org/) emulator instead of a physical board.
 
 We'll "flash" and boot the "robot" by running the following command:
 
@@ -65,7 +89,7 @@ ostree admin status
 
 You can also confirm that vim is not found by running `vim` which should produce a nice error message.
 
-If you heaad to the [robots](https://dashboard.airbotics.io/robots) page of the dashboard you can see information about it your robot and confirm the correct version is running.
+If you head over to the [robots](https://dashboard.airbotics.io/robots) page of the dashboard you can see information about it your robot and confirm the correct version is running.
 
 
 <!-- > More: You can read more about different boards [here](#), ostree commands, agent status. -->
@@ -73,7 +97,7 @@ If you heaad to the [robots](https://dashboard.airbotics.io/robots) page of the 
 ----------------------------
 ## 4. Build a new version of the image
 
-Great! Now we have a robot that's running an image we've built and is provisioned with Airbotics. Let's improve our software by adding vim to it. In the `conf/local.conf` of the meta-updater layer add the following line:
+Great! Now we have a robot that's running an image we've built and is provisioned with Airbotics. Let's improve our software by adding vim to it. In the `airbotics-quickstart/build/conf/local.conf` of the meta-updater layer add the following line:
 
 ```
 IMAGE_INSTALL_append = " vim "
@@ -93,7 +117,9 @@ After it builds we can see it in the [images](https://dashboard.airbotics.io/ima
 
 So our engineers have been busy at work improving our codebase and we now have a brand new image that includes vim. Let's roll it out to our fleet.
 
-We'll head to the rollouts page on the dashboard and create a rollout. We'll first choose our robot and then the new version of the image, and create it. We can monitor the status of the rollout from the dashboard.
+We'll head to the [rollouts page](https://dashboard.airbotics.io/rollouts) on the dashboard and create a [rollout](../components/rollouts.md). We'll target the rollout at selected robots (just one for now) and we'll specify we want to update ECUs with the `qemu86-64` hardware id to update to the update to our new image with vim. You should see a summary showing how our robot will be affected by the rollout, then you can confirm the creation of the rollout.
+
+The final step to get the robot to update is to launch the rollout. You can do that from the Rollout Details page. At this point our robot should begin to download and install the new update. We can monitor the status of the rollout from the dashboard.
 
 With Airbotics, **updates only take place after a reboot**, you can confirm that although the update has been accepted by the robot it hasn't yet been applied by running this command on the board:
 
@@ -103,7 +129,7 @@ ostree admin status
 
 We can also confirm vim isn't on the robot yet.
 
-Now Let's reboot the board by exiting QEMU and running it again with `../meta-updater/scripts/run-qemu-ota --overlay mydevice.cow`. Once it boots you should now be able to use vim. Nice 😎
+Now Let's reboot the qemu and confirm the update was applied: `sudo reboot`. Once it boots you should now be able to use vim. You'll see the ECU, Robot and Rollout status has changed. Nice 😎
 
 ## 7. Cleaning up
 

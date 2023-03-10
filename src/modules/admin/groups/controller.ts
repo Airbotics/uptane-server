@@ -66,7 +66,7 @@ export const createGroup = async (req: Request, res: Response, next: NextFunctio
 
     } catch (error) {
         // console.log(error);
-        
+
         next(error);
     }
 }
@@ -79,6 +79,7 @@ export const createGroup = async (req: Request, res: Response, next: NextFunctio
 export const listGroups = async (req: Request, res: Response, next: NextFunction) => {
 
     const teamID = req.headers['air-team-id'];
+    const { skip, take } = req.query;
 
     try {
 
@@ -93,7 +94,9 @@ export const listGroups = async (req: Request, res: Response, next: NextFunction
                 _count: {
                     select: { robots: true }
                 }
-            }
+            },
+            skip: skip ? Number(skip) : undefined,
+            take: take ? Number(take) : undefined
         });
 
         const sanitisedGroups: IGroup[] = groups.map(group => ({
@@ -294,11 +297,7 @@ export const listRobotsInGroup = async (req: Request, res: Response, next: NextF
     const oryID = req.oryIdentity!.traits.id;
     const teamID = req.headers['air-team-id']!;
     const groupID = req.params.group_id;
-
-    // const {
-    //     skip,
-    //     take
-    // } = req.query;
+    const { skip, take } = req.query;
 
     try {
 
@@ -335,8 +334,8 @@ export const listRobotsInGroup = async (req: Request, res: Response, next: NextF
             orderBy: {
                 created_at: 'desc'
             },
-            // skip: skip ? Number(skip) : undefined,
-            // take: take ? Number(take) : undefined
+            skip: skip ? Number(skip) : undefined,
+            take: take ? Number(take) : undefined
         });
 
         const sanitisedGroupRobots: IGroupRobot[] = groupRobots.map(groupRobot => ({

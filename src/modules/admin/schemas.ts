@@ -60,6 +60,7 @@ export const updateGoupSchema = Joi.object({
 
 export const createTeamSchema = Joi.object({
     name: nameField.required(),
+    invite_code: nameField.required(),
 });
 
 export const updateTeamSchema = Joi.object({
@@ -68,7 +69,7 @@ export const updateTeamSchema = Joi.object({
 
 export const createRolloutSchema = Joi.object({
     name: Joi.string().required(),
-    description: nameField.optional().allow(''),
+    description: Joi.string().allow(null),
     hwid_img_map: Joi.array().items(Joi.object({
         hw_id: Joi.string().required(),
         img_id: Joi.string().required()

@@ -77,6 +77,7 @@ CREATE TABLE "certificates" (
 -- CreateTable
 CREATE TABLE "images" (
     "id" TEXT NOT NULL,
+    "target_id" TEXT NOT NULL,
     "team_id" TEXT NOT NULL,
     "name" TEXT NOT NULL,
     "description" TEXT,
@@ -300,7 +301,6 @@ CREATE TABLE "rollouts" (
 CREATE TABLE "rollout_hardware_images" (
     "id" TEXT NOT NULL,
     "rollout_id" TEXT NOT NULL,
-    "team_id" TEXT,
     "hw_id" TEXT NOT NULL,
     "image_id" TEXT,
     "created_at" TIMESTAMP(3) NOT NULL DEFAULT CURRENT_TIMESTAMP,
@@ -361,16 +361,25 @@ CREATE UNIQUE INDEX "certificates_id_key" ON "certificates"("id");
 CREATE UNIQUE INDEX "certificates_serial_key" ON "certificates"("serial");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "certificates_team_id_id_key" ON "certificates"("team_id", "id");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "images_id_key" ON "images"("id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "images_team_id_id_key" ON "images"("team_id", "id");
 
 -- CreateIndex
+CREATE UNIQUE INDEX "images_team_id_target_id_key" ON "images"("team_id", "target_id");
+
+-- CreateIndex
 CREATE UNIQUE INDEX "images_team_id_sha256_key" ON "images"("team_id", "sha256");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "tuf_metadata_id_key" ON "tuf_metadata"("id");
+
+-- CreateIndex
+CREATE UNIQUE INDEX "tuf_metadata_team_id_id_key" ON "tuf_metadata"("team_id", "id");
 
 -- CreateIndex
 CREATE UNIQUE INDEX "robots_id_key" ON "robots"("id");
@@ -460,10 +469,10 @@ ALTER TABLE "provisioning_credentials" ADD CONSTRAINT "provisioning_credentials_
 ALTER TABLE "provisioning_credentials" ADD CONSTRAINT "provisioning_credentials_provisioning_cert_id_fkey" FOREIGN KEY ("provisioning_cert_id") REFERENCES "certificates"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "certificates" ADD CONSTRAINT "certificates_team_id_fkey" FOREIGN KEY ("team_id") REFERENCES "teams"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "certificates" ADD CONSTRAINT "certificates_team_id_fkey" FOREIGN KEY ("team_id") REFERENCES "teams"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "certificates" ADD CONSTRAINT "certificates_robot_id_fkey" FOREIGN KEY ("robot_id") REFERENCES "robots"("id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "certificates" ADD CONSTRAINT "certificates_robot_id_fkey" FOREIGN KEY ("robot_id") REFERENCES "robots"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "images" ADD CONSTRAINT "images_team_id_fkey" FOREIGN KEY ("team_id") REFERENCES "teams"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -481,10 +490,10 @@ ALTER TABLE "robots" ADD CONSTRAINT "robots_team_id_fkey" FOREIGN KEY ("team_id"
 ALTER TABLE "ecus" ADD CONSTRAINT "ecus_team_id_fkey" FOREIGN KEY ("team_id") REFERENCES "teams"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "ecus" ADD CONSTRAINT "ecus_team_id_robot_id_fkey" FOREIGN KEY ("team_id", "robot_id") REFERENCES "robots"("team_id", "id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "ecus" ADD CONSTRAINT "ecus_robot_id_fkey" FOREIGN KEY ("robot_id") REFERENCES "robots"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "ecus" ADD CONSTRAINT "ecus_team_id_image_id_fkey" FOREIGN KEY ("team_id", "image_id") REFERENCES "images"("team_id", "id") ON DELETE CASCADE ON UPDATE CASCADE;
+ALTER TABLE "ecus" ADD CONSTRAINT "ecus_image_id_fkey" FOREIGN KEY ("image_id") REFERENCES "images"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "network_reports" ADD CONSTRAINT "network_reports_team_id_fkey" FOREIGN KEY ("team_id") REFERENCES "teams"("id") ON DELETE CASCADE ON UPDATE CASCADE;
@@ -559,7 +568,7 @@ ALTER TABLE "audit_events" ADD CONSTRAINT "audit_events_team_id_fkey" FOREIGN KE
 ALTER TABLE "rollouts" ADD CONSTRAINT "rollouts_team_id_fkey" FOREIGN KEY ("team_id") REFERENCES "teams"("id") ON DELETE CASCADE ON UPDATE CASCADE;
 
 -- AddForeignKey
-ALTER TABLE "rollout_hardware_images" ADD CONSTRAINT "rollout_hardware_images_team_id_image_id_fkey" FOREIGN KEY ("team_id", "image_id") REFERENCES "images"("team_id", "id") ON DELETE SET NULL ON UPDATE CASCADE;
+ALTER TABLE "rollout_hardware_images" ADD CONSTRAINT "rollout_hardware_images_image_id_fkey" FOREIGN KEY ("image_id") REFERENCES "images"("id") ON DELETE SET NULL ON UPDATE CASCADE;
 
 -- AddForeignKey
 ALTER TABLE "rollout_hardware_images" ADD CONSTRAINT "rollout_hardware_images_rollout_id_fkey" FOREIGN KEY ("rollout_id") REFERENCES "rollouts"("id") ON DELETE CASCADE ON UPDATE CASCADE;

@@ -93,6 +93,8 @@ const config = {
     DEV_ROOT_CA_TTL: [20, 'year'],                                              // expiry of dev root cert
     DEV_GATEWAY_CA_TTL: [10, 'year'],                                           // expiry of dev gateway cert
 
+    BETA_INVITE_CODE: process.env.BETA_INVITE_CODE
+
 };
 
 export default config;

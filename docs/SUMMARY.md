@@ -11,24 +11,28 @@
 * [Features](introduction/features.md)
 * [FAQ](introduction/faq.md)
 
+## Components
+
+* [Provisioning credentials](components/provisioning-credentials.md)
+* [Images](components/images.md)
+* Robots
+    * [Overview](components/robots/overview.md)
+    * [ECUs](components/robots/ecus.md)
+    * [Telemetry](components/robots/telemetry.md)
+* [Rollouts](components/rollouts.md)
+* [Groups](components/groups.md)
+* [Accounts](components/accounts.md)
+* [Teams](components/teams.md)
+
+
 ## Guides
 
 * [Overview](guides/overview.md)
 * [Quickstart](guides/quickstart.md)
-* [Provisioning credentials](guides/provisioning-credentials.md)
-* [Images](guides/images.md)
-* Robots
-    * [Overview](guides/robots/overview.md)
-    * [ECUs](guides/robots/ecus.md)
-    * [Telemetry](guides/robots/telemetry.md)
-* [Rollouts](guides/rollouts.md)
-* [Groups](guides/groups.md)
-* [Accounts](guides/accounts.md)
-* [Teams](guides/teams.md)
 * [Self-hosting](guides/self-hosting.md)
 
-## Developers
+## Contributors
 
-* [Overview](developers/overview.md)
-* [Working with...](developers/working-with.md)
-* [Architecture](developers/architecture.md)
+* [Overview](contributors/overview.md)
+* [Working with...](contributors/working-with.md)
+* [Architecture](contributors/architecture.md)

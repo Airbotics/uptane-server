@@ -11,7 +11,6 @@ const router = express.Router();
 router.post('/rollouts',
     mustBeAuthenticated,
     mustBeInTeam(OryTeamRelations.admin),
-    validate(rolloutIdSchema, EValidationSource.Path),
     validate(createRolloutSchema, EValidationSource.Body),
     controller.createRollout);
 

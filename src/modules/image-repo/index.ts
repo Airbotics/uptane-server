@@ -177,8 +177,8 @@ router.put('/:team_id/api/v1/user_repo/targets', validate(targetsSchema, EValida
         const image = await tx.image.create({
             data: {
                 team_id,
-                id: mostRecentTargetKey!,
-                name: mostRecentTarget.custom.name,
+                target_id: mostRecentTargetKey!,            //hwid-sha
+                name: mostRecentTarget.custom.name,         //hwid
                 size: 0,
                 hwids: mostRecentTarget.custom.hardwareIds,
                 sha256: mostRecentTarget.hashes.sha256,

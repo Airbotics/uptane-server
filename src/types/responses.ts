@@ -1,4 +1,4 @@
-import { CertificateStatus, EcuStatus, ImageFormat, RolloutRobotStatus, RolloutStatus } from '@prisma/client';
+import { CertificateStatus, EcuStatus, ImageFormat, RolloutRobotStatus, RolloutStatus, RolloutTargetType } from '@prisma/client';
 import { EComputedRobotStatus} from '@airbotics-core/consts';
 
 
@@ -136,7 +136,7 @@ export interface IImageDetail {
 export interface IRolloutRes {
     id: string;
     name: string;
-    description: string;
+    description: string | null;
     status: RolloutStatus;
     created_at: Date;
     updated_at: Date;
@@ -146,7 +146,8 @@ export interface IRolloutRes {
 export interface IRolloutDetailRes {
     id: string;
     name: string;
-    description: string;
+    description: string | null;
+    target_type: RolloutTargetType;
     status: RolloutStatus;
     created_at: Date;
     updated_at: Date;
@@ -154,6 +155,10 @@ export interface IRolloutDetailRes {
         id: string | null;
         name: string | null;
         status: RolloutRobotStatus;
+        ecus: {
+            id: string,
+            status: EcuStatus | null
+        }[]
     }[]
 }
 

@@ -252,6 +252,7 @@ export const launchRollout = async (req: Request, res: Response) => {
 export const listRollouts = async (req: Request, res: Response) => {
 
     const teamId = req.headers['air-team-id'];
+    const { skip, take } = req.query;
 
     const rollouts = await prisma.rollout.findMany({
         where: {
@@ -259,7 +260,9 @@ export const listRollouts = async (req: Request, res: Response) => {
         },
         orderBy: {
             created_at: 'desc'
-        }
+        },
+        skip: skip ? Number(skip) : undefined,
+        take: take ? Number(take) : undefined
     })
 
     const rolloutSanitised: IRolloutRes[] = rollouts.map(rollout => ({
@@ -301,7 +304,10 @@ export const getRollout = async (req: Request, res: Response) => {
             robots: {
                 include: {
                     robot: {
-                        select: { id: true, name: true }
+                        select: { id: true, name: true}
+                    },
+                    ecus: {
+                        select: { status: true, ecu_id: true }
                     }
                 }
             }
@@ -318,12 +324,17 @@ export const getRollout = async (req: Request, res: Response) => {
         name: rollout.name,
         description: rollout.description,
         status: rollout.status,
+        target_type: rollout.target_type,
         created_at: rollout.created_at,
         updated_at: rollout.updated_at,
         robots: rollout.robots.map(rolloutBot => ({
             id: rolloutBot.robot_id,
             name: rolloutBot.robot ? rolloutBot.robot.name : null, 
-            status: rolloutBot.status
+            status: rolloutBot.status,
+            ecus: rolloutBot.ecus.map(ecu => ({
+                id: ecu.ecu_id!,
+                status: ecu.status
+            }))
         }))
     };
 
@@ -437,5 +448,3 @@ export const computeAffected = async (req: Request, res: Response) => {
         return new SuccessJsonResponse(res, affected);
     }
 }
-
-

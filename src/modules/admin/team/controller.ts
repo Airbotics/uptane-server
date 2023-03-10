@@ -34,8 +34,13 @@ export const createTeam = async (req: Request, res: Response, next: NextFunction
     const oryID = req.oryIdentity!.traits.id;
 
     const {
-        name
+        name,
+        invite_code
     } = req.body;
+
+    if(invite_code !== config.BETA_INVITE_CODE) {
+        return new BadResponse(res, 'Invalid invite code');
+    }
 
     try {
 

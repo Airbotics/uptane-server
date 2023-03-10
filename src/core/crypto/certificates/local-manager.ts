@@ -55,10 +55,11 @@ export const downloadCertificate = async (teamId: string, certId: string): Promi
     
     const dbCert = await prisma.certificate.findUnique({
         where: {
-            team_id_id: {
-                team_id: teamId,
-                id: certId
-            }
+            id: certId
+            // team_id_id: {
+            //     team_id: teamId,
+            //     id: certId
+            // }
         }
     });
 
@@ -73,10 +74,11 @@ export const downloadCertificate = async (teamId: string, certId: string): Promi
 
     await prisma.certificate.update({
         where: {
-            team_id_id: {
-                team_id: teamId,
-                id: certId
-            }
+            id: certId
+            // team_id_id: {
+            //     team_id: teamId,
+            //     id: certId
+            // }
         },
         data: {
             status: CertificateStatus.issued,
@@ -111,7 +113,7 @@ export const revokeCertificate = async (serial: string, reason: string): Promise
         throw new Error();
     }
 
-    await blobStorage.deleteObject(DEV_CERTS_BUCKET, cert.team_id, cert.id);
+    await blobStorage.deleteObject(DEV_CERTS_BUCKET, cert.team_id!, cert.id);
 
     await prisma.certificate.update({
         where: {
@@ -150,7 +152,7 @@ export const purgeExpiredCertificates = async (): Promise<any> => {
     });
 
     for (const cert of expiredCerts) {
-        await blobStorage.deleteObject(DEV_CERTS_BUCKET, cert.team_id, cert.id);
+        await blobStorage.deleteObject(DEV_CERTS_BUCKET, cert.team_id!, cert.id);
 
     }
 

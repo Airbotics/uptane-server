@@ -139,7 +139,7 @@ model Certificate {
 
 // images stored in image repo
 model Image {
-    id                  String          @default(uuid())
+    id                  String          @id @default(uuid()) @unique
     team_id             String
     name                String                                  // human readable name
     description         String?
@@ -156,7 +156,7 @@ model Image {
     ecus                Ecu[]
     rollout_image       RolloutHardwareImage[]
 
-    @@id([team_id, id])
+    @@unique([team_id, id])
     @@unique([team_id, sha256])
     @@map("images")
 }

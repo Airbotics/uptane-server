@@ -27,7 +27,6 @@
 
 ## Guides
 
-* [Overview](guides/overview.md)
 * [Quickstart](guides/quickstart.md)
 * [Self-hosting](guides/self-hosting.md)
 
@@ -35,4 +34,3 @@
 
 * [Overview](contributors/overview.md)
 * [Working with...](contributors/working-with.md)
-* [Architecture](contributors/architecture.md)

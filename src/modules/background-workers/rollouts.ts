@@ -347,6 +347,6 @@ export const processRollouts = async () => {
     }
     catch (e) {
         logger.error('rollouts processing failed!');
-        logger.error(e);
+        console.log(e);
     }
 }

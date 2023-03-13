@@ -8,7 +8,11 @@ export const purgeExpiredProvisioningCredentials = async () => {
 
     logger.info('running background worker to purge expired provisioning credentials');
 
-    await certificateManager.purgeExpiredCertificates();
+    try {
+        await certificateManager.purgeExpiredCertificates();
+    } catch (error) {
+        console.log(error);
+    }
 
     logger.info('completed background worker to purge expired provisioning credentials');
 

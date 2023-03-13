@@ -16,7 +16,6 @@ import {
     purgeExpiredProvisioningCredentials,
     resignTufRoles,
     processRollouts,
-    generateStaticDeltas
 } from '@airbotics-modules/background-workers';
 
 
@@ -62,7 +61,6 @@ if(config.USE_NODE_SCHEDULER) {
     schedule.scheduleJob(config.WORKERS.ROLLOUTS_CRON, processRollouts);
     schedule.scheduleJob(config.WORKERS.PROVISIONING_CREDS_EXPIRY_PURGER_CRON, purgeExpiredProvisioningCredentials);
     schedule.scheduleJob(config.WORKERS.TUF_RESIGNER_CRON, resignTufRoles);
-    schedule.scheduleJob(config.WORKERS.STATIC_DELTA_GENERATOR_CRON, generateStaticDeltas);
 }
 
 // handle 404

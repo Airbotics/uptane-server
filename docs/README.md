@@ -4,7 +4,7 @@ Airbotics is an secure, robust, [open-source](https://github.com/Airbotics/airbo
 
 You can start deploying software with the [Airbotics Cloud](https://dashboard.airbotics.io) version or learn how to [self-host](guides/self-hosting.md) on your existing infrastructure.
 
-> We're still in Alpha so this should not be considered stable or secure.
+> We're in Closed Beta so this may still contain bugs.
 
 
 ## Quick links

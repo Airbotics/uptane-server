@@ -5,7 +5,6 @@ import { Ecu, Robot, Rollout, RolloutStatus } from '@prisma/client';
 import { RolloutTargetType } from '@airbotics-core/consts';
 import { SuccessMessageResponse } from '../../../core/network/responses';
 import { prisma } from '@airbotics-core/drivers';
-import { generateStaticDelta } from '@airbotics-core/generate-static-delta';
 import { auditEvent } from '@airbotics-core/events';
 import { EEventAction, EEventActorType, EEventResource } from '@airbotics-core/consts';
 import { IRolloutAffectedBotRes, IRolloutDetailRes, IRolloutRes, ICreateRolloutBody } from '@airbotics-types';
@@ -22,9 +21,6 @@ import { setEnvironmentData } from 'worker_threads';
  * state of the rollout. This endpoint leaves the rollout in a 'pending' state, the
  * launchRollout endpoint must be called before the updates begin to be applied to
  * affected robots 
- * 
- * TODO: Generate deltas
- * 
  */
 export const createRollout = async (req: Request, res: Response) => {
 

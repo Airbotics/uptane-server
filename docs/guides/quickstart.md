@@ -135,7 +135,7 @@ Now Let's reboot the qemu and confirm the update was applied: `sudo reboot`. Onc
 
 If you don't intend to continue to use your credentials we recommend you revoke them in Airbotics dashboard and delete them from your computer. You can also delete the images and robot.
 
-## Next steps
+<!-- ## Next steps
 
 Now that you have completed a basic workflow here are some cool things you can do:
 
@@ -143,4 +143,4 @@ Now that you have completed a basic workflow here are some cool things you can d
 
 - [Learn about the core concepts of Airbotics](../introduction/core-concepts.md).
 
-- [Learn about the technologies Airbotics is built on](../introduction/supporting-technologies.md).
+- [Learn about the technologies Airbotics is built on](../introduction/supporting-technologies.md). -->

@@ -1,6 +1,6 @@
 import * as express from 'express';
 import { IncomingHttpHeaders } from 'http';
-import { OryIdentity } from '../index';
+import { IOryIdentity } from '../responses';
 
 declare module 'express' {
     interface Request {
@@ -8,7 +8,7 @@ declare module 'express' {
             robot_id: string;
             team_id: string;
         },
-        oryIdentity?: OryIdentity
+        oryIdentity?: IOryIdentity
         headers: IncomingHttpHeaders & {
             "air-team-id"?: string
         }

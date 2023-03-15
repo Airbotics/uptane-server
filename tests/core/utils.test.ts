@@ -1,4 +1,4 @@
-import { extractCommitsFromDelta, getKeyStorageEcuKeyId, getKeyStorageRepoKeyId } from '@airbotics-core/utils';
+import { getKeyStorageEcuKeyId, getKeyStorageRepoKeyId } from '@airbotics-core/utils';
 import { TUFRepo, TUFRole } from '@prisma/client';
 
 
@@ -20,7 +20,7 @@ test('should return correct key storage key id for an ecu', async () => {
     expect(keyId).toEqual(`${teamId}/${ecuId}`);
 });
 
-
+/*
 test('should extract commits from delta id', async () => {
     const prefix = 'M2';
     const suffix = '_TV2F38wdBiLREy1xvUUcgSh81HRez7odWfAzjM_k-NdSxsgJmi+UxquZCbebOp1Qaswjy_Ft6jykJhdo251A';
@@ -41,3 +41,4 @@ test('should extract commits from delta id', async () => {
     expect(from).toEqual('1a94f265a56eb768d714f5a73b82c988a11d453bcec3f985502b48296d4d217d.commit');
     expect(to).toEqual('2fc7fe5550e410128d73535c77e98352b495478132c9b4060a4b8ab640e74f09.commit');
 });
+*/

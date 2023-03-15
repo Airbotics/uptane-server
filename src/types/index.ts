@@ -248,27 +248,9 @@ export interface IEcuRegistrationPayload {
     }[];
 }
 
-export interface OryIdentity {
-    session_id: string;
-    traits: {
-        id: string;
-        created_at: string;
-        state: string;  //active or inactive
-        email: string;
-        name: {
-            first: string;
-            last: string;
-        }
-    }
-}
 
-export interface ITeamDetail {
-    id: string;
-    name: string;
-    role: string;
-    num_members: number
-    created_at: Date;
-}
+
+
 
 export interface IGroup {
     id: string;

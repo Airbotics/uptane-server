@@ -26,16 +26,16 @@ const config = {
     GATEWAY_ORIGIN: 'https://localhost:8003',                                   // origin of the gateway (gateway.airbotics.io)
     CORS_ORIGIN: NODE_ENV==='production' ? ['https://dashboard.staging.airbotics.io', 'https://dashboard.airbotics.io'] : 'http://localhost:3000',
 
-    // blob storage
-    BLOB_STORAGE_PROVIDER: EBlobStorageProvider.Filesystem,                     // blob storage provider to use
+    // blob storage provider to use
+    BLOB_STORAGE_PROVIDER: process.env.BLOB_STORAGE_PROVIDER as EBlobStorageProvider || EBlobStorageProvider.Filesystem,
     BLOB_FS_STORAGE_DIR: './.blobs',                                            // where ostree blobs are stored when filesystem provider is being used
 
-    // key storage and management
-    KEY_STORAGE_PROVIDER: EKeyStorageProvider.Filesystem,                       // key storage provider to use
+    // key storage and management to use
+    KEY_STORAGE_PROVIDER: process.env.KEY_STORAGE_PROVIDER as EKeyStorageProvider || EKeyStorageProvider.Filesystem,
     KEYS_FS_STORAGE_DIR: './.keys',                                             // where private keys are stored when filesystem provider is being used
 
-    // certificate storage and management
-    CERTIFICATE_MANAGER_PROVIDER: ECertificateManagerProvider.Local,            // certificate manager provider to use
+    // certificate storage and management to use
+    CERTIFICATE_MANAGER_PROVIDER: process.env.CERTIFICATE_MANAGER_PROVIDER as ECertificateManagerProvider || ECertificateManagerProvider.Local,
 
     // tuf
     TUF_KEY_TYPE: EKeyType.Rsa,                                                 // key type to use for TUF
@@ -72,7 +72,7 @@ const config = {
     ORY_TIMEOUT: 4000,                                                          // timeout in ms
 
     // background workers
-    USE_NODE_SCHEDULER: true,                                                   // whether to use the nodejs scheduler to run workers, for development
+    USE_NODE_SCHEDULER: process.env.USE_NODE_SCHEDULER || 'true',               // whether to use the nodejs scheduler to run workers, for development
     WORKERS: {
         ROLLOUTS_CRON: '*/10 * * * * *',                                        // how often to run the rollouts worker
         TUF_RESIGNER_CRON: '0 * * * *',                                         // how often to run the tuf resigner

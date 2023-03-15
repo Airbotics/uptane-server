@@ -1,5 +1,72 @@
 import { CertificateStatus, EcuStatus, ImageFormat, RolloutRobotStatus, RolloutStatus, RolloutTargetType } from '@prisma/client';
 import { EComputedRobotStatus} from '@airbotics-core/consts';
+import { TUFRepo, TUFRole } from '@prisma/client';
+
+/**
+ * ORY
+ */
+export interface IOryIdentity {
+    session_id: string;
+    traits: {
+        id: string;
+        created_at: string;
+        state: string;  //active or inactive
+        email: string;
+        name: {
+            first: string;
+            last: string;
+        }
+    }
+}
+
+
+/**
+ * Teams
+ */
+export interface ITeamRes {
+    id: string;
+    name: string;
+    role: string;
+    num_members: number
+    created_at: Date;
+    uptane_roles?: {    //TODO
+        id: string;
+        repo: TUFRepo,
+        role: TUFRole,
+        expires_at: string;
+        online: boolean;
+        key_count: number;
+    }[];
+}
+
+export interface ITeamMemberRes {
+    id: string;
+    name: string;
+    email: string;
+    role: string;
+    joined_at: Date;
+}
+
+
+/**
+ * Fleet overview
+ */
+export interface IFleetOverviewRes {
+    num_groups: number;
+    num_robots: number;
+    num_images: number;
+    num_rollouts: number;
+    storage_usage: number;
+    rollout_history: {
+        date: string;
+        count: number;
+    }[];
+    robot_status_breakdown: {
+        failed: number;
+        updated: number;
+        updating: number;
+    };
+}
 
 
 /**

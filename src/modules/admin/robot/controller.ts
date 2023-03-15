@@ -66,6 +66,7 @@ export const getRobot = async (req: Request, res: Response, next: NextFunction) 
     const teamID = req.headers['air-team-id']!;
     const robotID = req.params.robot_id;
 
+
     const robot = await prisma.robot.findUnique({
         where: {
             team_id_id: {
@@ -162,8 +163,6 @@ export const getRobot = async (req: Request, res: Response, next: NextFunction) 
     return new SuccessJsonResponse(res, robotSanitised);
 
 }
-
-
 
 /**
  * Update a robots name and description

@@ -55,7 +55,7 @@ selfservice:
   default_browser_return_url: /login
   flows:
     error:
-      ui_url: /error
+      ui_url: https://dashboard.airbotics.io/error
     login:
       after:
         hooks: []
@@ -69,7 +69,7 @@ selfservice:
       before:
         hooks: []
       lifespan: 30m0s
-      ui_url: /login
+      ui_url: https://dashboard.airbotics.io/login
     logout:
       after: {}
     recovery:
@@ -81,7 +81,7 @@ selfservice:
       enabled: true
       lifespan: 30m0s
       notify_unknown_recipients: true
-      ui_url: /recovery
+      ui_url: https://dashboard.airbotics.io/recovery
       use: code
     registration:
       after:
@@ -90,15 +90,15 @@ selfservice:
           hooks:
           - hook: session
         password:
+          hooks: []
+        webauthn:
           hooks:
           - hook: session
-        webauthn:
-          hooks: []
       before:
         hooks: []
       enabled: true
       lifespan: 30m0s
-      ui_url: /registration
+      ui_url: https://dashboard.airbotics.io/registration
     settings:
       after:
         hooks: []
@@ -111,7 +111,7 @@ selfservice:
       lifespan: 30m0s
       privileged_session_max_age: 15m0s
       required_aal: highest_available
-      ui_url: /settings
+      ui_url: https://dashboard.airbotics.io/settings
     verification:
       after:
         hooks: []
@@ -120,7 +120,7 @@ selfservice:
       enabled: true
       lifespan: 30m0s
       notify_unknown_recipients: true
-      ui_url: /verification
+      ui_url: https://dashboard.airbotics.io/verification
       use: code
   methods:
     code:

@@ -6,7 +6,7 @@ import { IdentityApiGetIdentityRequest, RelationshipApiGetRelationshipsRequest,R
 import { EComputedRobotStatus, EEventAction, EEventActorType, EEventResource, OryNamespaces, OryTeamRelations, TREEHUB_BUCKET } from '@airbotics-core/consts';
 import { BadResponse, SuccessJsonResponse, NoContentResponse } from '@airbotics-core/network/responses';
 import { logger } from '@airbotics-core/logger';
-import { IFleetOverview, ITeamDetail } from '@airbotics-types';
+import { IFleetOverview } from '@airbotics-types';
 import { auditEvent } from '@airbotics-core/events';
 import { certificateManager, generateKeyPair } from '@airbotics-core/crypto';
 import config from '@airbotics-config';
@@ -15,6 +15,7 @@ import { blobStorage } from '@airbotics-core/blob-storage';
 import { keyStorage } from '@airbotics-core/key-storage';
 import { getKeyStorageEcuKeyId, getKeyStorageRepoKeyId, computeRobotStatus } from '@airbotics-core/utils';
 import { dayjs } from '@airbotics-core/time';
+import { ITeamRes, ITeamMemberRes, IFleetOverviewRes } from 'src/types/responses';
 
 
 
@@ -287,7 +288,7 @@ export const listTeams = async (req: Request, res: Response, next: NextFunction)
 
         else {
 
-            const sanitisedTeams: ITeamDetail[] = teams.map((team, idx) => ({
+            const sanitisedTeams: ITeamRes[] = teams.map((team, idx) => ({
                 id: team.id,
                 name: team.name,
                 role: relationsRes.relation_tuples![idx].relation,
@@ -333,7 +334,7 @@ export const listTeamMembers = async (req: Request, res: Response, next: NextFun
 
         const teamRelationsRes = (await ory.relations.getRelationships(relationsParams)).data;
 
-        const teamMembers = [];
+        const teamMembers: ITeamMemberRes[] = [];
 
         for (const relation of teamRelationsRes.relation_tuples!) {
 
@@ -351,7 +352,7 @@ export const listTeamMembers = async (req: Request, res: Response, next: NextFun
                     name: identity.traits.name.first + ' ' + identity.traits.name.last,
                     email: identity.traits.email,
                     role: relation.relation,
-                    created_at: identity.created_at
+                    joined_at: new Date(identity.created_at!)
                 })
             }
         }
@@ -402,7 +403,7 @@ export const updateTeam = async (req: Request, res: Response, next: NextFunction
             }
         });
 
-        const sanitisedTeam: ITeamDetail = {
+        const sanitisedTeam: ITeamRes = {
             id: team.id,
             name: team.name,
             role: OryTeamRelations.admin,
@@ -638,7 +639,7 @@ for (const robot of robots) {
             d.date ASC`;
 
 
-    const stats: IFleetOverview = {
+    const stats: IFleetOverviewRes = {
         num_groups,
         num_robots,
         num_images,

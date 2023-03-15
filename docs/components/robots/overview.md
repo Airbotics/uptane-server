@@ -25,6 +25,7 @@ A robot can have one of the following status:
 | `Updating`  | One or more ECUs on a robot are currently in the process of updating.      |
 | `Failed`    | One or more ECUs on a robot failed to update to the latest version.        |
 
+This status is will be updated as new software updates are applied to its ECUs through [rollouts](../rollouts.md).
 
 ## Rollout history
 

@@ -66,7 +66,7 @@ bitbake core-image-minimal
 > Note: the first time you do this it can take as long as an hour. This could be a good time to get that coffee.
 
 
-When the image finishes building meta-updater will sign upload it to Airbotics. You'll then be able to see it in the [images](https://dashboard.airbotics.io/images) page on the dashboard. Click into the image and change its description to something like _Quickstart image v1 - does not contain vim_.
+When the image finishes building meta-updater will sign and upload it to Airbotics. You'll then be able to see it in the [images](https://dashboard.airbotics.io/images) page on the dashboard. Click into the image and change its description to something like _Quickstart image v1 - does not contain vim_.
 
 > More: You can read a more detailed tutorial about building images [here](#) including how to pin images to certain compatible boards.
 
@@ -129,7 +129,7 @@ ostree admin status
 
 We can also confirm vim isn't on the robot yet.
 
-Now Let's reboot the qemu and confirm the update was applied: `sudo reboot`. Once it boots you should now be able to use vim. You'll see the ECU, Robot and Rollout status has changed. Nice 😎
+Now Let's reboot qemu and confirm the update was applied: `sudo reboot`. Once it boots you should now be able to use vim. You'll see the ECU, Robot and Rollout status has changed. Nice 😎
 
 ## 7. Cleaning up
 
@@ -139,7 +139,7 @@ If you don't intend to continue to use your credentials we recommend you revoke 
 
 Now that you have completed a basic workflow here are some cool things you can do:
 
-- [Group your robots](./groups.md).
+- [Group your robots](../components/groups.md).
 
 - [Learn about the core concepts of Airbotics](../introduction/core-concepts.md).
 

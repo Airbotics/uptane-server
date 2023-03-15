@@ -76,7 +76,6 @@ const config = {
     WORKERS: {
         ROLLOUTS_CRON: '*/10 * * * * *',                                        // how often to run the rollouts worker
         TUF_RESIGNER_CRON: '0 * * * *',                                         // how often to run the tuf resigner
-        STATIC_DELTA_GENERATOR_CRON: '0 * * * *',                               // how often to run the static delta generator
         PROVISIONING_CREDS_EXPIRY_PURGER_CRON: '0 * * * *'                      // how often to run the worker to "purge" expired provisioning credentials
     },
 

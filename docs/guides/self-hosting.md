@@ -1,6 +1,6 @@
 # Self-hosting
 
-## :warning: :warning: This  guide is WIP and may be incomplete or unstable :warning: :warning:
+:warning: :warning: This  guide is WIP and may be incomplete or unstable :warning: :warning:
 
 This guide provides the steps to set up the key Airbotics components to run in a **development** envirnoment. By the end of this guide you should be able to:
 

@@ -83,10 +83,11 @@ export const downloadCertificate = async (teamId: string, certId: string): Promi
 
     const dbCert = await prisma.certificate.findUnique({
         where: {
-            team_id_id: {
-                team_id: teamId,
-                id: certId
-            }
+            id: certId
+            // team_id_id: {
+            //     team_id: teamId,
+            //     id: certId
+            // }
         }
     });
 
@@ -115,10 +116,11 @@ export const downloadCertificate = async (teamId: string, certId: string): Promi
 
     await prisma.certificate.update({
         where: {
-            team_id_id: {
-                team_id: teamId,
-                id: certId
-            }
+            id: certId
+            // team_id_id: {
+            //     team_id: teamId,
+            //     id: certId
+            // }
         },
         data: {
             status: CertificateStatus.issued,

@@ -1,6 +1,7 @@
 # vs code extension to make http requests easily
 
 @BASE_URL=http://localhost:8001
+# @BASE_URL=https://api.airbotics.io
 @API_VERSION=v0
 @ORY_PROJECT_URL={{$dotenv %ORY_PROJECT_URL}}
 

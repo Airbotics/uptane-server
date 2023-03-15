@@ -5,34 +5,38 @@
 ## Introduction
 
 * [Overview](introduction/overview.md)
-* [Supporting technologies](introduction/supporting-technologies.md)
-* [Uptane primer](introduction/uptane-primer.md)
 * [Core Concepts](introduction/core-concepts.md)
 * [Features](introduction/features.md)
-* [FAQ](introduction/faq.md)
-
-## Components
-
-* [Provisioning credentials](components/provisioning-credentials.md)
-* [Images](components/images.md)
-* Robots
-    * [Overview](components/robots/overview.md)
-    * [ECUs](components/robots/ecus.md)
-    * [Telemetry](components/robots/telemetry.md)
-* [Rollouts](components/rollouts.md)
-* [Groups](components/groups.md)
-* [Accounts](components/accounts.md)
-* [Teams](components/teams.md)
+* [Security](introduction/security.md)
 
 
 ## Guides
 
-* [Overview](guides/overview.md)
 * [Quickstart](guides/quickstart.md)
 * [Self-hosting](guides/self-hosting.md)
+
+## Platform
+
+* [Provisioning credentials](platform/provisioning-credentials.md)
+* [Images](platform/images.md)
+* Robots
+    * [Overview](platform/robots/overview.md)
+    * [ECUs](platform/robots/ecus.md)
+    * [Telemetry](platform/robots/telemetry.md)
+* [Rollouts](platform/rollouts.md)
+* [Groups](platform/groups.md)
+* [Accounts](platform/accounts.md)
+* [Teams](platform/teams.md)
+
 
 ## Contributors
 
 * [Overview](contributors/overview.md)
 * [Working with...](contributors/working-with.md)
-* [Architecture](contributors/architecture.md)
+
+
+## Resources
+
+* [Supporting technologies](resources/supporting-technologies.md)
+* [Uptane primer](resources/uptane-primer.md)
+* [FAQ](resources/faq.md)

@@ -133,7 +133,8 @@ router.put('/:team_id/api/v1/user_repo/targets', validate(targetsSchema, EValida
     // check this image hasn't been created before
     const exists = await prisma.image.findUnique({
         where: {
-            id: mostRecentTargetKey!
+            id:  mostRecentTargetKey!
+            // id: mostRecentTargetKey!
         }
     });
 

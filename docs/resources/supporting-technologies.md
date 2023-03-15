@@ -37,7 +37,7 @@ The Airbotics client is built around libaktualizr with extensions for ROS and ot
 
 It allows for fine-grain customisation of systems but has a steep learning curve, for this reason we provide a reference distribution to get started.
 
-
+<!-- 
 ## ROS
 
 [Robot Operating System ](https://www.ros.org/) (ROS) is the de facto standard framework for developing software in robotics. It has been actively developed since 2007 and is widely used in production on some of the largest robotics fleets. At its core, it provides a set of tools allowing programs in a robot to share data. 
@@ -48,4 +48,4 @@ The Airbotics agent has an optional API with ROS 1 and 2 allowing for straightfo
 
 [Docker](https://www.docker.com/) is a virtualisation technology which helps simplify developer workflows. With it, developers can isolate their programs and dependencies minimising conflicts and making portability easier. Docker provides tooling to make this process relatively straightforward. Docker is widely-used across industries and has many years worth of cumulative server hours being used in large production environments.
 
-Building on Docker (and/or other containerisation technologies) allows robotics engineers using Airbotics to keep their workflow relatively simple, making it easier to test and share their work while it is in development before being shipped to production.
+Building on Docker (and/or other containerisation technologies) allows robotics engineers using Airbotics to keep their workflow relatively simple, making it easier to test and share their work while it is in development before being shipped to production. -->

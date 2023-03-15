@@ -43,12 +43,6 @@ enum TUFRole {
     timestamp
 }
 
-// status of static delta generation
-enum StaticDeltaStatus {
-    underway
-    failed
-    succeeded
-}
 
 // type/format of image
 enum ImageFormat {
@@ -66,7 +60,6 @@ model Team {
 
     refs                Ref[]
     objects             Object[]
-    deltas              StaticDelta[]
     images              Image[]
     tuf_metadata        TufMetadata[]
     robots              Robot[]
@@ -378,29 +371,10 @@ model Object {
 
     team                Team            @relation(fields: [team_id], references: [id], onDelete: Cascade)
     refs                Ref[]
-    from_deltas         StaticDelta[]   @relation(name: "DeltaFrom")
-    to_deltas           StaticDelta[]   @relation(name: "DeltaTo")
 
 
     @@id([team_id, object_id])
     @@map("objects")
-}
-
-// ostree static deltas
-model StaticDelta {
-    from                String
-    to                  String
-    team_id             String
-    created_at          DateTime        @default(now())
-    updated_at          DateTime        @updatedAt
-    status              StaticDeltaStatus @default(underway)
-
-    from_delta          Object          @relation(name: "DeltaFrom", fields: [team_id, from], references: [team_id, object_id], onDelete: Cascade)
-    to_delta            Object          @relation(name: "DeltaTo", fields: [team_id, to], references: [team_id, object_id], onDelete: Cascade)
-    team                Team            @relation(fields: [team_id], references: [id], onDelete: Cascade)
-
-    @@id([team_id, from, to])
-    @@map("static_deltas")
 }
 
 

@@ -44,7 +44,7 @@
 
 <br />
 
-<p align="center">⚠️ We're still in Alpha so this should not be considered stable or secure. ⚠️</p>
+<p align="center">⚠️ We're in Closed Beta so this may still contain bugs. ⚠️</p>
 
 <br />
 
@@ -140,9 +140,9 @@ A web version of the documentation is available [here](https://docs.airbotics.io
 
 ## Project status
 
-- [x] On the launchpad (public alpha) - moving fast and breaking things, should not be considered stable.
+- [x] On the launchpad (Alpha) - moving fast and breaking things, should not be considered stable.
 
-- [ ] Leaving the atmosphere (public beta) - stable enough for most use cases, may still contain bugs.
+- [x] Leaving the atmosphere (Closed Beta) - may still contain bugs.
 
 - [ ] Orbit (general availability) - ready for scale and production use cases.
 

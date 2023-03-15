@@ -59,6 +59,11 @@ From the root directory run the below command.
 npm run start
 ```
 
+## Creating a migration
+
+```
+npx prisma migrate dev --schema=./src/prisma/schema.prisma --name <name> --create-only
+```
 
 ## Logging
 

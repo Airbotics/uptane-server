@@ -6,6 +6,10 @@ FROM ubuntu:focal
 # nodejs v18.13.0
 # npm 8.19.3
 
+
+# https://github.com/docker/for-mac/issues/5831
+RUN set NODE_OPTIONS=--max-old-space-size=10240000
+
 RUN apt -y update \
     && apt -y install curl  \
     && curl -sL https://deb.nodesource.com/setup_18.x -o setup.sh \

@@ -21,7 +21,6 @@
         "@ory/client": "^1.1.4",
         "@prisma/client": "^4.6.1",
         "archiver": "^5.3.1",
-        "async-shelljs": "^0.1.4",
         "axios": "^1.2.0",
         "canonicalize": "^1.0.8",
         "cors": "^2.8.5",

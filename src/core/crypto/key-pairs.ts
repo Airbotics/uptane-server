@@ -1,5 +1,4 @@
 import forge from 'node-forge';
-import { generateKeyPairSync } from 'crypto';
 import { IKeyPair } from '@airbotics-types';
 import { EKeyType } from '@airbotics-core/consts';
 

@@ -301,7 +301,6 @@ export const listTeams = async (req: Request, res: Response, next: NextFunction)
         }
 
     } catch (error) {
-        logger.info(error);
         logger.error('A user was unable to read a list of teams they belong to');
         return new BadResponse(res, 'Unable to get teams');
     }

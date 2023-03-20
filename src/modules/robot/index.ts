@@ -1,4 +1,4 @@
-import { CertificateType } from '@prisma/client';
+import { CertificateStatus, CertificateType } from '@prisma/client';
 import dayjs, { ManipulateType } from 'dayjs';
 import express, { Request } from 'express';
 import forge from 'node-forge';
@@ -23,8 +23,8 @@ const router = express.Router();
  * - Generate a p12 and send it back.
  * 
  * NOTE: This is the only endpoint that doesn't use the `mustBeRobot` middleware.
- * Instead it directly pulls out the `air-client-id` header, which for this endpoint only
- * is the team id.
+ * Instead it directly pulls out the `air-client-id` header, which for this endpoint only is the
+ * id of the credential, for all other endpoints a robot hits it will be the id of the robot
  * 
  * TODO:
  * - handle ttl
@@ -39,15 +39,31 @@ router.post('/devices', async (req: Request, res) => {
     // we prefer robot nomenclature over device
     const robotId = deviceId;
 
-    const team_id = req.header('air-client-id')!;
+    const credentialId = req.header('air-client-id')!;
 
-    // TODO check provisioning credentials is issued
+    // check provisioning credentials exists and is in an issued state
+    const credentials = await prisma.provisioningCredentials.findUnique({
+        where: {
+            id: credentialId
+        }
+    });
+
+    if(!credentials) {
+        logger.error('could not find a provisioning credential');
+        return new InternalServerErrorResponse(res);
+    }
+
+    if(credentials!.status !== CertificateStatus.issued) {
+        logger.error('provisioning credential is not in an issued state');
+        return new InternalServerErrorResponse(res);
+    }
+    
 
     // check robot is not already provisioned
     const robot = await prisma.robot.findUnique({
         where: {
             team_id_id: {
-                team_id,
+                team_id: credentials!.team_id,
                 id: robotId
             }
         }
@@ -61,7 +77,7 @@ router.post('/devices', async (req: Request, res) => {
     // create robot
     await prisma.robot.create({
         data: {
-            team_id,
+            team_id: credentials!.team_id,
             id: robotId,
             name: robotId
         }
@@ -73,17 +89,18 @@ router.post('/devices', async (req: Request, res) => {
 
     const certExpiresAt = dayjs().add(config.ROBOT_CERT_TTL[0] as number, config.ROBOT_CERT_TTL[1] as ManipulateType);
 
-    const robotCertId = await certificateManager.issueCertificate(team_id, robotKeyPair, CertificateType.robot, robotId, certExpiresAt);
+    const robotCertId = await certificateManager.issueCertificate(credentials!.team_id, robotKeyPair, CertificateType.robot, robotId, certExpiresAt);
 
 
     // patiently wait for acm pca to issue, apologies client...
-    // TODO plz fix
-    await delay(1000);
+    // Note: this should be a couple of seconds long, around 5 seconds
+    await delay(5000);
 
     // get robot cert
-    const robotCert = await certificateManager.downloadCertificate(team_id, robotCertId);
+    const robotCert = await certificateManager.downloadCertificate(credentials!.team_id, robotCertId);
 
     if (!robotCert) {
+        logger.error('could not issue a cert for a robot');
         return new InternalServerErrorResponse(res);
     }
 
@@ -91,6 +108,7 @@ router.post('/devices', async (req: Request, res) => {
     const rootCACert = await certificateManager.getRootCertificate();
 
     if (!rootCACert) {
+        logger.error('could not get the root cert');
         return new InternalServerErrorResponse(res);
     }
 

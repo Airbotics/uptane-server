@@ -43,12 +43,50 @@ enum TUFRole {
     timestamp
 }
 
+// type of key used for tuf
+enum KeyType {
+    rsa
+}
 
 // type/format of image
 enum ImageFormat {
     ostree
     binary                                                      // this is not supported for now
 }
+
+enum RolloutStatus {
+    prepared
+    launched
+    completed
+    cancelled
+}
+
+enum RolloutTargetType {
+    group
+    hw_id_match
+    selected_bots
+}
+
+enum RolloutRobotStatus {
+    pending             // rollout created but worker hasn’t got around to processing
+    skipped             // worker determined update is n/a for bot
+    scheduled           // worker has created the latest targets.json in the director repo
+    accepted            // robot has acknowledged the update
+    completed           // robot has successfully pulled the update
+    cancelled           // the rollout was cancelled
+    failed              // robot tried and failed to pull the update
+}
+
+enum EcuStatus {
+    download_started
+    download_completed
+    download_failed
+    installation_started
+    installation_completed
+    installation_failed
+    installation_applied
+}
+
 
 // a team of users, a team is the owner of all resources
 model Team {
@@ -62,6 +100,7 @@ model Team {
     objects             Object[]
     images              Image[]
     tuf_metadata        TufMetadata[]
+    tuf_keys            TufKey[]
     robots              Robot[]
     ecus                Ecu[]
     robot_manifests     RobotManifest[]
@@ -104,7 +143,6 @@ model ProvisioningCredentials {
     @@unique([team_id, provisioning_cert_id])
     @@map("provisioning_credentials")
 }
-
 
 
 // a record of certs that we have issued
@@ -184,6 +222,23 @@ model TufMetadata {
 }
 
 
+// tuf key
+model TufKey {
+    id                  String          @id @unique
+    team_id             String
+    role                TUFRole                                 // director or image repo
+    repo                TUFRepo                                 // root, targets, snapshot or timestamp
+    online              Boolean         @default(true)
+    key_type            KeyType
+    created_at          DateTime        @default(now())
+
+    team                Team            @relation(fields: [team_id], references: [id], onDelete: Cascade)
+
+    @@unique([team_id, id])
+    @@map("tuf_keys")
+}
+
+
 // robots on which Airbotics will update software
 // these are called vehicles in the Update spec
 model Robot {
@@ -239,6 +294,7 @@ model Ecu {
     @@map("ecus")
 }
 
+
 // a network report from a robot
 model NetworkReport {
     id                  String          @id @default(uuid()) @unique
@@ -257,6 +313,7 @@ model NetworkReport {
     @@map("network_reports")
 }
 
+
 // installed packages report from a robot
 model InstalledPackagesReport {
     id                  String          @id @default(uuid()) @unique
@@ -272,6 +329,7 @@ model InstalledPackagesReport {
     @@unique([team_id, id])
     @@map("installed_packages_reports")
 }
+
 
 // aktualizr config report from a robot
 model AktualizrConfigReport {
@@ -289,6 +347,7 @@ model AktualizrConfigReport {
     @@map("aktualizr_config_reports")
 }
 
+
 // hardware info report from a robot
 model HardwareInfoReport {
     id                  String          @id @default(uuid()) @unique
@@ -304,6 +363,7 @@ model HardwareInfoReport {
     @@unique([team_id, id])
     @@map("hardware_info_reports")
 }
+
 
 // telemetry events sent by an ecu
 model EcuTelemetry {
@@ -339,7 +399,6 @@ model RobotManifest {
     @@id([team_id, id])
     @@map("robot_manifests")
 }
-
 
 
 // ostree references
@@ -394,6 +453,7 @@ model Group {
     @@map("groups")
 }
 
+
 // mappings between a robot and which groups they are in
 model RobotGroup {
     robot_id            String
@@ -427,43 +487,7 @@ model AuditEvent {
 }
 
 
-// ---------------- ROLLOUTS ---------------- //
-
-
-enum RolloutStatus {
-    prepared
-    launched
-    completed
-    cancelled
-}
-
-enum RolloutTargetType {
-    group
-    hw_id_match
-    selected_bots
-}
-
-enum RolloutRobotStatus {
-    pending             // rollout created but worker hasn’t got around to processing
-    skipped             // worker determined update is n/a for bot
-    scheduled           // worker has created the latest targets.json in the director repo
-    accepted            // robot has acknowledged the update
-    completed           // robot has successfully pulled the update
-    cancelled           // the rollout was cancelled
-    failed              // robot tried and failed to pull the update
-}
-
-
-enum EcuStatus {
-    download_started
-    download_completed
-    download_failed
-    installation_started
-    installation_completed
-    installation_failed
-    installation_applied
-}
-
+// rollout
 model Rollout {
     id                  String              @id @default(uuid()) @unique
     team_id             String
@@ -483,7 +507,6 @@ model Rollout {
     @@unique([id, team_id])
     @@map("rollouts")
 }
-
 
 
 model RolloutHardwareImage {

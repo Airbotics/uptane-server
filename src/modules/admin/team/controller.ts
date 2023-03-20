@@ -1,16 +1,16 @@
 import { Request, Response, NextFunction } from 'express';
 import { RevocationReason } from '@aws-sdk/client-acm-pca';
 import { ory, prisma } from '@airbotics-core/drivers';
-import { TUFRepo, TUFRole } from '@prisma/client';
-import { IdentityApiGetIdentityRequest, RelationshipApiGetRelationshipsRequest,RelationshipApiDeleteRelationshipsRequest, RelationshipApiPatchRelationshipsRequest } from '@ory/client';
-import { EComputedRobotStatus, EEventAction, EEventActorType, EEventResource, OryNamespaces, OryTeamRelations, TREEHUB_BUCKET } from '@airbotics-core/consts';
+import { KeyType, TUFRepo, TUFRole } from '@prisma/client';
+import { IdentityApiGetIdentityRequest, RelationshipApiGetRelationshipsRequest, RelationshipApiDeleteRelationshipsRequest, RelationshipApiPatchRelationshipsRequest } from '@ory/client';
+import { EComputedRobotStatus, EEventAction, EEventActorType, EEventResource, OryNamespaces, OryTeamRelations, TREEHUB_BUCKET, TUF_METADATA_LATEST } from '@airbotics-core/consts';
 import { BadResponse, SuccessJsonResponse, NoContentResponse } from '@airbotics-core/network/responses';
 import { logger } from '@airbotics-core/logger';
 import { IFleetOverview } from '@airbotics-types';
 import { auditEvent } from '@airbotics-core/events';
 import { certificateManager, generateKeyPair } from '@airbotics-core/crypto';
 import config from '@airbotics-config';
-import { generateSignedRoot, generateSignedSnapshot, generateSignedTargets, generateSignedTimestamp } from '@airbotics-core/tuf';
+import { generateSignedRoot, generateSignedSnapshot, generateSignedTargets, generateSignedTimestamp, getTufMetadata } from '@airbotics-core/tuf';
 import { blobStorage } from '@airbotics-core/blob-storage';
 import { keyStorage } from '@airbotics-core/key-storage';
 import { getKeyStorageEcuKeyId, getKeyStorageRepoKeyId, computeRobotStatus } from '@airbotics-core/utils';
@@ -39,7 +39,7 @@ export const createTeam = async (req: Request, res: Response, next: NextFunction
         invite_code
     } = req.body;
 
-    if(invite_code !== config.BETA_INVITE_CODE) {
+    if (invite_code !== config.BETA_INVITE_CODE) {
         return new BadResponse(res, 'Invalid invite code');
     }
 
@@ -81,7 +81,7 @@ export const createTeam = async (req: Request, res: Response, next: NextFunction
 
         const newTeam = await prisma.$transaction(async tx => {
 
-            //Create the team in our db
+            // create the team in our db
             const team = await tx.team.create({
                 data: {
                     name: name
@@ -148,7 +148,7 @@ export const createTeam = async (req: Request, res: Response, next: NextFunction
                 }
             });
 
-            // store image repo key pairs
+            // store image repo key pairs in key storage
             await keyStorage.putKeyPair(getKeyStorageRepoKeyId(team.id, TUFRepo.image, TUFRole.root), {
                 publicKey: imageRootKeyPair.publicKey,
                 privateKey: imageRootKeyPair.privateKey
@@ -182,6 +182,71 @@ export const createTeam = async (req: Request, res: Response, next: NextFunction
             await keyStorage.putKeyPair(getKeyStorageRepoKeyId(team.id, TUFRepo.director, TUFRole.timestamp), {
                 publicKey: directorTimestampKeyPair.publicKey,
                 privateKey: directorTimestampKeyPair.privateKey
+            });
+
+            console.log(getKeyStorageRepoKeyId(team.id, TUFRepo.image, TUFRole.root))
+
+
+            // now store a record of them in the db
+            await tx.tufKey.createMany({
+                data: [
+                    {
+                        id: getKeyStorageRepoKeyId(team.id, TUFRepo.image, TUFRole.root),
+                        team_id: team.id,
+                        repo: TUFRepo.image,
+                        role: TUFRole.root,
+                        key_type: KeyType.rsa
+                    },
+                    {
+                        id: getKeyStorageRepoKeyId(team.id, TUFRepo.image, TUFRole.targets),
+                        team_id: team.id,
+                        repo: TUFRepo.image,
+                        role: TUFRole.targets,
+                        key_type: KeyType.rsa
+                    },
+                    {
+                        id: getKeyStorageRepoKeyId(team.id, TUFRepo.image, TUFRole.snapshot),
+                        team_id: team.id,
+                        repo: TUFRepo.image,
+                        role: TUFRole.snapshot,
+                        key_type: KeyType.rsa
+                    },
+                    {
+                        id: getKeyStorageRepoKeyId(team.id, TUFRepo.image, TUFRole.timestamp),
+                        team_id: team.id,
+                        repo: TUFRepo.image,
+                        role: TUFRole.timestamp,
+                        key_type: KeyType.rsa
+                    },
+                    {
+                        id: getKeyStorageRepoKeyId(team.id, TUFRepo.director, TUFRole.root),
+                        team_id: team.id,
+                        repo: TUFRepo.director,
+                        role: TUFRole.root,
+                        key_type: KeyType.rsa
+                    },
+                    {
+                        id: getKeyStorageRepoKeyId(team.id, TUFRepo.director, TUFRole.targets),
+                        team_id: team.id,
+                        repo: TUFRepo.director,
+                        role: TUFRole.targets,
+                        key_type: KeyType.rsa
+                    },
+                    {
+                        id: getKeyStorageRepoKeyId(team.id, TUFRepo.director, TUFRole.snapshot),
+                        team_id: team.id,
+                        repo: TUFRepo.director,
+                        role: TUFRole.snapshot,
+                        key_type: KeyType.rsa
+                    },
+                    {
+                        id: getKeyStorageRepoKeyId(team.id, TUFRepo.director, TUFRole.timestamp),
+                        team_id: team.id,
+                        repo: TUFRepo.director,
+                        role: TUFRole.timestamp,
+                        key_type: KeyType.rsa
+                    }
+                ]
             });
 
 
@@ -237,6 +302,7 @@ export const createTeam = async (req: Request, res: Response, next: NextFunction
         return new SuccessJsonResponse(res, newTeam);
 
     } catch (error) {
+        console.log(error)
         logger.error('A user was unable to create a new team');
         return new BadResponse(res, 'Unable to create a new team.')
     }
@@ -283,24 +349,76 @@ export const listTeams = async (req: Request, res: Response, next: NextFunction)
         });
 
         if (teams.length === 0) {
-            return new NoContentResponse(res, 'User is not yet part of a team');
-        }
+            return new SuccessJsonResponse(res, []);
+        } else {
 
-        else {
+            const sanitisedTeams: ITeamRes[] = [];
 
-            const sanitisedTeams: ITeamRes[] = teams.map((team, idx) => ({
-                id: team.id,
-                name: team.name,
-                role: relationsRes.relation_tuples![idx].relation,
-                num_members: team.num_members,
-                created_at: team.created_at
-            }));
+            for (const [idx, team] of teams.entries()) {
+
+                const directorRoot = await getTufMetadata(team.id, TUFRepo.director, TUFRole.root, TUF_METADATA_LATEST);
+                const imageRoot = await getTufMetadata(team.id, TUFRepo.image, TUFRole.root, TUF_METADATA_LATEST);
+                const imageTargets = await getTufMetadata(team.id, TUFRepo.image, TUFRole.targets, TUF_METADATA_LATEST);
+                const imageSnapshot = await getTufMetadata(team.id, TUFRepo.image, TUFRole.snapshot, TUF_METADATA_LATEST);
+                const imageTimestamp = await getTufMetadata(team.id, TUFRepo.image, TUFRole.timestamp, TUF_METADATA_LATEST);
+
+                sanitisedTeams.push({
+                    id: team.id,
+                    name: team.name,
+                    role: relationsRes.relation_tuples![idx].relation,
+                    num_members: team.num_members,
+                    created_at: team.created_at,
+                    uptane_roles: [
+                        {
+                            id: 'director-root',
+                            repo: TUFRepo.director,
+                            role: TUFRole.root,
+                            expires_at: directorRoot?.signed.expires,
+                            online: true,
+                            key_count: 1
+                        },
+                        {
+                            id: 'image-root',
+                            repo: TUFRepo.image,
+                            role: TUFRole.root,
+                            expires_at: imageRoot?.signed.expires,
+                            online: true,
+                            key_count: 1
+                        },
+                        {
+                            id: 'image-targets',
+                            repo: TUFRepo.image,
+                            role: TUFRole.targets,
+                            expires_at: imageTargets?.signed.expires,
+                            online: true,
+                            key_count: 1
+                        },
+                        {
+                            id: 'image-snapshot',
+                            repo: TUFRepo.image,
+                            role: TUFRole.snapshot,
+                            expires_at: imageSnapshot?.signed.expires,
+                            online: true,
+                            key_count: 1
+                        },
+                        {
+                            id: 'image-timestamp',
+                            repo: TUFRepo.image,
+                            role: TUFRole.timestamp,
+                            expires_at: imageTimestamp?.signed.expires,
+                            online: true,
+                            key_count: 1
+                        }
+                    ]
+                });
+            }
 
             logger.info('A user read a list of their teams');
             return new SuccessJsonResponse(res, sanitisedTeams);
         }
 
     } catch (error) {
+        logger.info(error);
         logger.error('A user was unable to read a list of teams they belong to');
         return new BadResponse(res, 'Unable to get teams');
     }
@@ -402,12 +520,61 @@ export const updateTeam = async (req: Request, res: Response, next: NextFunction
             }
         });
 
+
+        const directorRoot = await getTufMetadata(team.id, TUFRepo.director, TUFRole.root, TUF_METADATA_LATEST);
+        const imageRoot = await getTufMetadata(team.id, TUFRepo.image, TUFRole.root, TUF_METADATA_LATEST);
+        const imageTargets = await getTufMetadata(team.id, TUFRepo.image, TUFRole.targets, TUF_METADATA_LATEST);
+        const imageSnapshot = await getTufMetadata(team.id, TUFRepo.image, TUFRole.snapshot, TUF_METADATA_LATEST);
+        const imageTimestamp = await getTufMetadata(team.id, TUFRepo.image, TUFRole.timestamp, TUF_METADATA_LATEST);
+
         const sanitisedTeam: ITeamRes = {
             id: team.id,
             name: team.name,
             role: OryTeamRelations.admin,
             num_members: team.num_members,
-            created_at: team.created_at
+            created_at: team.created_at,
+            uptane_roles: [
+                {
+                    id: 'director-root',
+                    repo: TUFRepo.director,
+                    role: TUFRole.root,
+                    expires_at: directorRoot?.signed.expires,
+                    online: true,
+                    key_count: 1
+                },
+                {
+                    id: 'image-root',
+                    repo: TUFRepo.image,
+                    role: TUFRole.root,
+                    expires_at: imageRoot?.signed.expires,
+                    online: true,
+                    key_count: 1
+                },
+                {
+                    id: 'image-targets',
+                    repo: TUFRepo.image,
+                    role: TUFRole.targets,
+                    expires_at: imageTargets?.signed.expires,
+                    online: true,
+                    key_count: 1
+                },
+                {
+                    id: 'image-snapshot',
+                    repo: TUFRepo.image,
+                    role: TUFRole.snapshot,
+                    expires_at: imageSnapshot?.signed.expires,
+                    online: true,
+                    key_count: 1
+                },
+                {
+                    id: 'image-timestamp',
+                    repo: TUFRepo.image,
+                    role: TUFRole.timestamp,
+                    expires_at: imageTimestamp?.signed.expires,
+                    online: true,
+                    key_count: 1
+                }
+            ]
         };
 
         logger.info('A team admin has updated info about one of their teams.');
@@ -462,7 +629,7 @@ export const deleteTeam = async (req: Request, res: Response, next: NextFunction
  
 */
 export const deleteTeamHelper = async (teamID: string, oryId: string) => {
-    
+
     await prisma.$transaction(async tx => {
 
         // delete team in db
@@ -489,7 +656,7 @@ export const deleteTeamHelper = async (teamID: string, oryId: string) => {
 
         // delete all objects beginning with their team id in the treehub bucket
         await blobStorage.deleteTeamObjects(TREEHUB_BUCKET, teamID);
-        
+
 
         // delete tuf keys
         await keyStorage.deleteKeyPair(getKeyStorageRepoKeyId(teamID, TUFRepo.image, TUFRole.root));
@@ -519,7 +686,7 @@ export const deleteTeamHelper = async (teamID: string, oryId: string) => {
         actor_type: EEventActorType.User,
         actor_id: null,
         team_id: null,
-        meta: {team_id: teamID, ory_id: oryId}
+        meta: { team_id: teamID, ory_id: oryId }
     });
 }
 
@@ -585,27 +752,27 @@ export const getFleetOverview = async (req: Request, res: Response, next: NextFu
     });
 
     // TODO optimise this to use sql instead of ts
-const robots = await prisma.robot.findMany({
-    where: {
-        team_id: teamID
-    },
-    include: {
-        ecus: true
-    }
-});
+    const robots = await prisma.robot.findMany({
+        where: {
+            team_id: teamID
+        },
+        include: {
+            ecus: true
+        }
+    });
 
-let numRobotsUpdating = 0;
-let numRobotsUpdated = 0;
-let numRobotsFailed = 0;
+    let numRobotsUpdating = 0;
+    let numRobotsUpdated = 0;
+    let numRobotsFailed = 0;
 
-for (const robot of robots) {
-    const status = computeRobotStatus(robot.ecus.map(e => e.status));
-    switch (status) {
-        case EComputedRobotStatus.Updating: numRobotsUpdating += 1; break;
-        case EComputedRobotStatus.Updated: numRobotsUpdated += 1; break;
-        case EComputedRobotStatus.Failed: numRobotsFailed += 1; break;
+    for (const robot of robots) {
+        const status = computeRobotStatus(robot.ecus.map(e => e.status));
+        switch (status) {
+            case EComputedRobotStatus.Updating: numRobotsUpdating += 1; break;
+            case EComputedRobotStatus.Updated: numRobotsUpdated += 1; break;
+            case EComputedRobotStatus.Failed: numRobotsFailed += 1; break;
+        }
     }
-}
 
 
 

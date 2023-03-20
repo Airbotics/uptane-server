@@ -1,6 +1,7 @@
 import { Request, Response } from 'express';
 import archiver from 'archiver';
 import forge from 'node-forge';
+import { randomUUID } from 'crypto';
 import { CertificateStatus, CertificateType, TUFRepo, TUFRole } from '@prisma/client';
 import {
     EEventAction,
@@ -26,13 +27,10 @@ import { RevocationReason } from '@aws-sdk/client-acm-pca';
 /**
  * Create provisioning credentials.
  * 
- * Note:
- * - because issuing a cert from acm pca takes some amount of seconds, this endpoint could be slow.. at least 5 secs. This can be optimised or refactored
- * 
  * TODO
  * - potentially store public key of provisioning and client cert in db
  * - catch archive on error event
- * - transaction
+ * - transactions
  */
 export const createProvisioningCredentials = async (req: Request, res: Response) => {
 
@@ -41,13 +39,15 @@ export const createProvisioningCredentials = async (req: Request, res: Response)
     const expiresAt = dayjs(req.body.expires_at);
     const { name } = req.body;
 
+    const credentialId = randomUUID();
+
     // create the provisioning key and issue the provisioning cert, this will create it in the db
     const provisioningKeyPair = generateKeyPair({ keyType: EKeyType.Rsa });
-    const provisioningCertId = await certificateManager.issueCertificate(teamID, provisioningKeyPair, CertificateType.provisioning, teamID, expiresAt);
+    const provisioningCertId = await certificateManager.issueCertificate(teamID, provisioningKeyPair, CertificateType.provisioning, credentialId, expiresAt);
 
     // create the client key and issue the client cert, this will create it in the db
     const clientKeyPair = generateKeyPair({ keyType: EKeyType.Rsa });
-    const clientCertId = await certificateManager.issueCertificate(teamID, clientKeyPair, CertificateType.client, teamID, expiresAt);
+    const clientCertId = await certificateManager.issueCertificate(teamID, clientKeyPair, CertificateType.client, credentialId, expiresAt);
 
     // temporarily save key pair
     await keyStorage.putKeyPair(provisioningCertId, provisioningKeyPair);
@@ -56,6 +56,7 @@ export const createProvisioningCredentials = async (req: Request, res: Response)
     // add record of creation of credentials to db
     const provisioningCredentials = await prisma.provisioningCredentials.create({
         data: {
+            id: credentialId,
             team_id: teamID,
             name,
             status: CertificateStatus.issuing,
@@ -92,7 +93,6 @@ export const createProvisioningCredentials = async (req: Request, res: Response)
  */
 export const downloadProvisioningCredential = async (req: Request, res: Response) => {
 
-    
     const oryID = req.oryIdentity!.traits.id;
     const teamID = req.headers['air-team-id']!;
     const provisioningCredentialsId = req.params.credentials_id;

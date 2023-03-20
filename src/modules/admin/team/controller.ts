@@ -283,7 +283,7 @@ export const listTeams = async (req: Request, res: Response, next: NextFunction)
         });
 
         if (teams.length === 0) {
-            return new NoContentResponse(res, 'User is not yet part of a team');
+            return new SuccessJsonResponse(res, []);
         }
 
         else {

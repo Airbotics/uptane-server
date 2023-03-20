@@ -29,11 +29,11 @@ export interface ITeamRes {
     role: string;
     num_members: number
     created_at: Date;
-    uptane_roles?: {    //TODO
+    uptane_roles: {
         id: string;
         repo: TUFRepo,
         role: TUFRole,
-        expires_at: string;
+        expires_at: string | undefined;
         online: boolean;
         key_count: number;
     }[];

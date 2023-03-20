@@ -27,13 +27,10 @@ import { RevocationReason } from '@aws-sdk/client-acm-pca';
 /**
  * Create provisioning credentials.
  * 
- * Note:
- * - because issuing a cert from acm pca takes some amount of seconds, this endpoint could be slow.. at least 5 secs. This can be optimised or refactored
- * 
  * TODO
  * - potentially store public key of provisioning and client cert in db
  * - catch archive on error event
- * - transaction
+ * - transactions
  */
 export const createProvisioningCredentials = async (req: Request, res: Response) => {
 

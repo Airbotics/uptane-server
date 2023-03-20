@@ -5,6 +5,7 @@ import { FilesystemProvider } from './fs-provider';
 import { AWSSecretsManagerProvider } from './aws-provider';
 import config from '@airbotics-config';
 
+// TODO create function to create tuf key pair
 export class KeyStorageProvider implements IKeyStorageProvider {
 
     private strategy: IKeyStorageProvider;

@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { RevocationReason } from '@aws-sdk/client-acm-pca';
 import { ory, prisma } from '@airbotics-core/drivers';
-import { TUFRepo, TUFRole } from '@prisma/client';
+import { KeyType, TUFRepo, TUFRole } from '@prisma/client';
 import { IdentityApiGetIdentityRequest, RelationshipApiGetRelationshipsRequest, RelationshipApiDeleteRelationshipsRequest, RelationshipApiPatchRelationshipsRequest } from '@ory/client';
 import { EComputedRobotStatus, EEventAction, EEventActorType, EEventResource, OryNamespaces, OryTeamRelations, TREEHUB_BUCKET, TUF_METADATA_LATEST } from '@airbotics-core/consts';
 import { BadResponse, SuccessJsonResponse, NoContentResponse } from '@airbotics-core/network/responses';
@@ -81,7 +81,7 @@ export const createTeam = async (req: Request, res: Response, next: NextFunction
 
         const newTeam = await prisma.$transaction(async tx => {
 
-            //Create the team in our db
+            // create the team in our db
             const team = await tx.team.create({
                 data: {
                     name: name
@@ -148,7 +148,7 @@ export const createTeam = async (req: Request, res: Response, next: NextFunction
                 }
             });
 
-            // store image repo key pairs
+            // store image repo key pairs in key storage
             await keyStorage.putKeyPair(getKeyStorageRepoKeyId(team.id, TUFRepo.image, TUFRole.root), {
                 publicKey: imageRootKeyPair.publicKey,
                 privateKey: imageRootKeyPair.privateKey
@@ -182,6 +182,71 @@ export const createTeam = async (req: Request, res: Response, next: NextFunction
             await keyStorage.putKeyPair(getKeyStorageRepoKeyId(team.id, TUFRepo.director, TUFRole.timestamp), {
                 publicKey: directorTimestampKeyPair.publicKey,
                 privateKey: directorTimestampKeyPair.privateKey
+            });
+
+            console.log(getKeyStorageRepoKeyId(team.id, TUFRepo.image, TUFRole.root))
+
+
+            // now store a record of them in the db
+            await tx.tufKey.createMany({
+                data: [
+                    {
+                        id: getKeyStorageRepoKeyId(team.id, TUFRepo.image, TUFRole.root),
+                        team_id: team.id,
+                        repo: TUFRepo.image,
+                        role: TUFRole.root,
+                        key_type: KeyType.rsa
+                    },
+                    {
+                        id: getKeyStorageRepoKeyId(team.id, TUFRepo.image, TUFRole.targets),
+                        team_id: team.id,
+                        repo: TUFRepo.image,
+                        role: TUFRole.targets,
+                        key_type: KeyType.rsa
+                    },
+                    {
+                        id: getKeyStorageRepoKeyId(team.id, TUFRepo.image, TUFRole.snapshot),
+                        team_id: team.id,
+                        repo: TUFRepo.image,
+                        role: TUFRole.snapshot,
+                        key_type: KeyType.rsa
+                    },
+                    {
+                        id: getKeyStorageRepoKeyId(team.id, TUFRepo.image, TUFRole.timestamp),
+                        team_id: team.id,
+                        repo: TUFRepo.image,
+                        role: TUFRole.timestamp,
+                        key_type: KeyType.rsa
+                    },
+                    {
+                        id: getKeyStorageRepoKeyId(team.id, TUFRepo.director, TUFRole.root),
+                        team_id: team.id,
+                        repo: TUFRepo.director,
+                        role: TUFRole.root,
+                        key_type: KeyType.rsa
+                    },
+                    {
+                        id: getKeyStorageRepoKeyId(team.id, TUFRepo.director, TUFRole.targets),
+                        team_id: team.id,
+                        repo: TUFRepo.director,
+                        role: TUFRole.targets,
+                        key_type: KeyType.rsa
+                    },
+                    {
+                        id: getKeyStorageRepoKeyId(team.id, TUFRepo.director, TUFRole.snapshot),
+                        team_id: team.id,
+                        repo: TUFRepo.director,
+                        role: TUFRole.snapshot,
+                        key_type: KeyType.rsa
+                    },
+                    {
+                        id: getKeyStorageRepoKeyId(team.id, TUFRepo.director, TUFRole.timestamp),
+                        team_id: team.id,
+                        repo: TUFRepo.director,
+                        role: TUFRole.timestamp,
+                        key_type: KeyType.rsa
+                    }
+                ]
             });
 
 
@@ -237,6 +302,7 @@ export const createTeam = async (req: Request, res: Response, next: NextFunction
         return new SuccessJsonResponse(res, newTeam);
 
     } catch (error) {
+        console.log(error)
         logger.error('A user was unable to create a new team');
         return new BadResponse(res, 'Unable to create a new team.')
     }

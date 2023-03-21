@@ -649,6 +649,10 @@ export const deleteTeamHelper = async (teamID: string, oryId: string) => {
             await keyStorage.deleteKeyPair(getKeyStorageEcuKeyId(teamID, ecu.id));
         }
 
+        /*
+
+        TODO: This takes a long time so move it to a worker to prevent a timeout
+
         // revoke all robot and provisioning credentials certs
         for (const cert of team.certificates) {
             await certificateManager.revokeCertificate(cert.serial, RevocationReason.PRIVILEGE_WITHDRAWN);
@@ -657,6 +661,7 @@ export const deleteTeamHelper = async (teamID: string, oryId: string) => {
         // delete all objects beginning with their team id in the treehub bucket
         await blobStorage.deleteTeamObjects(config.TREEHUB_BUCKET_NAME!, teamID);
 
+        */
 
         // delete tuf keys
         await keyStorage.deleteKeyPair(getKeyStorageRepoKeyId(teamID, TUFRepo.image, TUFRole.root));

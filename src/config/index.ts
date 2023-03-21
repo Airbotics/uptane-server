@@ -64,6 +64,7 @@ const config = {
     AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY,                   // aws secret acess key
     AWS_LOCAL_ENDPOINT: process.env.AWS_LOCAL_ENDPOINT,                         // local aws endpoint
     AWS_ACM_PCA_ROOT_CA_ARN: process.env.AWS_ACM_PCA_ROOT_CA_ARN,               // arn of aws acm pca root ca
+    TREEHUB_BUCKET_NAME: process.env.TREEHUB_BUCKET_NAME,                       // s3 bucket to use for treeub
 
     // ory
     ORY_ACCESS_TOKEN: process.env.ORY_ACCESS_TOKEN,                             // Access token for ory

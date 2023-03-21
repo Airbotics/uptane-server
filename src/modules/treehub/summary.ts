@@ -3,7 +3,6 @@ import { logger } from '@airbotics-core/logger';
 import { prisma } from '@airbotics-core/drivers';
 import { blobStorage } from '@airbotics-core/blob-storage';
 import { mustBeRobot, updateRobotMeta } from '@airbotics-middlewares';
-import { TREEHUB_BUCKET } from '@airbotics-core/consts';
 import config from '@airbotics-config';
 import { BadResponse, NotFoundResponse, SuccessBinaryResponse, SuccessEmptyResponse } from '@airbotics-core/network/responses';
 
@@ -15,7 +14,7 @@ const downloadSummary = async (req: Request, res: Response) => {
     const team_id = req.params.team_id || req.robotGatewayPayload!.team_id;
 
     try {
-        const content = await blobStorage.getObject(TREEHUB_BUCKET, team_id, 'summary');
+        const content = await blobStorage.getObject(config.TREEHUB_BUCKET_NAME!, team_id, 'summary');
 
         res.set('content-type', 'application/octet-stream');
         return new SuccessBinaryResponse(res, content);
@@ -58,7 +57,7 @@ router.put('/:team_id/summary', express.raw({ type: '*/*', limit: config.MAX_TRE
         return new BadResponse(res, '');
     }
 
-    await blobStorage.putObject(TREEHUB_BUCKET,  teamID, 'summary', content);
+    await blobStorage.putObject(config.TREEHUB_BUCKET_NAME!,  teamID, 'summary', content);
 
     logger.info('uploaded ostree summary');
     return new SuccessEmptyResponse(res);

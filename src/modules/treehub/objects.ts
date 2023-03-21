@@ -4,7 +4,6 @@ import { logger } from '@airbotics-core/logger';
 import { prisma } from '@airbotics-core/drivers';
 import { blobStorage } from '@airbotics-core/blob-storage';
 import { mustBeRobot, updateRobotMeta } from '@airbotics-middlewares';
-import { TREEHUB_BUCKET } from '@airbotics-core/consts';
 import config from '@airbotics-config';
 import { BadResponse, InternalServerErrorResponse, NotFoundResponse, SuccessEmptyResponse } from '@airbotics-core/network/responses';
 
@@ -35,7 +34,7 @@ const downloadObject = async (req: Request, res: Response) => {
     }
 
     try {
-        const content = await blobStorage.getObject(TREEHUB_BUCKET, team_id, `objects/${prefix}/${suffix}`);
+        const content = await blobStorage.getObject(config.TREEHUB_BUCKET_NAME!, team_id, `objects/${prefix}/${suffix}`);
 
         res.set('content-type', 'application/octet-stream');
         return res.status(200).send(content);
@@ -107,7 +106,7 @@ router.post('/:team_id/objects/:prefix/:suffix', express.raw({ type: '*/*', limi
             }
         });
 
-        await blobStorage.putObject(TREEHUB_BUCKET, teamID, `objects/${prefix}/${suffix}`, content);
+        await blobStorage.putObject(config.TREEHUB_BUCKET_NAME!, teamID, `objects/${prefix}/${suffix}`, content);
 
         await tx.object.update({
             where: {

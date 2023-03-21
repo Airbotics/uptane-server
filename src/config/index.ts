@@ -18,7 +18,7 @@ const config = {
     POSTGRES_CONN_STR: process.env.POSTGRES_CONN_STR || DEFAULT_CONN_STR,       // connection string for postgres
 
     // http server
-    PORT: process.env.PORT || 8001,                                             // port the server listens on
+    PORT: Number(process.env.PORT) || 8001,                                             // port the server listens on
     NODE_ENV: NODE_ENV,                                                         // mode to run the server in, 'production' or 'development'
     MAX_JSON_REQUEST_SIZE: '100mb',                                             // max json size we accept
     MAX_TREEHUB_REQUEST_SIZE: '2048mb',                                          // max binary size we accept for treehub objects, refs and summaries
@@ -87,7 +87,7 @@ const config = {
     LOGS_DIR: process.env.LOGS_DIR || '.logs',                                  // absolute path to local log directory
 
     // certs
-    ROOT_CA_EXIRY: 1893456000,                                                  // 2030 in unix time (seconds)
+    ROOT_CA_EXPIRY_MAX: 1830297601,                                             // 2028 in unix time (seconds)
     ROBOT_CERT_TTL: [10, 'year'],                                               // expiry of robot certs
     DEV_ROOT_CA_TTL: [20, 'year'],                                              // expiry of dev root cert
     DEV_GATEWAY_CA_TTL: [10, 'year'],                                           // expiry of dev gateway cert

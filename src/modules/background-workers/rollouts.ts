@@ -251,7 +251,7 @@ const generateNewMetadata = async (team_id: string, robot_id: string, correlatio
 
     for (const affected of affectedEcus) {
 
-        targetsImages[affected.image.id] = {
+        targetsImages[affected.image.target_id] = {
             custom: {
                 ecuIdentifiers: {
                     [affected.ecu.id]: {

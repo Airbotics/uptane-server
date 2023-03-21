@@ -74,9 +74,9 @@ const config = {
     // background workers
     USE_NODE_SCHEDULER: process.env.USE_NODE_SCHEDULER || 'true',               // whether to use the nodejs scheduler to run workers, for development
     WORKERS: {
-        ROLLOUTS_CRON: '*/10 * * * * *',                                        // how often to run the rollouts worker
-        TUF_RESIGNER_CRON: '0 * * * *',                                         // how often to run the tuf resigner
-        PROVISIONING_CREDS_EXPIRY_PURGER_CRON: '0 * * * *'                      // how often to run the worker to "purge" expired provisioning credentials
+        PROVISIONING_CREDS_EXPIRY_PURGER_CRON: process.env.PROVISIONING_CREDS_EXPIRY_PURGER_CRON  || '0 * * * *',   // how often to run the worker to "purge" expired provisioning credentials
+        ROLLOUTS_CRON: process.env.ROLLOUTS_CRON || '*/10 * * * * *',           // how often to run the rollouts worker
+        TUF_RESIGNER_CRON: process.env.TUF_RESIGNER_CRON || '0 * * * *',        // how often to run the tuf resigner
     },
 
     // manifest processing
@@ -84,7 +84,7 @@ const config = {
     SECONDARY_ECU_VALID_FOR_SECS: process.env.SECONDARY_ECU_VALID_FOR_SECS || 43200,
 
     // logs
-    LOGS_DIR: '.logs',                                                          // local log directory
+    LOGS_DIR: process.env.LOGS_DIR || '.logs',                                  // absolute path to local log directory
 
     // certs
     ROOT_CA_EXIRY: 1893456000,                                                  // 2030 in unix time (seconds)

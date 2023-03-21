@@ -17,7 +17,7 @@ export class FsBlobProvider implements IBlobStorageProvider {
         return true;
     }
 
-    async getObject(bucketId: string, teamId: string, objectId: string): Promise<Buffer | string> {
+    async getObject(bucketId: string, teamId: string, objectId: string): Promise<Buffer> {
         const filePath = path.resolve(path.join(config.BLOB_FS_STORAGE_DIR, bucketId, teamId, objectId));
         return fs.readFileSync(filePath);
     }

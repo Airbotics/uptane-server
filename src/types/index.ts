@@ -16,6 +16,7 @@ import {
     IFleetOverview,
     IImageDetail
 } from './responses';
+import { Readable } from 'stream';
 
 
 export {
@@ -40,7 +41,7 @@ export {
  */
 export interface IBlobStorageProvider {
     putObject(bucketId: string, teamId: string, objectId: string, content: Buffer | string): Promise<boolean>;
-    getObject(bucketId: string, teamId: string, objectId: string): Promise<Buffer | string>;
+    getObject(bucketId: string, teamId: string, objectId: string): Promise<Buffer | Readable>;
     deleteObject(bucketId: string, teamId: string, objectId: string): Promise<boolean>;
     deleteTeamObjects(bucketId: string, teamId: string): Promise<boolean>;
 }

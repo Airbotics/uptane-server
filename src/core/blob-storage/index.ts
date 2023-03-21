@@ -1,6 +1,7 @@
 import config from '@airbotics-config';
 import { EBlobStorageProvider } from '@airbotics-core/consts';
 import { IBlobStorageProvider } from '@airbotics-types';
+import { Readable } from 'stream';
 import { FsBlobProvider } from './fs-provider';
 import { s3BlobProvider } from './s3-provider';
 
@@ -28,7 +29,7 @@ export class BlobStorageProvider implements IBlobStorageProvider {
         return this.strategy.putObject(bucketId, teamId, objectId, content);
     }
 
-    async getObject(bucketId: string, teamId: string, objectId: string): Promise<Buffer | string> {
+    async getObject(bucketId: string, teamId: string, objectId: string): Promise<Buffer | Readable> {
         return this.strategy.getObject(bucketId, teamId, objectId);
     }
 

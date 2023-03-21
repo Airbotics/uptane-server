@@ -6,6 +6,8 @@ import { blobStorage } from '@airbotics-core/blob-storage';
 import { mustBeRobot, updateRobotMeta } from '@airbotics-middlewares';
 import config from '@airbotics-config';
 import { BadResponse, InternalServerErrorResponse, NotFoundResponse, SuccessEmptyResponse } from '@airbotics-core/network/responses';
+import { binaryFromStream } from '@airbotics-core/utils';
+import { Readable } from 'stream';
 
 const router = express.Router();
 
@@ -35,9 +37,10 @@ const downloadObject = async (req: Request, res: Response) => {
 
     try {
         const content = await blobStorage.getObject(config.TREEHUB_BUCKET_NAME!, team_id, `objects/${prefix}/${suffix}`);
+        const binaryStr = await binaryFromStream(content as Readable) 
 
         res.set('content-type', 'application/octet-stream');
-        return res.status(200).send(content);
+        return res.status(200).send(binaryStr);
 
     } catch (error) {
         // db and blob storage should be in sync

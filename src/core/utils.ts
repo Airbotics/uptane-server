@@ -1,7 +1,7 @@
 import { EcuStatus, TUFRepo, TUFRole } from '@prisma/client';
 import canonicalize from 'canonicalize';
 import { EComputedRobotStatus } from './consts';
-
+import { Readable } from 'stream';
 
 /**
  * Serialises a Js object to canonical JSON.
@@ -50,4 +50,15 @@ export const computeRobotStatus = (ecu_statuses: EcuStatus[]): EComputedRobotSta
     } else {
         return EComputedRobotStatus.Updating;
     }
+}
+
+
+// converts readable stream (s3 blob) to binary string
+export const binaryFromStream = (stream: Readable): Promise<string> => {
+    return new Promise((resolve, reject) => {
+        const chunks: Uint8Array[] = [];
+        stream.on("data", (chunk) => chunks.push(chunk));
+        stream.on("error", reject);
+        stream.on("end", () => resolve(Buffer.concat(chunks).toString('binary')));
+    });
 }

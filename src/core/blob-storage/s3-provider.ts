@@ -2,11 +2,13 @@ import {
     ListObjectsCommand,
     DeleteObjectCommand,
     GetObjectCommand,
-    PutObjectCommand
+    PutObjectCommand,
+    GetObjectCommandOutput
 } from '@aws-sdk/client-s3';
 import { s3Client } from '@airbotics-core/drivers';
 import { IBlobStorageProvider } from '@airbotics-types';
 import { logger } from '@airbotics-core/logger';
+import { Readable } from 'stream';
 
 
 /**
@@ -19,7 +21,7 @@ import { logger } from '@airbotics-core/logger';
 export class s3BlobProvider implements IBlobStorageProvider {
 
     async putObject(bucketId: string, teamId: string, objectId: string, content: Buffer | string): Promise<boolean> {
-        
+
         const params = {
             Bucket: bucketId,
             Key: `${teamId}/${objectId}`,
@@ -36,22 +38,24 @@ export class s3BlobProvider implements IBlobStorageProvider {
         return res.$metadata.httpStatusCode === 200;
     }
 
-    async getObject(bucketId: string, teamId: string, objectId: string): Promise<Buffer | string> {
-        const params = {
+    async getObject(bucketId: string, teamId: string, objectId: string): Promise<Readable> {
+
+        const cmd = new GetObjectCommand({
             Bucket: bucketId,
             Key: `${teamId}/${objectId}`
-        };
+        })
 
-        const res = await s3Client.send(new GetObjectCommand(params));
-
+        const res: GetObjectCommandOutput = await s3Client.send(cmd);
+   
         if (res.$metadata.httpStatusCode !== 200) {
             logger.error('could not get blob from s3');
             new Error('an unknown error occurred.');
         }
-        // TODO 
-        // @ts-ignore
-        return res.Body;
+
+        return res.Body as Readable;
+
     }
+
 
     async deleteObject(bucketId: string, teamId: string, objectId: string): Promise<boolean> {
         const params = {

@@ -5,6 +5,8 @@ import { blobStorage } from '@airbotics-core/blob-storage';
 import { mustBeRobot, updateRobotMeta } from '@airbotics-middlewares';
 import config from '@airbotics-config';
 import { BadResponse, NotFoundResponse, SuccessBinaryResponse, SuccessEmptyResponse } from '@airbotics-core/network/responses';
+import { binaryFromStream } from '@airbotics-core/utils';
+import { Readable } from 'stream';
 
 const router = express.Router();
 
@@ -15,9 +17,10 @@ const downloadSummary = async (req: Request, res: Response) => {
 
     try {
         const content = await blobStorage.getObject(config.TREEHUB_BUCKET_NAME!, team_id, 'summary');
+        const binaryStr = await binaryFromStream(content as Readable) 
 
         res.set('content-type', 'application/octet-stream');
-        return new SuccessBinaryResponse(res, content);
+        return new SuccessBinaryResponse(res, binaryStr);
 
     } catch (error) {
         return new NotFoundResponse(res);

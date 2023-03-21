@@ -89,7 +89,7 @@ const config = {
 
     // certs
     ROOT_CA_EXPIRY_MAX: 1830297600001,                                          // 2028 in unix time (milliseconds)
-    ROBOT_CERT_TTL: [10, 'year'],                                               // expiry of robot certs
+    ROBOT_CERT_TTL: [5, 'year'],                                               // expiry of robot certs
     DEV_ROOT_CA_TTL: [20, 'year'],                                              // expiry of dev root cert
     DEV_GATEWAY_CA_TTL: [10, 'year'],                                           // expiry of dev gateway cert
 

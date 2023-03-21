@@ -58,7 +58,7 @@ router.get('/:role.json', mustBeRobot, updateRobotMeta, async (req: Request, res
     const metadata = await getTufMetadata(team_id, TUFRepo.image, role, TUF_METADATA_LATEST);
 
     if (!metadata) {
-        logger.warn('a robot is trying to get a tuf metadata role that does not exist')
+        logger.warn('a robot is trying to get a tuf metadata role that does not exist');
         return new NotFoundResponse(res);
     }
 

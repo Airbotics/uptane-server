@@ -3,7 +3,7 @@ import { RevocationReason } from '@aws-sdk/client-acm-pca';
 import { ory, prisma } from '@airbotics-core/drivers';
 import { KeyType, TUFRepo, TUFRole } from '@prisma/client';
 import { IdentityApiGetIdentityRequest, RelationshipApiGetRelationshipsRequest, RelationshipApiDeleteRelationshipsRequest, RelationshipApiPatchRelationshipsRequest } from '@ory/client';
-import { EComputedRobotStatus, EEventAction, EEventActorType, EEventResource, OryNamespaces, OryTeamRelations, TREEHUB_BUCKET, TUF_METADATA_LATEST } from '@airbotics-core/consts';
+import { EComputedRobotStatus, EEventAction, EEventActorType, EEventResource, OryNamespaces, OryTeamRelations, TUF_METADATA_LATEST } from '@airbotics-core/consts';
 import { BadResponse, SuccessJsonResponse, NoContentResponse } from '@airbotics-core/network/responses';
 import { logger } from '@airbotics-core/logger';
 import { IFleetOverview } from '@airbotics-types';
@@ -655,7 +655,7 @@ export const deleteTeamHelper = async (teamID: string, oryId: string) => {
         }
 
         // delete all objects beginning with their team id in the treehub bucket
-        await blobStorage.deleteTeamObjects(TREEHUB_BUCKET, teamID);
+        await blobStorage.deleteTeamObjects(config.TREEHUB_BUCKET_NAME!, teamID);
 
 
         // delete tuf keys

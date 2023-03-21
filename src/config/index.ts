@@ -22,8 +22,8 @@ const config = {
     NODE_ENV: NODE_ENV,                                                         // mode to run the server in, 'production' or 'development'
     MAX_JSON_REQUEST_SIZE: '100mb',                                             // max json size we accept
     MAX_TREEHUB_REQUEST_SIZE: '2048mb',                                          // max binary size we accept for treehub objects, refs and summaries
-    API_ORIGIN: 'http://localhost:8002',                                        // origin of the api (api.airbotics.io)
-    GATEWAY_ORIGIN: 'https://localhost:8003',                                   // origin of the gateway (gateway.airbotics.io)
+    API_ORIGIN: NODE_ENV === 'development' ? 'http://localhost:8002' : 'https://api.airbotics.io',
+    GATEWAY_ORIGIN: NODE_ENV === 'development' ? 'https://localhost:8003': 'https://m2m.airbotics.io',
     CORS_ORIGIN: NODE_ENV==='production' ? ['https://dashboard.staging.airbotics.io', 'https://dashboard.airbotics.io'] : 'http://localhost:3000',
 
     // blob storage provider to use
@@ -64,6 +64,7 @@ const config = {
     AWS_SECRET_ACCESS_KEY: process.env.AWS_SECRET_ACCESS_KEY,                   // aws secret acess key
     AWS_LOCAL_ENDPOINT: process.env.AWS_LOCAL_ENDPOINT,                         // local aws endpoint
     AWS_ACM_PCA_ROOT_CA_ARN: process.env.AWS_ACM_PCA_ROOT_CA_ARN,               // arn of aws acm pca root ca
+    TREEHUB_BUCKET_NAME: process.env.TREEHUB_BUCKET_NAME,                       // s3 bucket to use for treeub
 
     // ory
     ORY_ACCESS_TOKEN: process.env.ORY_ACCESS_TOKEN,                             // Access token for ory
@@ -87,8 +88,8 @@ const config = {
     LOGS_DIR: process.env.LOGS_DIR || '.logs',                                  // absolute path to local log directory
 
     // certs
-    ROOT_CA_EXPIRY_MAX: 1830297601,                                             // 2028 in unix time (seconds)
-    ROBOT_CERT_TTL: [5, 'year'],                                                // expiry of robot certs
+    ROOT_CA_EXPIRY_MAX: 1830297600001,                                          // 2028 in unix time (milliseconds)
+    ROBOT_CERT_TTL: [5, 'year'],                                               // expiry of robot certs
     DEV_ROOT_CA_TTL: [20, 'year'],                                              // expiry of dev root cert
     DEV_GATEWAY_CA_TTL: [10, 'year'],                                           // expiry of dev gateway cert
 

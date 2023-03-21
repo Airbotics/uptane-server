@@ -73,7 +73,6 @@ export const enum ESignatureScheme {
 }
 
 // infra consts
-export const TREEHUB_BUCKET = 'airbotics-treehub';
 export const DEV_CERTS_BUCKET = 'certs';
 export const DEV_ROOT_CA_CERT_OBJ_ID = 'root-ca-cert';
 export const DEV_ROOT_CA_KEY_ID = 'root-ca-key';

@@ -23,7 +23,7 @@ const downloadSummary = async (req: Request, res: Response) => {
         return new SuccessBinaryResponse(res, binaryStr);
 
     } catch (error) {
-        return new NotFoundResponse(res);
+        return res.status(404).end();
     }
 
 }
@@ -46,7 +46,7 @@ router.put('/:team_id/summary', express.raw({ type: '*/*', limit: config.MAX_TRE
     // if content-length was not sent, or it is zero, or it is not a number return 400
     if (!size || size === 0 || isNaN(size)) {
         logger.warn('could not upload ostree summary because content-length header was not sent');
-        return new BadResponse(res, '');
+        return res.status(400).end();
     }
 
     const teamCount = await prisma.team.count({
@@ -57,13 +57,13 @@ router.put('/:team_id/summary', express.raw({ type: '*/*', limit: config.MAX_TRE
 
     if (teamCount === 0) {
         logger.warn('could not upload ostree summary because team does not exist');
-        return new BadResponse(res, '');
+        return res.status(400).end();
     }
 
     await blobStorage.putObject(config.TREEHUB_BUCKET_NAME!,  teamID, 'summary', content);
 
     logger.info('uploaded ostree summary');
-    return new SuccessEmptyResponse(res);
+    return res.status(200).end();
 
 });
 

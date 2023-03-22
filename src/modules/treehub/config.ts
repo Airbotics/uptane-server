@@ -20,7 +20,7 @@ const getConfig = async (req: Request, res: Response) => {
 
     if (teamCount === 0) {
         logger.warn('could not get ostree config because team does not exist');
-        return new BadResponse(res, '');
+        return res.status(400).end();
     }
 
     res.set('content-type', 'text/plain');

@@ -20,25 +20,25 @@ export const rolloutEventHandler = async (event: AktualizrEvent) => {
         case EAktualizrEvent.EcuInstallationApplied: await handleEcuEvent(event, EcuStatus.installation_applied); break;
         case EAktualizrEvent.EcuInstallationCompleted: await handleEcuEvent(event, event.event.success ? EcuStatus.installation_completed : EcuStatus.installation_failed); break;
         default: logger.error(`unable to handle AktualizrEvent. No handler for event type ${event.eventType.id}`);
-    }    
+    }
 };
 
 
 const handleRolloutAccepted = async (event: AktualizrEvent) => {
     logger.info(`handling AktualizrEvent: ${event.eventType.id}`);
-} 
+}
 
 const handleRolloutDeclined = async (event: AktualizrEvent) => {
     logger.info(`handling AktualizrEvent: ${event.eventType.id}`);
-} 
+}
 
 const handleRolloutPostponed = async (event: AktualizrEvent) => {
     logger.info(`handling AktualizrEvent: ${event.eventType.id}`);
-} 
+}
 
 const handleRobotPaused = async (event: AktualizrEvent) => {
     logger.info(`TODO: handling AktualizrEvent: ${event.eventType.id}`);
-} 
+}
 
 const handleRobotResumed = async (event: AktualizrEvent) => {
     logger.info(`TODO: handling AktualizrEvent: ${event.eventType.id}`);
@@ -55,7 +55,7 @@ const handleEcuEvent = async (event: AktualizrEvent, status: EcuStatus) => {
 
     logger.info(`handling AktualizrEvent: ${event.eventType.id}`);
 
-    if(event.event.correlationId === null || event.event.ecu === null) {
+    if (event.event.correlationId === null || event.event.ecu === null) {
         logger.error(`Could not process ${event.eventType.id} event, ecu or correlation ID is missing!`);
         return;
     }
@@ -74,13 +74,34 @@ const handleEcuEvent = async (event: AktualizrEvent, status: EcuStatus) => {
             }
         });
 
-        await tx.ecu.update({
+        //update the ecu status to whats being reported
+        const updatedEcu = await tx.ecu.update({
             where: { id: event.event.ecu! },
             data: {
-                status: status
+                status: status,
             }
-        })
+        });
 
+        //We also need to update the 'installed image' of the ecu
+        if (event.eventType.id === EAktualizrEvent.EcuInstallationCompleted) {
+
+            const botRollout = await prisma.rolloutRobot.findUnique({
+                where: { id: event.event.correlationId! },
+                include: {
+                    rollout: {
+                        include: { hw_imgs: true }
+                    }
+                }
+            })
+
+            await tx.ecu.update({
+                where: { id: event.event.ecu! },
+                data: {
+                    image_id: botRollout?.rollout.hw_imgs.find(hw_img => hw_img.hw_id === updatedEcu.hwid )!.image_id
+                }
+            })
+
+        }
     })
 
 }

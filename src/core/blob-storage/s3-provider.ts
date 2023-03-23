@@ -51,7 +51,7 @@ export class s3BlobProvider implements IBlobStorageProvider {
             logger.error('could not get blob from s3');
             new Error('an unknown error occurred.');
         }
-
+        
         return res.Body as Readable;
 
     }

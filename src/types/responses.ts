@@ -170,6 +170,21 @@ export interface IRobotRolloutRes {
  * Images
  */
 
+export interface IImageRes {
+    id: string;
+    name: string;
+    target_id: string;
+    size: number;
+    sha256: string;
+    hwids: string[];
+    created_at: Date;
+}
+
+export interface IImageDetailRes extends IImageRes {
+    description: string | null;
+    format: ImageFormat;
+}
+
 export interface IImageRobotRes {
     robot: {
         id: string;
@@ -182,18 +197,6 @@ export interface IImageRobotRes {
         updated_at: Date
     }
 }
-
-export interface IImageDetail {
-    id: string;
-    name: string;
-    size: number;
-    sha256: string;
-    hwids: string[];
-    created_at: Date;
-    description: string | null;
-    format: ImageFormat;
-}
-
 
 
 /**

@@ -1,11 +1,11 @@
-import { CertificateStatus, CertificateType } from '@prisma/client';
+import { CertificateStatus, CertificateType, EcuStatus, EcuTelemetry } from '@prisma/client';
 import dayjs, { ManipulateType } from 'dayjs';
 import express, { Request } from 'express';
 import forge from 'node-forge';
 import { logger } from '@airbotics-core/logger';
 import { generateKeyPair, certificateManager } from '@airbotics-core/crypto';
 import { prisma } from '@airbotics-core/drivers';
-import { EKeyType } from '@airbotics-core/consts';
+import { EAktualizrEvent, EKeyType } from '@airbotics-core/consts';
 import { mustBeRobot, updateRobotMeta } from '@airbotics-middlewares';
 import config from '@airbotics-config';
 import { delay } from '@airbotics-core/utils';
@@ -216,12 +216,28 @@ router.post('/events', mustBeRobot, updateRobotMeta, async (req: Request, res) =
 
     const events = req.body as AktualizrEvent[];
 
+
+    const mapFromAktEventToTelemetryEvent = (aktEvent: AktualizrEvent): string => {
+        switch (aktEvent.eventType.id) {
+            case EAktualizrEvent.CampaignAccepted: return 'campaign_accepted';
+            case EAktualizrEvent.CampaignDeclined: return 'campaign_declined';
+            case EAktualizrEvent.CampaignPostponed: return 'campaign_postponed';
+            case EAktualizrEvent.DevicePaused: return 'device_paused';
+            case EAktualizrEvent.DeviceResumed: return 'device_resumed';
+            case EAktualizrEvent.EcuDownloadStarted: return 'download_started';
+            case EAktualizrEvent.EcuDownloadCompleted: return aktEvent.event.success ? 'download_completed' : 'download_failed';
+            case EAktualizrEvent.EcuInstallationStarted: return 'installation_started';
+            case EAktualizrEvent.EcuDownloadCompleted: return aktEvent.event.success ? 'installation_completed' : 'installation_failed';
+            case EAktualizrEvent.EcuInstallationApplied: return 'installation_applied';
+            default: return '';
+        }
+    }
+
     const robotEvents = events.map(robotEvent => ({
         team_id,
         ecu_id: robotEvent.event.ecu!,
-        event_type: robotEvent.eventType.id,
+        event_type: mapFromAktEventToTelemetryEvent(robotEvent),
         device_time: robotEvent.deviceTime,
-        success: robotEvent.event.success
     }));
 
     await prisma.ecuTelemetry.createMany({

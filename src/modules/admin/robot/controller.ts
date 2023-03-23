@@ -392,7 +392,6 @@ export const listRobotTelemetry = async (req: Request, res: Response, next: Next
         id: tele.id,
         device_time: tele.device_time,
         event_type: tele.event_type,
-        success: tele.success,
         ecu: {
             id: tele.ecu_id,
             hw_id: tele.ecu.hwid

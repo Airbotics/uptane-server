@@ -140,7 +140,6 @@ export interface IEcuTelemetryRes {
         hw_id: string;
     };
     event_type: string;
-    success: boolean | null;
     device_time: Date;
 }
 

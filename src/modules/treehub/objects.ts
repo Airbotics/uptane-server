@@ -8,6 +8,9 @@ import config from '@airbotics-config';
 import { BadResponse, InternalServerErrorResponse, NotFoundResponse, SuccessEmptyResponse } from '@airbotics-core/network/responses';
 import { binaryFromStream } from '@airbotics-core/utils';
 import { Readable } from 'stream';
+import { GetObjectCommand, GetObjectCommandOutput, S3Client } from '@aws-sdk/client-s3';
+import { generateHash } from '@airbotics-core/crypto';
+import { EHashDigest } from '@airbotics-core/consts';
 
 const router = express.Router();
 
@@ -36,11 +39,17 @@ const downloadObject = async (req: Request, res: Response) => {
     }
 
     try {
+        
         const content = await blobStorage.getObject(config.TREEHUB_BUCKET_NAME!, team_id, `objects/${prefix}/${suffix}`);
-        const binaryStr = await binaryFromStream(content as Readable) 
+        const binaryStr: string = await binaryFromStream(content as Readable)
 
-        res.set('content-type', 'application/octet-stream');
-        return res.status(200).send(binaryStr);
+        res.writeHead(200, {
+            'Accept-Ranges': 'bytes',
+            'Content-Type': 'application/octet-stream',
+        });
+ 
+        res.end(binaryStr, 'binary')
+
 
     } catch (error) {
         // db and blob storage should be in sync
@@ -48,8 +57,6 @@ const downloadObject = async (req: Request, res: Response) => {
         logger.error('ostree object in postgres and blob storage are out of sync');
         return res.status(500).end();
     }
-
-
 }
 
 
@@ -86,7 +93,6 @@ router.post('/:team_id/objects/:prefix/:suffix', express.raw({ type: '*/*', limi
         logger.warn('could not upload ostree object because team does not exist');
         return res.status(400).end();
     }
-
 
     await prisma.$transaction(async tx => {
 
@@ -179,6 +185,7 @@ router.get('/:team_id/objects/:prefix/:suffix', downloadObject);
  * Will fetch from s3 or local filesystem depending on config.
  */
 router.get('/objects/:prefix/:suffix', mustBeRobot, updateRobotMeta, downloadObject);
+
 
 
 export default router;

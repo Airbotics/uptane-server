@@ -2,9 +2,10 @@ import { Request, Response, NextFunction } from 'express';
 import { BadResponse, SuccessJsonResponse } from '@airbotics-core/network/responses';
 import { logger } from '@airbotics-core/logger';
 import { prisma } from '@airbotics-core/drivers';
-import { IImageRobotRes, IImageDetail } from '@airbotics-types';
+import { IImageDetailRes, IImageRes, IImageRobotRes } from '@airbotics-reponse-types';
 import { auditEvent } from '@airbotics-core/events';
 import { EEventAction, EEventActorType, EEventResource } from '@airbotics-core/consts';
+
 
 
 /**
@@ -26,8 +27,9 @@ export const listImages = async (req: Request, res: Response) => {
         take: take ? Number(take) : undefined
     });
 
-    const imagesSanitised = images.map(image => ({
+    const imagesSanitised: IImageRes[] = images.map(image => ({
         id: image.id,
+        target_id: image.target_id,
         name: image.name,
         size: image.size,
         sha256: image.sha256,
@@ -65,8 +67,9 @@ export const getImage = async (req: Request, res: Response) => {
         return new BadResponse(res, 'Unable to get image');
     }
 
-    const imageSanitised: IImageDetail= {
+    const imageSanitised: IImageDetailRes = {
         id: image.id,
+        target_id: image.target_id,
         name: image.name,
         description: image.description,
         size: image.size,

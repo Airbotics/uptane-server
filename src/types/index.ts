@@ -13,8 +13,7 @@ import {
     IRolloutAffectedBotRes,
     IRolloutDetailRes,
     IRolloutRes,
-    IFleetOverview,
-    IImageDetail
+    IFleetOverview
 } from './responses';
 import { Readable } from 'stream';
 
@@ -31,8 +30,7 @@ export {
     IRolloutAffectedBotRes,
     IRolloutDetailRes,
     IRolloutRes,
-    IFleetOverview,
-    IImageDetail
+    IFleetOverview
 };
 
 

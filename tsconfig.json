@@ -15,6 +15,7 @@
             "@airbotics-middlewares": ["src/middlewares/"],
             "@airbotics-modules/*": ["src/modules/*"],
             "@airbotics-types": ["src/types/"],
+            "@airbotics-reponse-types": ["src/types/responses.ts"],
             "@airbotics-config": ["src/config/"]
         },
         "typeRoots": [

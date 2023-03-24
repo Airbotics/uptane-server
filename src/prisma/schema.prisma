@@ -370,10 +370,8 @@ model EcuTelemetry {
     id                  String          @id @default(uuid()) @unique
     team_id             String
     ecu_id              String
-
-    event_type          String
+    event_type          String          // roughly corresponds to ecu status, plus device_paused, device_resumed and a few others
     device_time         DateTime
-    success             Boolean?
     created_at          DateTime        @default(now())
 
     team                Team            @relation(fields: [team_id], references: [id], onDelete: Cascade)

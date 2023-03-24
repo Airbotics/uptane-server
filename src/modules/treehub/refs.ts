@@ -25,7 +25,7 @@ const getRef = async (req: Request, res: Response) => {
 
     if (!ref) {
         logger.warn('could not get ostree ref because it does not exist');
-        return new BadResponse(res, '');
+        return res.status(404).end();
     }
 
     res.set('content-type', 'text/plain');
@@ -54,7 +54,7 @@ router.post('/:team_id/refs/heads/:name', express.text({ type: '*/*', limit: con
 
     if (teamCount === 0) {
         logger.warn('could not upload ostree ref because team does not exist');
-        return new BadResponse(res, '');
+        return res.status(400).end();
     }
 
     // check object exists
@@ -66,7 +66,7 @@ router.post('/:team_id/refs/heads/:name', express.text({ type: '*/*', limit: con
 
     if (objectCount === 0) {
         logger.warn('could not upload ostree ref because the object it references does not exist');
-        return new BadResponse(res, '');
+        return res.status(400).end();
     }
 
     await prisma.ref.upsert({
@@ -89,7 +89,7 @@ router.post('/:team_id/refs/heads/:name', express.text({ type: '*/*', limit: con
     });
 
     logger.info('uploaded ostree ref');
-    return new SuccessEmptyResponse(res);
+    return res.status(200).end();
 });
 
 // get a ref

@@ -92,14 +92,14 @@ const handleEcuEvent = async (event: AktualizrEvent, status: EcuStatus) => {
                         include: { hw_imgs: true }
                     }
                 }
-            })
+            });
 
             await tx.ecu.update({
                 where: { id: event.event.ecu! },
                 data: {
                     image_id: botRollout?.rollout.hw_imgs.find(hw_img => hw_img.hw_id === updatedEcu.hwid )!.image_id
                 }
-            })
+            });
 
         }
     })

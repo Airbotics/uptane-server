@@ -227,7 +227,12 @@ export interface IRolloutDetailRes {
         status: RolloutRobotStatus;
         ecus: {
             id: string,
-            status: EcuStatus | null
+            status: EcuStatus | null,
+            hw_id: string;
+            image?: {
+                id: string, 
+                target_id: string
+            }
         }[]
     }[]
 }

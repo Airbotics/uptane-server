@@ -277,7 +277,7 @@ export interface ICreateRolloutBody {
     hwid_img_map: { hw_id: string, img_id: string }[];
     targeted_robots: {
         type: RolloutTargetType;
-        group_id: string;
+        group_id: string | undefined;
         selected_bot_ids: string[];
     }
 }

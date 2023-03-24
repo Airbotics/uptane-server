@@ -5,7 +5,7 @@ import forge from 'node-forge';
 import { logger } from '@airbotics-core/logger';
 import { generateKeyPair, certificateManager } from '@airbotics-core/crypto';
 import { prisma } from '@airbotics-core/drivers';
-import { EKeyType } from '@airbotics-core/consts';
+import { EKeyType, EAktualizrEvent } from '@airbotics-core/consts';
 import { mustBeRobot, updateRobotMeta } from '@airbotics-middlewares';
 import config from '@airbotics-config';
 import { delay } from '@airbotics-core/utils';

@@ -418,13 +418,13 @@ router.get('/:version.:role.json', mustBeRobot, updateRobotMeta, async (req: Req
 router.get('/:role.json', mustBeRobot, updateRobotMeta, async (req: Request, res) => {
 
     const role = req.params.role;
-
-
+    
     const {
         team_id,
         robot_id
     } = req.robotGatewayPayload!;
 
+ 
     // since this is the director repo metadata is genereated per robot, apart from
     // the root which is the same for all. therefore if the role is root we don't
     // include the robot_id as a clause
@@ -440,12 +440,18 @@ router.get('/:role.json', mustBeRobot, updateRobotMeta, async (req: Request, res
         }
     });
 
+
     if (metadata.length === 0) {
         logger.warn(`could not download ${role} metadata because it does not exist`);
         return new NotFoundResponse(res);
     }
 
+    console.log('5');
+
+
     const mostRecentMetadata = metadata[0].value as Prisma.JsonObject;
+
+    console.log('6');
 
     // check it hasnt expired
     // TODO

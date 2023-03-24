@@ -120,9 +120,10 @@ const processTargetRoles = async (teamIds: string[]) => {
         
         for (const repo of tufRepos) {
             
-            const latestTarget = await getTufMetadata(teamId, repo, TUFRole.targets, TUF_METADATA_LATEST) as ISignedTargetsTUF;
+            const latestTarget = await getTufMetadata(teamId, repo, TUFRole.targets, TUF_METADATA_LATEST) as ISignedTargetsTUF | null;
+            if(latestTarget === null) continue;
 
-            if (dayjs(latestTarget.signed.expires).isAfter(dayjs().add(config.TUF_EXPIRY_WINDOW[0] as number, config.TUF_EXPIRY_WINDOW[1] as ManipulateType))) {
+            if (dayjs(latestTarget.signed.expires).isBefore(dayjs().add(config.TUF_EXPIRY_WINDOW[0] as number, config.TUF_EXPIRY_WINDOW[1] as ManipulateType))) {
 
                 logger.debug(`detected version ${latestTarget.signed.version} of targets for ${repo} repo in ${teamId} team is about to expire`);
                 const newTargetVersion = latestTarget.signed.version + 1;
@@ -178,7 +179,7 @@ const processTargetRoles = async (teamIds: string[]) => {
                         }
                     })
                 })
-                logger.debug(`detected version ${latestTarget.signed.version} of target for ${repo} repo in ${teamId} was successfully resigned!`);
+                logger.debug(`detected version ${latestTarget.signed.version} of targets for ${repo} repo in ${teamId} was successfully resigned!`);
                 logger.debug(`detected version ${latestSnapshot.signed.version} of snapshot for ${repo} repo in ${teamId} was successfully resigned!`);
                 logger.debug(`detected version ${latestTimestamp.signed.version} of timestamp for ${repo} repo in ${teamId} was successfully resigned!`);
             }
@@ -213,9 +214,10 @@ const processSnapshotRoles = async (teamIds: string[]) => {
         
         for (const repo of tufRepos) {
             
-            const latestSnapshot = await getTufMetadata(teamId, repo, TUFRole.snapshot, TUF_METADATA_LATEST) as ISignedSnapshotTUF;
-
-            if (dayjs(latestSnapshot.signed.expires).isAfter(dayjs().add(config.TUF_EXPIRY_WINDOW[0] as number, config.TUF_EXPIRY_WINDOW[1] as ManipulateType))) {
+            const latestSnapshot = await getTufMetadata(teamId, repo, TUFRole.snapshot, TUF_METADATA_LATEST) as ISignedSnapshotTUF | null;
+            if(latestSnapshot === null) continue;
+            
+            if (dayjs(latestSnapshot.signed.expires).isBefore(dayjs().add(config.TUF_EXPIRY_WINDOW[0] as number, config.TUF_EXPIRY_WINDOW[1] as ManipulateType))) {
                 logger.debug(`detected version ${latestSnapshot.signed.version} of snapshot for ${repo} repo in ${teamId} team is about to expire`);
                 const newSnapshotVersion = latestSnapshot.signed.version + 1;
                 const snapshotKeyPair = await keyStorage.getKeyPair(getKeyStorageRepoKeyId(teamId, repo, TUFRole.snapshot));
@@ -282,9 +284,10 @@ const processTimestampRoles = async (teamIds: string[]) => {
         
         for (const repo of tufRepos) {
             
-            const latestTimestamp = await getTufMetadata(teamId, repo, TUFRole.timestamp, TUF_METADATA_LATEST) as ISignedTimestampTUF;
+            const latestTimestamp = await getTufMetadata(teamId, repo, TUFRole.timestamp, TUF_METADATA_LATEST) as ISignedTimestampTUF | null;
+            if(latestTimestamp === null) continue;
 
-            if (dayjs(latestTimestamp.signed.expires).isAfter(dayjs().add(config.TUF_EXPIRY_WINDOW[0] as number, config.TUF_EXPIRY_WINDOW[1] as ManipulateType))) {
+            if (dayjs(latestTimestamp.signed.expires).isBefore(dayjs().add(config.TUF_EXPIRY_WINDOW[0] as number, config.TUF_EXPIRY_WINDOW[1] as ManipulateType))) {
                 logger.debug(`detected version ${latestTimestamp.signed.version} of timestamp for ${repo} repo in ${teamId} team is about to expire`);
                 const newTimestampVersion = latestTimestamp.signed.version + 1;
                 const timestampKeyPair = await keyStorage.getKeyPair(getKeyStorageRepoKeyId(teamId, repo, TUFRole.timestamp));
@@ -326,14 +329,14 @@ export const resignTufRoles = async () => {
             select: { id: true }
         })).map(team => team.id);
 
-        await processRootRoles();
+        // await processRootRoles();
         await processTargetRoles(teamIds);
         await processSnapshotRoles(teamIds);
         await processTimestampRoles(teamIds);
 
     } catch(e) {
         logger.error('Error running TUF resigner worker');
-        logger.error(e);
+        console.log(e);
     }
 
     logger.info('completed background worker to resign tuf roles');

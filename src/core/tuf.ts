@@ -189,7 +189,7 @@ export const generateSignedRoot = (ttl: (number | string)[], version: number, ro
  * Generate sign targets metadata.
  */
 export const generateSignedTargets = (ttl: (number | string)[], version: number, targetsKeyPair: IKeyPair, targetsImages: ITargetsImages, custom?: any): ISignedTargetsTUF => {
-
+    
     const signed: ITargetsSignedTUF = {
         _type: ETUFRole.Targets,
         expires: getTUFExpiry(ttl),
@@ -211,7 +211,7 @@ export const generateSignedTargets = (ttl: (number | string)[], version: number,
  * Generate sign snapshot metadata.
  */
 export const generateSignedSnapshot = (ttl: (number | string)[], version: number, snapshotKeyPair: IKeyPair, targetsMetadata: ISignedTargetsTUF): ISignedSnapshotTUF => {
-
+    
     const signed: ISnapshotSignedTUF = {
         _type: ETUFRole.Snapshot,
         expires: getTUFExpiry(ttl),

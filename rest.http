@@ -401,6 +401,18 @@ air-client-id:{{ROBOT_ID}}
 GET {{BASE_URL}}/api/{{API_VERSION}}/robot/repo/2.root.json HTTP/1.1
 air-client-id:{{ROBOT_ID}}
 
+### get latest timestamp metadata
+GET {{BASE_URL}}/api/{{API_VERSION}}/robot/repo/timestamp.json HTTP/1.1
+air-client-id:{{ROBOT_ID}}
+
+### get latest snapshot metadata
+GET {{BASE_URL}}/api/{{API_VERSION}}/robot/repo/snapshot.json HTTP/1.1
+air-client-id:{{ROBOT_ID}}
+
+### get latest targets metadata
+GET {{BASE_URL}}/api/{{API_VERSION}}/robot/repo/targets.json HTTP/1.1
+air-client-id:{{ROBOT_ID}}
+
 
 
 ### Upload a new targets.json (usually done by garage sign)

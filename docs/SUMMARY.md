@@ -13,6 +13,7 @@
 ## Guides
 
 * [Quickstart](guides/quickstart.md)
+* [Deploying Airbotics](guides/deploying-airbotics.md)
 * [Self-hosting](guides/self-hosting.md)
 
 ## Platform
@@ -32,6 +33,7 @@
 ## Contributors
 
 * [Overview](contributors/overview.md)
+* [Background workers](contributors/background-workers.md)
 * [Working with...](contributors/working-with.md)
 
 

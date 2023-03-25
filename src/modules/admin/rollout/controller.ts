@@ -29,159 +29,168 @@ export const createRollout = async (req: Request, res: Response) => {
     const teamId = req.headers['air-team-id']!;
     const oryId = req.oryIdentity!.traits.id;
 
+    try {
 
-    const createdRollout: Rollout = await prisma.$transaction(async tx => {
+        const createdRollout: Rollout = await prisma.$transaction(async tx => {
 
-        //Create the rollout
-        const rollout = await tx.rollout.create({
-            data: {
-                team_id: teamId,
-                name: body.name,
-                description: body.description,
-                target_type: body.targeted_robots.type,
-                status: RolloutStatus.prepared
-            }
-        });
-
-        //Add the hw_id to image_id map for the rollout
-        await tx.rolloutHardwareImage.createMany({
-            data: body.hwid_img_map.map(elem => ({
-                rollout_id: rollout.id,
-                hw_id: elem.hw_id,
-                image_id: elem.img_id
-
-            }))
-        });
-
-        //Determine the potentially affected bot_ids and their corresponding ecu_ids
-        let potentiallyAffectedBots: { robot_id: string, ecu_ids: string[] }[] = [];
-
-        if (body.targeted_robots.type === RolloutTargetType.selected_bots) {
-
-            const robots = await tx.robot.findMany({
-                where: {
-                    id: { in: body.targeted_robots.selected_bot_ids }
-                },
-                include: {
-                    ecus: {
-                        select: { id: true },
-                        where: {
-                            hwid: { in: body.hwid_img_map.map(elem => elem.hw_id) }
-                        }
-                    }
+            //Create the rollout
+            const rollout = await tx.rollout.create({
+                data: {
+                    team_id: teamId,
+                    name: body.name,
+                    description: body.description,
+                    target_type: body.targeted_robots.type,
+                    status: RolloutStatus.prepared
                 }
             });
 
-            potentiallyAffectedBots = robots.map(robot => ({
-                robot_id: robot.id,
-                ecu_ids: robot.ecus.map(ecu => ecu.id)
-            }))
-        }
+            //Add the hw_id to image_id map for the rollout
+            await tx.rolloutHardwareImage.createMany({
+                data: body.hwid_img_map.map(elem => ({
+                    rollout_id: rollout.id,
+                    hw_id: elem.hw_id,
+                    image_id: elem.img_id
 
-        else if (body.targeted_robots.type === RolloutTargetType.group) {
+                }))
+            });
 
-            const robotGroups = await tx.robotGroup.findMany({
-                where: {
-                    group_id: body.targeted_robots.group_id
-                },
-                include: {
-                    robot: {
-                        include: {
-                            ecus: {
-                                select: { id: true },
-                                where: {
-                                    hwid: { in: body.hwid_img_map.map(elem => elem.hw_id) }
+            //Determine the potentially affected bot_ids and their corresponding ecu_ids
+            let potentiallyAffectedBots: { robot_id: string, ecu_ids: string[] }[] = [];
+
+            if (body.targeted_robots.type === RolloutTargetType.selected_bots) {
+
+                const robots = await tx.robot.findMany({
+                    where: {
+                        id: { in: body.targeted_robots.selected_bot_ids }
+                    },
+                    include: {
+                        ecus: {
+                            select: { id: true },
+                            where: {
+                                hwid: { in: body.hwid_img_map.map(elem => elem.hw_id) }
+                            }
+                        }
+                    }
+                });
+
+                potentiallyAffectedBots = robots.map(robot => ({
+                    robot_id: robot.id,
+                    ecu_ids: robot.ecus.map(ecu => ecu.id)
+                }))
+            }
+
+            else if (body.targeted_robots.type === RolloutTargetType.group) {
+
+                const robotGroups = await tx.robotGroup.findMany({
+                    where: {
+                        group_id: body.targeted_robots.group_id
+                    },
+                    include: {
+                        robot: {
+                            include: {
+                                ecus: {
+                                    select: { id: true },
+                                    where: {
+                                        hwid: { in: body.hwid_img_map.map(elem => elem.hw_id) }
+                                    }
                                 }
                             }
                         }
                     }
-                }
-            });
+                });
 
-            potentiallyAffectedBots = robotGroups.map(botGrp => ({
-                robot_id: botGrp.robot_id,
-                ecu_ids: botGrp.robot.ecus.map(ecu => ecu.id)
-            }))
-        }
+                potentiallyAffectedBots = robotGroups.map(botGrp => ({
+                    robot_id: botGrp.robot_id,
+                    ecu_ids: botGrp.robot.ecus.map(ecu => ecu.id)
+                }))
+            }
 
-        else if (body.targeted_robots.type === RolloutTargetType.hw_id_match) {
+            else if (body.targeted_robots.type === RolloutTargetType.hw_id_match) {
 
-            const hwIds = body.hwid_img_map.map(elem => (elem.hw_id));
+                const hwIds = body.hwid_img_map.map(elem => (elem.hw_id));
 
-            const robots = await tx.robot.findMany({
-                where: {
-                    ecus: {
-                        some: {
-                            hwid: { in: hwIds }
+                const robots = await tx.robot.findMany({
+                    where: {
+                        ecus: {
+                            some: {
+                                hwid: { in: hwIds }
+                            }
+                        }
+                    },
+                    include: {
+                        ecus: {
+                            select: { id: true },
+                            where: {
+                                hwid: { in: body.hwid_img_map.map(elem => elem.hw_id) }
+                            }
                         }
                     }
-                },
-                include: {
-                    ecus: {
-                        select: { id: true },
-                        where: {
-                            hwid: { in: body.hwid_img_map.map(elem => elem.hw_id) }
+                })
+
+                potentiallyAffectedBots = robots.map(robot => ({
+                    robot_id: robot.id,
+                    ecu_ids: robot.ecus.map(ecu => ecu.id)
+                }))
+            }
+
+            else {
+                throw ('Unknown robot target type for rollout');
+            }
+
+            if (potentiallyAffectedBots.length === 0) {
+                throw ('Cannot create a rollout that affects 0 robots!');
+            }
+
+            //For each of the potentially affected bots, add a RolloutRobot and n RolloutRobotEcus
+            for (const bot of potentiallyAffectedBots) {
+                await tx.rolloutRobot.create({
+                    data: {
+                        rollout_id: rollout.id,
+                        robot_id: bot.robot_id,
+                        ecus: {
+                            createMany: {
+                                data: bot.ecu_ids.map(id => ({
+                                    ecu_id: id
+                                }))
+                            }
                         }
                     }
-                }
-            })
+                })
+            }
 
-            potentiallyAffectedBots = robots.map(robot => ({
-                robot_id: robot.id,
-                ecu_ids: robot.ecus.map(ecu => ecu.id)
-            }))
-        }
+            return rollout;
 
-        else {
-            throw ('Unknown robot target type for rollout');
-        }
+        });
 
 
-        //For each of the potentially affected bots, add a RolloutRobot and n RolloutRobotEcus
-        for (const bot of potentiallyAffectedBots) {
-            await tx.rolloutRobot.create({
-                data: {
-                    rollout_id: rollout.id,
-                    robot_id: bot.robot_id,
-                    ecus: {
-                        createMany: {
-                            data: bot.ecu_ids.map(id => ({
-                                ecu_id: id
-                            }))
-                        }
-                    }
-                }
-            })
-        }
+        auditEvent.emit({
+            resource: EEventResource.Rollout,
+            action: EEventAction.Created,
+            actor_type: EEventActorType.User,
+            actor_id: oryId,
+            team_id: teamId,
+            meta: {
+                rollout_id: createdRollout.id,
+                name: createdRollout.name
+            }
+        });
 
-        return rollout;
+        const rolloutSantised: IRolloutRes = {
+            id: createdRollout.id,
+            name: createdRollout.name,
+            description: createdRollout.description,
+            status: createdRollout.status,
+            created_at: createdRollout.created_at,
+            updated_at: createdRollout.updated_at
+        };
 
-    });
+        logger.info('created rollout');
 
-    auditEvent.emit({
-        resource: EEventResource.Rollout,
-        action: EEventAction.Created,
-        actor_type: EEventActorType.User,
-        actor_id: oryId,
-        team_id: teamId,
-        meta: {
-            rollout_id: createdRollout.id,
-            name: createdRollout.name
-        }
-    });
+        return new SuccessJsonResponse(res, rolloutSantised);
 
-    const rolloutSantised: IRolloutRes = {
-        id: createdRollout.id,
-        name: createdRollout.name,
-        description: createdRollout.description,
-        status: createdRollout.status,
-        created_at: createdRollout.created_at,
-        updated_at: createdRollout.updated_at
-    };
-
-    logger.info('created rollout');
-
-    return new SuccessJsonResponse(res, rolloutSantised);
+    } catch (e) {
+        return new BadResponse(res, e);
+    }
 
 }
 
@@ -300,12 +309,17 @@ export const getRollout = async (req: Request, res: Response) => {
             robots: {
                 include: {
                     robot: {
-                        select: { id: true, name: true}
+                        select: { id: true, name: true }
                     },
                     ecus: {
-                        select: { status: true, ecu_id: true }
+                        include: { ecu: true }
                     }
                 }
+            },
+            hw_imgs: {
+                include: {
+                    image: { select: { id: true, target_id: true}}
+                 }
             }
         }
     })
@@ -313,6 +327,13 @@ export const getRollout = async (req: Request, res: Response) => {
     if (!rollout) {
         logger.warn('could not get rollout details, either it does not exist or belongs to another team');
         return new BadResponse(res, 'Unable to get rollout details');
+    }
+
+    const imgHelper = (hwId: string) => {
+        const image = rollout.hw_imgs.find(img => img.hw_id === hwId)!.image
+        if(image) {
+            return {id: image.id, target_id: image.target_id};
+        }
     }
 
     const rolloutSanitised: IRolloutDetailRes = {
@@ -325,11 +346,13 @@ export const getRollout = async (req: Request, res: Response) => {
         updated_at: rollout.updated_at,
         robots: rollout.robots.map(rolloutBot => ({
             id: rolloutBot.robot_id,
-            name: rolloutBot.robot ? rolloutBot.robot.name : null, 
+            name: rolloutBot.robot ? rolloutBot.robot.name : null,
             status: rolloutBot.status,
-            ecus: rolloutBot.ecus.map(ecu => ({
-                id: ecu.ecu_id!,
-                status: ecu.status
+            ecus: rolloutBot.ecus.map(rolloutEcu => ({
+                id: rolloutEcu.ecu_id!,
+                status: rolloutEcu.status,
+                hw_id: rolloutEcu.ecu ? rolloutEcu.ecu.hwid : 'unknown',
+                image: imgHelper(rolloutEcu.ecu!.hwid)
             }))
         }))
     };

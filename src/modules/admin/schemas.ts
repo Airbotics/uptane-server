@@ -69,7 +69,7 @@ export const updateTeamSchema = Joi.object({
 
 export const createRolloutSchema = Joi.object({
     name: Joi.string().required(),
-    description: Joi.string().allow(null),
+    description: Joi.string().required(),
     hwid_img_map: Joi.array().items(Joi.object({
         hw_id: Joi.string().required(),
         img_id: Joi.string().required()
@@ -80,7 +80,7 @@ export const createRolloutSchema = Joi.object({
             RolloutTargetType.hw_id_match,
             RolloutTargetType.selected_bots
         ).required(),
-        group_id: Joi.string().allow(''),
+        group_id: Joi.string().empty(), //can be string | undefined but not ''
         selected_bot_ids: Joi.array().items(Joi.string())
     })
 });
@@ -89,3 +89,4 @@ export const provCredentialsSchema = Joi.object({
     name: Joi.string().required().min(2),
     expires_at: Joi.number().required().min(new Date().getTime()).max(config.ROOT_CA_EXPIRY_MAX)
 });
+

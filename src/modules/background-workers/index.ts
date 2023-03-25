@@ -1,9 +1,9 @@
-import { purgeExpiredProvisioningCredentials } from './provisioning-creds-purger';
+import { resourcePurger } from './resource-purger';
 import { resignTufRoles } from './tuf-resigner';
 import { processRollouts } from './rollouts';
 
 export {
-    purgeExpiredProvisioningCredentials,
+    resourcePurger,
     resignTufRoles,
     processRollouts
 }

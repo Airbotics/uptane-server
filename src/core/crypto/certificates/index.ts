@@ -3,7 +3,7 @@ import { CertificateStatus, CertificateType } from '@prisma/client';
 import { IKeyPair } from '@airbotics-types';
 import config from '@airbotics-config';
 import { ECertificateManagerProvider } from '@airbotics-core/consts';
-import { ICertificate, ICertificateManagerProvider } from '@airbotics-types';
+import { ICertificateManagerProvider } from '@airbotics-types';
 import * as acmPcaManager from './acmpca-manager';
 import * as localManager from './local-manager';
 
@@ -65,7 +65,7 @@ export class CertificateManagerProvider implements ICertificateManagerProvider {
      * TODO:
      * - use transaction
      */
-    async downloadCertificate(teamId: string, certId: string): Promise<ICertificate | null> {
+    async downloadCertificate(teamId: string, certId: string): Promise<string> {
         switch (config.CERTIFICATE_MANAGER_PROVIDER) {
             case ECertificateManagerProvider.ACMPCA:
                 return await acmPcaManager.downloadCertificate(teamId, certId);
@@ -89,13 +89,13 @@ export class CertificateManagerProvider implements ICertificateManagerProvider {
      * TODO:
      * - use transaction
      */
-    async revokeCertificate(serial: string, reason: string): Promise<boolean> {
+    async revokeCertificate(id: string, reason: string): Promise<boolean> {
         switch (config.CERTIFICATE_MANAGER_PROVIDER) {
             case ECertificateManagerProvider.ACMPCA:
-                return await acmPcaManager.revokeCertificate(serial, reason);
+                return await acmPcaManager.revokeCertificate(id, reason);
 
             case ECertificateManagerProvider.Local:
-                return await localManager.revokeCertificate(serial, reason);
+                return await localManager.revokeCertificate(id, reason);
         }
 
     }

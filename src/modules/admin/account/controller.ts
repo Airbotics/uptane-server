@@ -6,7 +6,6 @@ import config from '@airbotics-config';
 import { logger } from '@airbotics-core/logger';
 import { auditEvent } from '@airbotics-core/events';
 import { EEventAction, EEventActorType, EEventResource, OryNamespaces, OryTeamRelations } from '@airbotics-core/consts';
-import prisma from '@airbotics-core/drivers/postgres';
 import { deleteTeamHelper } from '../team/controller';
 
 /**
@@ -124,20 +123,21 @@ export const deleteAccount = async (req: Request, res: Response) => {
 
                 //user is the only admin left in a team that still has members, not safe to delete account or team.
                 else if (!otherAdminsInTeam && otherMembersInTeam) {
-                    throw ('You cannot delete your account while you are the only admin in a team that has other members!')
+                    throw ('You cannot delete your account while you are the only admin in a team that has other members');
                 }
             }
         }
 
         //delete any teams (if any)
         for(const teamId of teamsToDelete) {
-            await deleteTeamHelper(teamId, oryID)
+            await deleteTeamHelper(teamId, oryID);
         }
 
         //Finally delete the account
         const deleteParams: IdentityApiDeleteIdentityRequest = {
             id: oryID
-        }
+        };
+
         await ory.identities.deleteIdentity(deleteParams);
 
     } catch (error) {

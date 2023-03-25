@@ -13,7 +13,7 @@ import directorRepo from '@airbotics-modules/director-repo';
 import robot from '@airbotics-modules/robot';
 import webhooks from '@airbotics-modules/webhooks';
 import {
-    purgeExpiredProvisioningCredentials,
+    resourcePurger,
     resignTufRoles,
     processRollouts,
 } from '@airbotics-modules/background-workers';
@@ -59,7 +59,7 @@ app.use('/api/v0/robot/treehub', treehub);
 // optionally mount a background worker in this process, if it has been configured
 if(config.USE_NODE_SCHEDULER === 'true') {
     schedule.scheduleJob(config.WORKERS.ROLLOUTS_CRON, processRollouts);
-    schedule.scheduleJob(config.WORKERS.PROVISIONING_CREDS_EXPIRY_PURGER_CRON, purgeExpiredProvisioningCredentials);
+    schedule.scheduleJob(config.WORKERS.RESOURCE_PURGER, resourcePurger);
     schedule.scheduleJob(config.WORKERS.TUF_RESIGNER_CRON, resignTufRoles);
 }
 

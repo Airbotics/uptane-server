@@ -75,9 +75,9 @@ const config = {
     // background workers
     USE_NODE_SCHEDULER: process.env.USE_NODE_SCHEDULER || 'true',               // whether to use the nodejs scheduler to run workers, for development
     WORKERS: {
-        PROVISIONING_CREDS_EXPIRY_PURGER_CRON: process.env.PROVISIONING_CREDS_EXPIRY_PURGER_CRON  || '0 * * * *',   // how often to run the worker to "purge" expired provisioning credentials
         ROLLOUTS_CRON: process.env.ROLLOUTS_CRON || '*/10 * * * * *',           // how often to run the rollouts worker
         TUF_RESIGNER_CRON: process.env.TUF_RESIGNER_CRON || '0 * * * *',        // how often to run the tuf resigner
+        RESOURCE_PURGER: process.env.RESOURCE_PURGER || '0 * * * *',            // how often to run the resource purger
     },
 
     // manifest processing

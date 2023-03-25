@@ -1,7 +1,7 @@
 import { Request, Response, NextFunction } from 'express';
 import { RevocationReason } from '@aws-sdk/client-acm-pca';
 import { ory, prisma } from '@airbotics-core/drivers';
-import { KeyType, TUFRepo, TUFRole } from '@prisma/client';
+import { KeyType, TrashResource, TUFRepo, TUFRole } from '@prisma/client';
 import { IdentityApiGetIdentityRequest, RelationshipApiGetRelationshipsRequest, RelationshipApiDeleteRelationshipsRequest, RelationshipApiPatchRelationshipsRequest } from '@ory/client';
 import { EComputedRobotStatus, EEventAction, EEventActorType, EEventResource, OryNamespaces, OryTeamRelations, TUF_METADATA_LATEST } from '@airbotics-core/consts';
 import { BadResponse, SuccessJsonResponse, NoContentResponse } from '@airbotics-core/network/responses';
@@ -649,19 +649,24 @@ export const deleteTeamHelper = async (teamID: string, oryId: string) => {
             await keyStorage.deleteKeyPair(getKeyStorageEcuKeyId(teamID, ecu.id));
         }
 
-        /*
+        // put blob storage "directory" in the trash
+        await prisma.trash.create({
+            data: {
+                resource_type: TrashResource.blob_storage_directory,
+                resource_id: teamID
+            }
+        });
 
-        TODO: This takes a long time so move it to a worker to prevent a timeout
-
-        // revoke all robot and provisioning credentials certs
+        // for every certificate (robot, client and provisioning) put them all in the trash
         for (const cert of team.certificates) {
-            await certificateManager.revokeCertificate(cert.serial, RevocationReason.PRIVILEGE_WITHDRAWN);
+            await prisma.trash.create({
+                data: {
+                    resource_type: TrashResource.certificate,
+                    resource_id: cert.id
+                }
+            });
         }
-
-        // delete all objects beginning with their team id in the treehub bucket
-        await blobStorage.deleteTeamObjects(config.TREEHUB_BUCKET_NAME!, teamID);
-
-        */
+        
 
         // delete tuf keys
         await keyStorage.deleteKeyPair(getKeyStorageRepoKeyId(teamID, TUFRepo.image, TUFRole.root));
@@ -675,7 +680,7 @@ export const deleteTeamHelper = async (teamID: string, oryId: string) => {
         await keyStorage.deleteKeyPair(getKeyStorageRepoKeyId(teamID, TUFRepo.director, TUFRole.timestamp));
 
 
-        //finally delete all ory relationships with matching team_id
+        // finally delete all ory relationships with matching team_id
         const relationsParams: RelationshipApiDeleteRelationshipsRequest = {
             namespace: OryNamespaces.teams,
             object: team.id

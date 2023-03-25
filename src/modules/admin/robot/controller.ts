@@ -9,6 +9,7 @@ import { auditEvent } from '@airbotics-core/events';
 import { EEventAction, EEventActorType, EEventResource } from '@airbotics-core/consts';
 import { certificateManager } from '@airbotics-core/crypto';
 import { IRobotDetailRes, IRobotRes, IEcuTelemetryRes, IRobotRolloutRes, IUpdateRobotDetailsBody } from '@airbotics-types';
+import { TrashResource } from '@prisma/client';
 
 
 /**
@@ -148,7 +149,7 @@ export const getRobot = async (req: Request, res: Response, next: NextFunction) 
             created_at: cert.created_at,
             expires_at: cert.expires_at,
             status: cert.status,
-            serial: cert.serial,
+            // serial: cert.serial,
             revoked_at: cert.revoked_at
         })),
         latest_network_report: robot.network_reports.length === 0 ? undefined : {
@@ -241,8 +242,13 @@ export const deleteRobot = async (req: Request, res: Response, next: NextFunctio
             await keyStorage.deleteKeyPair(getKeyStorageEcuKeyId(teamID, ecu.id));
         }
 
-        // revoke certificate
-        await certificateManager.revokeCertificate(robot.certificates[0].serial, RevocationReason.PRIVILEGE_WITHDRAWN);
+        // put the certificate in the trash, right now robots only have one certificate
+        await prisma.trash.create({
+            data: {
+                resource_type: TrashResource.certificate,
+                resource_id: robot.certificates[0].id
+            }
+        });
 
         auditEvent.emit({
             resource: EEventResource.Robot,

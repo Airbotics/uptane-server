@@ -26,11 +26,11 @@ There is of course a time between when a web server "deletes" a resource and whe
 ### Events
 
 **Delete a robot** 
-The web server puts the id (ARN) of robot cert in the bin.
+The web server puts the id of robot cert in the bin.
 
 **Revoke provisioning credential** 
-The web server puts the id (ARN) of client_auth cert in the bin.
-The web server puts the id (ARN) of provisioning cert in the bin.
+The web server puts the id of client_auth cert in the bin.
+The web server puts the id of provisioning cert in the bin.
 
 **Delete team**
 The web server puts the blob storage directory for that team in the bin.

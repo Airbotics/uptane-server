@@ -149,8 +149,7 @@ model ProvisioningCredentials {
 model Certificate {
     id                  String          @id @default(uuid()) @unique
     team_id             String?
-    serial              String          @unique
-    acm_arn             String?
+    acm_arn             String?                             // this has to be optional because certs stored locally do not have an arn
     created_at          DateTime        @default(now())
     expires_at          DateTime
     revoked_at          DateTime?
@@ -557,4 +556,19 @@ model RolloutRobotEcu {
     
     @@unique([rollout_robot_id, ecu_id])
     @@map("rollout_robot_ecus")
+}
+
+
+enum TrashResource {
+    blob_storage_directory      // resource_id is object prefix (i.e. team id)
+    ostree_image                // resource_id is branch
+    certificate                 // resource_id is id in postgres
+}
+
+model Trash {
+    id                  String              @id @default(uuid()) @unique
+    resource_type       TrashResource
+    resource_id         String              // the s3 "directory" name, or certificate arn
+
+    @@map("trash")
 }

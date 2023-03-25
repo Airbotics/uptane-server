@@ -6,7 +6,7 @@ Depending on your circumstances this can take anywhere from a few days to 6 mont
 
 At any stage feel free to hop on a [call](https://calendly.com/airbotics/30-min-meeting) with us.
 
-### 1. Sign up - register an account
+### 1. Registration - sign up to Airbotics
 Pretty straightforward - you'll need an account to use Airbotics. You can register one [here](https://dashboard.airbotics.io/register). While we're in Closed Beta you'll also need an invitation code.
 
 ### 2. Consideration - complete the quickstart guide

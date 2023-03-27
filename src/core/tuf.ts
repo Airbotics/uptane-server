@@ -79,7 +79,6 @@ export const getTufMetadata = async (
 
     let metadataValue: any = null;
 
-
     if (version === TUF_METADATA_LATEST) {
 
         const metadata = await prisma.tufMetadata.findFirst({
@@ -87,13 +86,12 @@ export const getTufMetadata = async (
                 team_id,
                 repo,
                 role,
-                robot_id
+                ...(robot_id !== null && { robot_id: robot_id})
             },
             orderBy: {
                 version: 'desc'
             }
         });
-
         metadataValue = metadata ? metadata.value : null;
     }
 

@@ -330,7 +330,7 @@ const generateNewMetadata = async (team_id: string, robot_id: string, correlatio
 
 export const processRollouts = async () => {
 
-    logger.info('rollouts processing started...');
+    logger.info('rollouts processing started');
 
     try {
 
@@ -343,10 +343,10 @@ export const processRollouts = async () => {
         await processPending(teamIds);
         await processStatuses(teamIds);
 
-        logger.info('rollouts processing completed!');
+        logger.info('rollouts processing completed');
     }
     catch (e) {
-        logger.error('rollouts processing failed!');
+        logger.error('rollouts processing failed');
         console.log(e);
     }
 }

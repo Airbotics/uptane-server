@@ -1,4 +1,3 @@
-import { randomUUID } from 'crypto';
 import { Dayjs } from 'dayjs';
 import {
     IssueCertificateCommand,
@@ -6,13 +5,13 @@ import {
     GetCertificateAuthorityCertificateCommand,
     GetCertificateCommand
 } from '@aws-sdk/client-acm-pca';
-import forge from 'node-forge';
 import config from '@airbotics-config';
 import { prisma, acmPcaClient } from '@airbotics-core/drivers';
-import { ICertificate, IKeyPair } from '@airbotics-types';
+import { IKeyPair } from '@airbotics-types';
 import { CertificateStatus, CertificateType } from '@prisma/client';
 import { dayjs } from '@airbotics-core/time';
 import { generateCertificateSigningRequest } from './utils';
+import { logger } from '@airbotics-core/logger';
 
 
 export const getRootCertificate = async (): Promise<string | null> => {
@@ -67,7 +66,6 @@ export const issueCertificate = async (teamId: string, keyPair: IKeyPair, certTy
     const cert = await prisma.certificate.create({
         data: {
             expires_at: expiresAt.toDate(),
-            serial: `tmp-${randomUUID()}`,
             acm_arn: issueResponse.CertificateArn,
             ...(certType === CertificateType.robot && { robot_id: commonName }),
             team_id: teamId,
@@ -79,15 +77,11 @@ export const issueCertificate = async (teamId: string, keyPair: IKeyPair, certTy
 }
 
 
-export const downloadCertificate = async (teamId: string, certId: string): Promise<ICertificate | null> => {
+export const downloadCertificate = async (teamId: string, certId: string): Promise<string> => {
 
     const dbCert = await prisma.certificate.findUnique({
         where: {
             id: certId
-            // team_id_id: {
-            //     team_id: teamId,
-            //     id: certId
-            // }
         }
     });
 
@@ -112,45 +106,38 @@ export const downloadCertificate = async (teamId: string, certId: string): Promi
         throw new Error();
     }
 
-    const forgeCert = forge.pki.certificateFromPem(getResponse.Certificate!);
+    // const forgeCert = forge.pki.certificateFromPem(getResponse.Certificate!);
 
     await prisma.certificate.update({
         where: {
             id: certId
-            // team_id_id: {
-            //     team_id: teamId,
-            //     id: certId
-            // }
         },
         data: {
             status: CertificateStatus.issued,
-            serial: forgeCert.serialNumber,
         }
     });
+
+    return getResponse.Certificate!;
     
-    return {
-        cert: getResponse.Certificate!,
-        expiresAt: dayjs(),
-        serial: forgeCert.serialNumber
-    };
 }
 
 
-export const revokeCertificate = async (serial: string, reason: string): Promise<boolean> => {
+export const revokeCertificate = async (id: string, reason: string): Promise<boolean> => {
 
+    /*
     const cert = await prisma.certificate.findUnique({
         where: {
-            serial
+            id
         }
     });
 
     if (!cert) {
-        // logger.error('trying to revoke a certificate that does not exist');
+        logger.error('trying to revoke a certificate that does not exist');
         throw new Error();
     }
 
     if (cert.status !== CertificateStatus.issued && cert.status !== CertificateStatus.issuing) {
-        // logger.error('trying to revoke a certificate that has not been issued');
+        logger.error('trying to revoke a certificate that has not been issued');
         throw new Error();
     }
 
@@ -170,7 +157,7 @@ export const revokeCertificate = async (serial: string, reason: string): Promise
 
     await prisma.certificate.update({
         where: {
-            serial
+            id
         },
         data: {
             status: CertificateStatus.revoked,
@@ -178,6 +165,7 @@ export const revokeCertificate = async (serial: string, reason: string): Promise
             revoked_reason: reason
         }
     });
+    */
 
     return true;
 }

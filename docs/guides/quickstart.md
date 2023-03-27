@@ -81,7 +81,7 @@ We'll "flash" and boot the "robot" by running the following command:
 ../meta-updater/scripts/run-qemu-ota --overlay quickstart-robot.cow
 ```
 
-Once it boots the agent will automatically provision itself with Airbotics and genreate a random ID. From the command line in QEMU you can manually check which version is running with the command below:
+Once it boots the agent will automatically provision itself with Airbotics and genreate a random ID. You can log in with the password `root`. From the command line in QEMU you can manually check which version is running with the command below:
 
 ```
 ostree admin status

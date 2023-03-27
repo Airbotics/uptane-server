@@ -53,8 +53,8 @@ export interface IKeyStorageProvider {
 export interface ICertificateManagerProvider {
     getRootCertificate(): Promise<string | null>;
     issueCertificate(teamId: string, keyPair: IKeyPair, certType: CertificateType, commonName: string, expiresAt: Dayjs): Promise<any>;
-    downloadCertificate(teamId: string, certId: string): Promise<ICertificate | null>;
-    revokeCertificate(serial: string, reason: string): Promise<boolean>;
+    downloadCertificate(teamId: string, certId: string): Promise<string>;
+    revokeCertificate(id: string, reason: string): Promise<boolean>;
     purgeExpiredCertificates(): Promise<any>;
 }
 
@@ -67,11 +67,11 @@ export interface IKeyPair {
     privateKey: string;
 }
 
-export interface ICertificate {
-    cert: string;
-    serial: string;
-    expiresAt: Dayjs;
-}
+// export interface ICertificate {
+//     cert: string;
+//     // serial: string;
+//     expiresAt: Dayjs;
+// }
 
 
 /**

@@ -123,7 +123,6 @@ export interface IRobotDetailRes {
     };
     certificates: {
         id: string;
-        serial: string;
         created_at: Date;
         expires_at: Date;
         status: string;

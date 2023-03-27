@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import archiver from 'archiver';
 import forge from 'node-forge';
 import { randomUUID } from 'crypto';
-import { CertificateStatus, CertificateType, TUFRepo, TUFRole } from '@prisma/client';
+import { CertificateStatus, CertificateType, TrashResource, TUFRepo, TUFRole } from '@prisma/client';
 import {
     EEventAction,
     EEventActorType,
@@ -143,12 +143,12 @@ export const downloadProvisioningCredential = async (req: Request, res: Response
 
     // bundle into provisioning pcks12, no encryption password set
     const provisioningp12 = forge.pkcs12.toPkcs12Asn1(forge.pki.privateKeyFromPem(provisioningKeyPair.privateKey),
-        [forge.pki.certificateFromPem(provisioningCert.cert), forge.pki.certificateFromPem(rootCACertStr)],
+        [forge.pki.certificateFromPem(provisioningCert), forge.pki.certificateFromPem(rootCACertStr)],
         null,
         { algorithm: 'aes256' });
 
     // const clientp12 = forge.pkcs12.toPkcs12Asn1(forge.pki.privateKeyFromPem(clientKeyPair.privateKey),
-    //     [forge.pki.certificateFromPem(clientCert.cert), forge.pki.certificateFromPem(rootCACertStr)],
+    //     [forge.pki.certificateFromPem(clientCert), forge.pki.certificateFromPem(rootCACertStr)],
     //     null,
     //     { algorithm: 'aes256' });
 
@@ -289,9 +289,21 @@ export const revokeProvisioningCredentials = async (req: Request, res: Response)
         return new BadResponse(res, 'Could not revoke provisioning credentials.');
     }
 
-    // revoke the certificates
-    await certificateManager.revokeCertificate(provisioningCredentials.client_cert.serial, RevocationReason.PRIVILEGE_WITHDRAWN);
-    await certificateManager.revokeCertificate(provisioningCredentials.provisioning_cert.serial, RevocationReason.PRIVILEGE_WITHDRAWN);
+    // put the certificates in the trash
+    await prisma.trash.create({
+        data: {
+            resource_type: TrashResource.certificate,
+            resource_id: provisioningCredentials.client_cert.id
+        }
+    });
+
+    await prisma.trash.create({
+        data: {
+            resource_type: TrashResource.certificate,
+            resource_id: provisioningCredentials.provisioning_cert.id
+        }
+    });
+
 
     // revoke the credential
     await prisma.provisioningCredentials.update({

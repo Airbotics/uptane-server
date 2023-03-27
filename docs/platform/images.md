@@ -30,7 +30,7 @@ The following build arguments for meta-updater are supported:
 | `SOTA_HARDWARE_ID`        | Type of hardware ID this image can be deployed to, e.g. `nvidia-jetson`, `motor-controller-ecu` |
 | `SOTA_POLLING_SEC`        | How often the agent should poll for updates in seconds, e.g `86400` |
 
-> Note: modifying other variables could break Airbotics.
+> Note: modifying other variables is not supported.
 
 <!-- OSTree
 hardware
@@ -43,6 +43,16 @@ description -->
 <!-- source meta-updater/scripts/envsetup.sh qemux86-64 build distro= poky-sota-systemd -->
 
 <!-- bitbake core-image-minimal -->
+
+## Supported boards
+
+Based on the original development of [meta-updater](https://github.com/advancedtelematic/meta-updater/) the following boards are supported:
+- [Raspberry Pi (2, 3, and 4) ](https://github.com/advancedtelematic/meta-updater-raspberrypi)
+- [Intel Minnowboard](https://github.com/advancedtelematic/meta-updater-minnowboard)
+- [QEMU x86-64 emulator](https://github.com/advancedtelematic/meta-updater-qemux86-64)
+- [Texas Instruments BeagleBone Black](https://github.com/advancedtelematic/meta-updater-ti/)
+
+Other boards can be supported by adding a custom Board Support Package (BSP).
 
 ## Storage
 

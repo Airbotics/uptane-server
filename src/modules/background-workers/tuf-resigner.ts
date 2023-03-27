@@ -114,9 +114,8 @@ const processRootRoles = async () => {
  *  16) generate the new timestamp metadata passing in the newly generated snapshot metadata
  *  17) write all new metadata to the db
  */
-const processTargetRoles = async (teamIds: string[]) => {
+const processTargetRoles = async () => {
 
-    for (const teamId of teamIds) {
 
         const latestTargets = await prisma.tufMetadata.findMany({
             where: {
@@ -134,34 +133,35 @@ const processTargetRoles = async (teamIds: string[]) => {
 
                 const targetMetadata = target.value as unknown as ISignedTargetsTUF;
                 const robotId: string | null = target.robot_id;
+console.log(target.expires_at);
 
                 if (dayjs(target.expires_at).isBefore(dayjs().add(config.TUF_EXPIRY_WINDOW[0] as number, config.TUF_EXPIRY_WINDOW[1] as ManipulateType))) {
 
-                    logger.debug(`detected ${target.version}.targets.json in the ${target.repo} repo (robot_id: ${robotId}) for team_id: ${teamId} team is about to expire`);
+                    logger.info(`detected ${target.version}.targets.json in the ${target.repo} repo (robot_id: ${robotId}) for team_id: ${target.team_id} team is about to expire`);
 
                     const newTargetVersion = target.version + 1;
-                    const targetKeyPair = await keyStorage.getKeyPair(getKeyStorageRepoKeyId(teamId, target.repo, TUFRole.targets));
+                    const targetKeyPair = await keyStorage.getKeyPair(getKeyStorageRepoKeyId(target.team_id, target.repo, TUFRole.targets));
                     const targetTTL = target.repo === TUFRepo.image ? config.TUF_TTL.IMAGE.TARGETS : config.TUF_TTL.DIRECTOR.TARGETS;
                     const newTarget = generateSignedTargets(targetTTL, newTargetVersion, targetKeyPair, targetMetadata.signed.targets, targetMetadata.signed.custom);
 
                     //also need to generate a new snapshot to reference the new target
-                    const latestSnapshot = await getTufMetadata(teamId, target.repo, TUFRole.snapshot, TUF_METADATA_LATEST, robotId) as ISignedTimestampTUF;
+                    const latestSnapshot = await getTufMetadata(target.team_id, target.repo, TUFRole.snapshot, TUF_METADATA_LATEST, robotId) as ISignedTimestampTUF;
                     const newSnapshotVersion = latestSnapshot.signed.version + 1;
-                    const snapshotKeyPair = await keyStorage.getKeyPair(getKeyStorageRepoKeyId(teamId, target.repo, TUFRole.snapshot));
+                    const snapshotKeyPair = await keyStorage.getKeyPair(getKeyStorageRepoKeyId(target.team_id, target.repo, TUFRole.snapshot));
                     const snapshotTTL = target.repo === TUFRepo.image ? config.TUF_TTL.IMAGE.SNAPSHOT : config.TUF_TTL.DIRECTOR.SNAPSHOT;
                     const newSnapshot = generateSignedSnapshot(snapshotTTL, newSnapshotVersion, snapshotKeyPair, newTarget);
 
                     //also need to generate a new timestamp to reference the new snapshot
-                    const latestTimestamp = await getTufMetadata(teamId, target.repo, TUFRole.timestamp, TUF_METADATA_LATEST, robotId) as ISignedTimestampTUF;
+                    const latestTimestamp = await getTufMetadata(target.team_id, target.repo, TUFRole.timestamp, TUF_METADATA_LATEST, robotId) as ISignedTimestampTUF;
                     const newTimestampVersion = latestTimestamp.signed.version + 1;
-                    const timestampKeyPair = await keyStorage.getKeyPair(getKeyStorageRepoKeyId(teamId, target.repo, TUFRole.timestamp));
+                    const timestampKeyPair = await keyStorage.getKeyPair(getKeyStorageRepoKeyId(target.team_id, target.repo, TUFRole.timestamp));
                     const timestampTTL = target.repo === TUFRepo.image ? config.TUF_TTL.IMAGE.TIMESTAMP : config.TUF_TTL.DIRECTOR.TIMESTAMP;
                     const newTimestamp = generateSignedTimestamp(timestampTTL, newTimestampVersion, timestampKeyPair, newSnapshot);
 
                     await prisma.$transaction(async tx => {
                         await tx.tufMetadata.create({
                             data: {
-                                team_id: teamId,
+                                team_id: target.team_id,
                                 repo: target.repo,
                                 role: TUFRole.targets,
                                 version: newTargetVersion,
@@ -173,7 +173,7 @@ const processTargetRoles = async (teamIds: string[]) => {
 
                         await tx.tufMetadata.create({
                             data: {
-                                team_id: teamId,
+                                team_id: target.team_id,
                                 repo: target.repo,
                                 role: TUFRole.snapshot,
                                 version: newSnapshotVersion,
@@ -185,7 +185,7 @@ const processTargetRoles = async (teamIds: string[]) => {
 
                         await tx.tufMetadata.create({
                             data: {
-                                team_id: teamId,
+                                team_id: target.team_id,
                                 repo: target.repo,
                                 role: TUFRole.timestamp,
                                 version: newTimestampVersion,
@@ -196,17 +196,15 @@ const processTargetRoles = async (teamIds: string[]) => {
                         })
                     })
 
-                    logger.debug(`targets.json in the ${target.repo} repo for team_id: ${teamId} was successfully resigned`);
-                    logger.debug(`snapshot.json in the ${target.repo} repo for team_id: ${teamId} was successfully resigned`);
-                    logger.debug(`timestamp.json in the ${target.repo} repo for team_id: ${teamId} was successfully resigned`);
+                    logger.info(`targets.json in the ${target.repo} repo for team_id: ${target.team_id} was successfully resigned`);
+                    logger.info(`snapshot.json in the ${target.repo} repo for team_id: ${target.team_id} was successfully resigned`);
+                    logger.info(`timestamp.json in the ${target.repo} repo for team_id: ${target.team_id} was successfully resigned`);
                 }
 
             } catch (e) {
-                logger.error(`Error resigning ${target.version}.targets.json in the ${target.repo} repo for team_id: ${teamId}`);
+                logger.error(`Error resigning ${target.version}.targets.json in the ${target.repo} repo for team_id: ${target.team_id}`);
             }
-
         }
-    }
 }
 
 
@@ -215,8 +213,7 @@ const processTargetRoles = async (teamIds: string[]) => {
  * Find and re-sign snapshot metadata that is about to expire
  * This also triggers the need to create a new timestamp since it always references the latest snapshot
  * 
- * For each team
- *  1) grab the latest snapshot metadata for both image and director repo
+ *  1) grab the latest snapshot metadata for both image and director repo for each team
  *  2) check if its expiry is within the re-sign threshold
  *  3) compute the new version of the snapshot metadata
  *  4) grab the snapshot keypair
@@ -230,79 +227,77 @@ const processTargetRoles = async (teamIds: string[]) => {
  *  12) generate the new timestamp metadata passing in the newly generated snapshot metadata
  *  13) write both snapshot and timestamp to db
  */
-const processSnapshotRoles = async (teamIds: string[]) => {
+const processSnapshotRoles = async () => {
 
-    for (const teamId of teamIds) {
+    const latestSnapshots = await prisma.tufMetadata.findMany({
+        where: {
+            role: TUFRole.snapshot,
+        },
+        orderBy: {
+            version: 'desc'
+        },
+        distinct: ['team_id', 'repo', 'robot_id']
+    });
 
-        const latestSnapshots = await prisma.tufMetadata.findMany({
-            where: {
-                role: TUFRole.snapshot,
-            },
-            orderBy: {
-                version: 'desc'
-            },
-            distinct: ['team_id', 'repo', 'robot_id']
-        });
+    for (const snapshot of latestSnapshots) {
 
-        for (const snapshot of latestSnapshots) {
+        try {
 
-            try {
+            const robotId: string | null = snapshot.robot_id;
 
-                const robotId: string | null = snapshot.robot_id;
+            if (dayjs(snapshot.expires_at).isBefore(dayjs().add(config.TUF_EXPIRY_WINDOW[0] as number, config.TUF_EXPIRY_WINDOW[1] as ManipulateType))) {
 
-                if (dayjs(snapshot.expires_at).isBefore(dayjs().add(config.TUF_EXPIRY_WINDOW[0] as number, config.TUF_EXPIRY_WINDOW[1] as ManipulateType))) {
+                logger.info(`detected ${snapshot.version}.snapshot.json in the ${snapshot.repo} repo (robot_id: ${robotId}) for team_id: ${snapshot.team_id} team is about to expire`);
 
-                    logger.debug(`detected ${snapshot.version}.snapshot.json in the ${snapshot.repo} repo (robot_id: ${robotId}) for team_id: ${teamId} team is about to expire`);
+                const newSnapshotVersion = snapshot.version + 1;
+                const snapshotKeyPair = await keyStorage.getKeyPair(getKeyStorageRepoKeyId(snapshot.team_id, snapshot.repo, TUFRole.snapshot));
+                const snapshotTTL = snapshot.repo === TUFRepo.image ? config.TUF_TTL.IMAGE.SNAPSHOT : config.TUF_TTL.DIRECTOR.SNAPSHOT;
+                const latestTargets = await getTufMetadata(snapshot.team_id, snapshot.repo, TUFRole.targets, TUF_METADATA_LATEST, robotId) as ISignedTargetsTUF;
+                const newSnapshot = generateSignedSnapshot(snapshotTTL, newSnapshotVersion, snapshotKeyPair, latestTargets);
 
-                    const newSnapshotVersion = snapshot.version + 1;
-                    const snapshotKeyPair = await keyStorage.getKeyPair(getKeyStorageRepoKeyId(teamId, snapshot.repo, TUFRole.snapshot));
-                    const snapshotTTL = snapshot.repo === TUFRepo.image ? config.TUF_TTL.IMAGE.SNAPSHOT : config.TUF_TTL.DIRECTOR.SNAPSHOT;
-                    const latestTargets = await getTufMetadata(teamId, snapshot.repo, TUFRole.targets, TUF_METADATA_LATEST, robotId) as ISignedTargetsTUF;
-                    const newSnapshot = generateSignedSnapshot(snapshotTTL, newSnapshotVersion, snapshotKeyPair, latestTargets);
+                //also need to generate a new timestamp to reference the new snapshot
+                const latestTimestamp = await getTufMetadata(snapshot.team_id, snapshot.repo, TUFRole.timestamp, TUF_METADATA_LATEST, robotId) as ISignedTimestampTUF;
+                const newTimestampVersion = latestTimestamp.signed.version + 1;
+                const timestampKeyPair = await keyStorage.getKeyPair(getKeyStorageRepoKeyId(snapshot.team_id, snapshot.repo, TUFRole.timestamp));
+                const timestampTTL = snapshot.repo === TUFRepo.image ? config.TUF_TTL.IMAGE.TIMESTAMP : config.TUF_TTL.DIRECTOR.TIMESTAMP;
+                const newTimestamp = generateSignedTimestamp(timestampTTL, newTimestampVersion, timestampKeyPair, newSnapshot);
 
-                    //also need to generate a new timestamp to reference the new snapshot
-                    const latestTimestamp = await getTufMetadata(teamId, snapshot.repo, TUFRole.timestamp, TUF_METADATA_LATEST, robotId) as ISignedTimestampTUF;
-                    const newTimestampVersion = latestTimestamp.signed.version + 1;
-                    const timestampKeyPair = await keyStorage.getKeyPair(getKeyStorageRepoKeyId(teamId, snapshot.repo, TUFRole.timestamp));
-                    const timestampTTL = snapshot.repo === TUFRepo.image ? config.TUF_TTL.IMAGE.TIMESTAMP : config.TUF_TTL.DIRECTOR.TIMESTAMP;
-                    const newTimestamp = generateSignedTimestamp(timestampTTL, newTimestampVersion, timestampKeyPair, newSnapshot);
+                await prisma.$transaction(async tx => {
 
-                    await prisma.$transaction(async tx => {
-
-                        await tx.tufMetadata.create({
-                            data: {
-                                team_id: teamId,
-                                repo: snapshot.repo,
-                                role: TUFRole.snapshot,
-                                version: newSnapshotVersion,
-                                value: newSnapshot as object,
-                                robot_id: robotId,
-                                expires_at: newSnapshot.signed.expires
-                            }
-                        })
-
-                        await tx.tufMetadata.create({
-                            data: {
-                                team_id: teamId,
-                                repo: snapshot.repo,
-                                role: TUFRole.timestamp,
-                                version: newTimestampVersion,
-                                value: newTimestamp as object,
-                                robot_id: robotId,
-                                expires_at: newTimestamp.signed.expires
-                            }
-                        })
+                    await tx.tufMetadata.create({
+                        data: {
+                            team_id: snapshot.team_id,
+                            repo: snapshot.repo,
+                            role: TUFRole.snapshot,
+                            version: newSnapshotVersion,
+                            value: newSnapshot as object,
+                            robot_id: robotId,
+                            expires_at: newSnapshot.signed.expires
+                        }
                     })
 
-                    logger.debug(`snapshot.json in the ${snapshot.repo} repo for team_id: ${teamId} was successfully resigned`);
-                    logger.debug(`timestamp.json in the ${snapshot.repo} repo for team_id: ${teamId} was successfully resigned`);
-                }
+                    await tx.tufMetadata.create({
+                        data: {
+                            team_id: snapshot.team_id,
+                            repo: snapshot.repo,
+                            role: TUFRole.timestamp,
+                            version: newTimestampVersion,
+                            value: newTimestamp as object,
+                            robot_id: robotId,
+                            expires_at: newTimestamp.signed.expires
+                        }
+                    })
+                })
 
-            } catch (e) {
-                logger.error(`Error resigning ${snapshot.version}.snapshot.json in the ${snapshot.repo} repo for team_id: ${teamId}`);
+                logger.info(`snapshot.json in the ${snapshot.repo} repo for team_id: ${snapshot.team_id} was successfully resigned`);
+                logger.info(`timestamp.json in the ${snapshot.repo} repo for team_id: ${snapshot.team_id} was successfully resigned`);
             }
 
+        } catch (e) {
+            logger.error(`Error resigning ${snapshot.version}.snapshot.json in the ${snapshot.repo} repo for team_id: ${snapshot.team_id}`);
         }
+
+
     }
 }
 
@@ -311,8 +306,7 @@ const processSnapshotRoles = async (teamIds: string[]) => {
 /**
  * Find and re-sign timestamp metadata that is about to expire
  * 
- * For each team 
- *  1) grab the latest timestamp metadata for both image and director repo
+ *  1) grab the latest timestamp metadata for both image and director repo for each team
  *  2) check if its expiry is within the resign threshold
  *  3) compute the new version of the timestamp.json
  *  4) grab the timestamp keypair
@@ -321,54 +315,52 @@ const processSnapshotRoles = async (teamIds: string[]) => {
  *  7) generate the new timestamp metadata
  *  8) write it to the db
  */
-const processTimestampRoles = async (teamIds: string[]) => {
+const processTimestampRoles = async () => {
 
-    for (const teamId of teamIds) {
+    const latestTimestamps = await prisma.tufMetadata.findMany({
+        where: {
+            role: TUFRole.timestamp,
+        },
+        orderBy: {
+            version: 'desc'
+        },
+        distinct: ['team_id', 'repo', 'robot_id']
+    });
 
-        const latestTimestamps = await prisma.tufMetadata.findMany({
-            where: {
-                role: TUFRole.timestamp,
-            },
-            orderBy: {
-                version: 'desc'
-            },
-            distinct: ['team_id', 'repo', 'robot_id']
-        });
+    for (const timestamp of latestTimestamps) {
 
-        for (const timestamp of latestTimestamps) {
+        try {
 
-            try {
+            const robotId: string | null = timestamp.robot_id;
 
-                const robotId: string | null = timestamp.robot_id;
+            if (dayjs(timestamp.expires_at).isBefore(dayjs().add(config.TUF_EXPIRY_WINDOW[0] as number, config.TUF_EXPIRY_WINDOW[1] as ManipulateType))) {
 
-                if (dayjs(timestamp.expires_at).isBefore(dayjs().add(config.TUF_EXPIRY_WINDOW[0] as number, config.TUF_EXPIRY_WINDOW[1] as ManipulateType))) {
+                logger.info(`detected ${timestamp.version}.timestamp.json in the ${timestamp.repo} repo (robot_id: ${robotId}) for team_id: ${timestamp.team_id} team is about to expire`);
 
-                    logger.debug(`detected ${timestamp.version}.timestamp.json in the ${timestamp.repo} repo (robot_id: ${robotId}) for team_id: ${teamId} team is about to expire`);
+                const newTimestampVersion = timestamp.version + 1;
+                const timestampKeyPair = await keyStorage.getKeyPair(getKeyStorageRepoKeyId(timestamp.team_id, timestamp.repo, TUFRole.timestamp));
+                const timestampTTL = timestamp.repo === TUFRepo.image ? config.TUF_TTL.IMAGE.TIMESTAMP : config.TUF_TTL.DIRECTOR.TIMESTAMP;
+                const latestSnapshot = await getTufMetadata(timestamp.team_id, timestamp.repo, TUFRole.snapshot, TUF_METADATA_LATEST, robotId) as ISignedSnapshotTUF;
+                const newTimestamp = generateSignedTimestamp(timestampTTL, newTimestampVersion, timestampKeyPair, latestSnapshot);
 
-                    const newTimestampVersion = timestamp.version + 1;
-                    const timestampKeyPair = await keyStorage.getKeyPair(getKeyStorageRepoKeyId(teamId, timestamp.repo, TUFRole.timestamp));
-                    const timestampTTL = timestamp.repo === TUFRepo.image ? config.TUF_TTL.IMAGE.TIMESTAMP : config.TUF_TTL.DIRECTOR.TIMESTAMP;
-                    const latestSnapshot = await getTufMetadata(teamId, timestamp.repo, TUFRole.snapshot, TUF_METADATA_LATEST, robotId) as ISignedSnapshotTUF;
-                    const newTimestamp = generateSignedTimestamp(timestampTTL, newTimestampVersion, timestampKeyPair, latestSnapshot);
-                    
-                    await prisma.tufMetadata.create({
-                        data: {
-                            team_id: teamId,
-                            repo: timestamp.repo,
-                            role: TUFRole.timestamp,
-                            version: newTimestampVersion,
-                            value: newTimestamp as object,
-                            robot_id: robotId,
-                            expires_at: newTimestamp.signed.expires
-                        }
-                    });
-                    logger.debug(`timestamp.json in the ${timestamp.repo} repo for team_id: ${teamId} was successfully resigned`);                    
-                }
-
-            } catch (e) {
-                logger.error(`Error resigning ${timestamp.version}.timestamp.json in the ${timestamp.repo} repo for team_id: ${teamId}`);
+                await prisma.tufMetadata.create({
+                    data: {
+                        team_id: timestamp.team_id,
+                        repo: timestamp.repo,
+                        role: TUFRole.timestamp,
+                        version: newTimestampVersion,
+                        value: newTimestamp as object,
+                        robot_id: robotId,
+                        expires_at: newTimestamp.signed.expires
+                    }
+                });
+                logger.info(`timestamp.json in the ${timestamp.repo} repo for team_id: ${timestamp.team_id} was successfully resigned`);
             }
+
+        } catch (e) {
+            logger.error(`Error resigning ${timestamp.version}.timestamp.json in the ${timestamp.repo} repo for team_id: ${timestamp.team_id}`);
         }
+
     }
 }
 
@@ -386,15 +378,10 @@ export const resignTufRoles = async () => {
     logger.info('running background worker to resign tuf roles');
 
     try {
-
-        const teamIds: string[] = (await prisma.team.findMany({
-            select: { id: true }
-        })).map(team => team.id);
-
         // await processRootRoles();
-        await processTargetRoles(teamIds);
-        await processSnapshotRoles(teamIds);
-        await processTimestampRoles(teamIds);
+        await processTargetRoles();
+        await processSnapshotRoles();
+        await processTimestampRoles();
 
     } catch (e) {
         logger.error('Error running TUF resigner worker');

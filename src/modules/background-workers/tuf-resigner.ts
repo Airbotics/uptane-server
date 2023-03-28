@@ -133,7 +133,6 @@ const processTargetRoles = async () => {
 
                 const targetMetadata = target.value as unknown as ISignedTargetsTUF;
                 const robotId: string | null = target.robot_id;
-console.log(target.expires_at);
 
                 if (dayjs(target.expires_at).isBefore(dayjs().add(config.TUF_EXPIRY_WINDOW[0] as number, config.TUF_EXPIRY_WINDOW[1] as ManipulateType))) {
 

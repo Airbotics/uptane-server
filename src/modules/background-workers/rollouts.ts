@@ -106,12 +106,17 @@ const processPending = async (teamIds: string[]) => {
                     const rolloutImage = rolloutImages.find(img => img.hw_id === botEcu.hwid);
 
                     if (rolloutImage) {
+                        
                         //This should never happen as images should not be deleted while a rolloutRobot.status = pending
                         if (!rolloutImage.image) {
                             logger.error(`image with hwid: ${rolloutImage.hw_id} may have been deleted `);
                             continue;
                         }
-                        affectedEcus.push({ ecu: botEcu, image: rolloutImage.image });
+
+                        // The ECU doesnt already have this image installed
+                        if(botEcu.image_id !== rolloutImage.id) {
+                            affectedEcus.push({ ecu: botEcu, image: rolloutImage.image });
+                        }
                     }
                 }
 
@@ -122,6 +127,7 @@ const processPending = async (teamIds: string[]) => {
 
                 //we need to generate new director metadata for the bot (ie is affected by the rollout)
                 else {
+
                     await generateNewMetadata(teamId, rolloutBot.robot_id!, rolloutBot.id, affectedEcus);
                     await setRolloutRobotStatus(rolloutBot.id, RolloutRobotStatus.scheduled);
                 }

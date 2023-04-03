@@ -114,7 +114,7 @@ const processPending = async (teamIds: string[]) => {
                         }
 
                         // The ECU doesnt already have this image installed
-                        if(botEcu.image_id !== rolloutImage.id) {
+                        if(botEcu.image_id !== rolloutImage.image_id) {
                             affectedEcus.push({ ecu: botEcu, image: rolloutImage.image });
                         }
                     }
@@ -127,7 +127,6 @@ const processPending = async (teamIds: string[]) => {
 
                 //we need to generate new director metadata for the bot (ie is affected by the rollout)
                 else {
-
                     await generateNewMetadata(teamId, rolloutBot.robot_id!, rolloutBot.id, affectedEcus);
                     await setRolloutRobotStatus(rolloutBot.id, RolloutRobotStatus.scheduled);
                 }

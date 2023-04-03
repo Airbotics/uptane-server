@@ -11,8 +11,6 @@ import { getKeyStorageRepoKeyId } from '@airbotics-core/utils';
 import { TUF_METADATA_LATEST } from '@airbotics-core/consts';
 import { Prisma } from '@prisma/client';
 
-//used for various loops
-const tufRepos: TUFRepo[] = [TUFRepo.image, TUFRepo.director];
 
 /**
  * Find and resign root metadata that is about to expire.
@@ -38,7 +36,6 @@ const processRootRoles = async () => {
         });
 
         logger.debug(`found ${mostRecentRoots.length} root metadata files to process`);
-
 
         for (const root of mostRecentRoots) {
 
@@ -115,7 +112,6 @@ const processRootRoles = async () => {
  *  17) write all new metadata to the db
  */
 const processTargetRoles = async () => {
-
 
         const latestTargets = await prisma.tufMetadata.findMany({
             where: {
@@ -295,8 +291,6 @@ const processSnapshotRoles = async () => {
         } catch (e) {
             logger.error(`Error resigning ${snapshot.version}.snapshot.json in the ${snapshot.repo} repo for team_id: ${snapshot.team_id}`);
         }
-
-
     }
 }
 
@@ -359,7 +353,6 @@ const processTimestampRoles = async () => {
         } catch (e) {
             logger.error(`Error resigning ${timestamp.version}.timestamp.json in the ${timestamp.repo} repo for team_id: ${timestamp.team_id}`);
         }
-
     }
 }
 
@@ -388,5 +381,4 @@ export const resignTufRoles = async () => {
     }
 
     logger.info('completed background worker to resign tuf roles');
-
 }

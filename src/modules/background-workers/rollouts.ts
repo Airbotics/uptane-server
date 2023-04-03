@@ -26,9 +26,9 @@ import { getKeyStorageRepoKeyId } from '@airbotics-core/utils';
  *          a) mark oldest n will be marked as 'skipped', and only the latest will be processed
  *          b) create a n new targets.jsons for each rollout and mark them as scheduled
  * 
- * 2) An image assoicated with a rollout has been deleted. In the images delete endpoint logic should be:
+ * 2) An image associated with a rollout has been deleted. In the images delete endpoint logic should be:
  *      
- *      It can be deleted if all assocaited RolloutRobot.status = 'successful' | 'cancelled' | 'failed'
+ *      It can be deleted if all associated RolloutRobot.status = 'successful' | 'cancelled' | 'failed'
  *      
  *      It cannot be deleted if any associated RolloutRobot.status =  'pending' | 'scheduled' | 'accepted'
  * 
@@ -137,7 +137,7 @@ const processPending = async (teamIds: string[]) => {
 
 
 /**
- * Responseible for processing the following status'
+ * Responsible for processing the following status'
  * - RolloutRobot.status (overall robot status, aggregate of all RolloutRobotEcu.status)
  * - Rollout.status  (overall rollout status, aggregate of all RolloutRobot.status)
  * 

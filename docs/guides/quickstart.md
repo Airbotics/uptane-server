@@ -12,31 +12,41 @@ In this guide we'll take Airbotics Cloud for a spin, we will:
     - ~100GB disk space
     - At least 8GB of RAM
 - An account with Airbotics, you can create one [here](https://dashboard.airbotics.io/register).
-- QEMU - `sudo apt install qemu`
-- Androids [repo](https://source.android.com/docs/setup/download#installing-repo) tool -  `sudo apt install repo` or follow the instructions from repo link if an official package available from your Linux distribution isn't avaiable.
-- Yocto dependencies - `sudo apt install gawk wget git diffstat unzip texinfo gcc-multilib build-essential chrpath socat cpio python python3 python3-pip python3-pexpect python-dev xz-utils debianutils iputils-ping cpu-checker default-jre parted`
-- A large coffee.
+- The following packages which include:
+    - The QEMU emulator
+    - Androids [repo](https://source.android.com/docs/setup/download#installing-repo) tool.  If an official package is not available for your Linux distribution, follow the install instructions from the link.
+    - Yocto dependencies 
 
-Let's go! 🚀
+```
+
+sudo apt install qemu
+
+sudo apt install repo
+
+sudo apt install gawk wget git diffstat unzip texinfo gcc-multilib build-essential chrpath socat cpio python python3 python3-pip python3-pexpect python-dev xz-utils debianutils iputils-ping cpu-checker default-jre parted
+
+```
+
+Finally you might want to get ready to make a large coffee. Let's go! 🚀
 
 
 
 ## 1. Download your provisioning credentials
 
-The first thing to do after creating your account is download your provisioning credentials from the [dashboard](https://dashboard.airbotics.io/team/provisioning-credentials). You've have to input an expiry date for them, it may take a few seconds for them to be issued.
+The first thing to do after creating your account is download your provisioning credentials from the [dashboard](https://dashboard.airbotics.io/team/provisioning-credentials). Choose an sensible expiry date for them, it may take a few seconds for them to be issued.
 
 Provisioning credentials are used to upload software images to Airbotics and to provision your robots, they come in a `credentials.zip` file.
 
-> More: You can read more about managing credentials [here](#).
+> More: You can read more about managing credentials [here](../platform/provisioning-credentials.md).
 
 
 ## 2. Build an image
 
-Now we'll build a full system image using [Yocto](https://www.yoctoproject.org/) - a set of tools for building embedded images. You'll need a relatively powerful computer to do this, the requirements for runnnig Yocto can be found [here](https://docs.yoctoproject.org/3.2.3/ref-manual/ref-system-requirements.html).
+Now we'll build a full system image using [Yocto](https://www.yoctoproject.org/) - a set of tools for building embedded images. You'll need a relatively powerful computer to do this, the requirements for running Yocto can be found [here](https://docs.yoctoproject.org/3.2.3/ref-manual/ref-system-requirements.html).
 
-For this guide we'll build a basic image on top of the referenece distribution [Poky](https://www.yoctoproject.org/software-item/poky/), we will build it without vim and later create a new version that does contain vim.
+For this guide we'll build a basic image on top of the reference distribution [Poky](https://www.yoctoproject.org/software-item/poky/), we will build it without vim and later create a new version that does contain vim.
 
-In the interest of moving quickly we'll make use of the [updater-repo](https://github.com/advancedtelematic/updater-repo) from Advanced Telematic. This repo can be used to gather all of the yocto layers we'll need to build an image for Airbotics.
+In the interest of moving quickly we'll make use of the [updater-repo](https://github.com/advancedtelematic/updater-repo) from Advanced Telematic. This repo can be used to gather all of the Yocto layers we'll need to build an image for Airbotics.
 
 Set up a project directory and then sync the required yocto layers.
 
@@ -49,13 +59,24 @@ repo sync -j8
 
 At this point you should have all the required yocto layers on your host machine, including [meta-updater](https://github.com/uptane/meta-updater) which contains the agent, OSTree, and other magic.  After this guide, you can add more layers with everything your robot needs by creating your own or importing [pre-built](https://layers.openembedded.org/layerindex/branch/master/layers/) ones.
 
-Meta-updater includes a helper script to set up the envirnoment. From your project root run `source meta-updater/scripts/envsetup.sh qemux86-64`. We are going to build an image for the QEMU emulator.
+Meta-updater includes a helper script to set up the environment. From your project root run: 
+```
+source meta-updater/scripts/envsetup.sh qemux86-64
+``` 
 
 You should now find yourself in the `airbotics-quickstart/build` directory.
 
-From here we will need to edit `airbotics-quickstart/build/conf/local.conf` and tell yocto where to look for our `credentials.zip` we downloaded in step 1. Open the conf file and add `SOTA_PACKED_CREDENTIALS` value to be the absolute path pointing to wherever you download your credentials.
+From here we will need to edit `airbotics-quickstart/build/conf/local.conf` and tell yocto where to look for our `credentials.zip` we downloaded in step 1. 
 
-For example `SOTA_PACKED_CREDENTIALS=<absolute-path-to-credentials>/credentials.zip`
+Open the conf file and set the `SOTA_PACKED_CREDENTIALS` variable to be the absolute path pointing to wherever you download your credentials.
+
+For example: 
+
+```
+SOTA_PACKED_CREDENTIALS=<absolute-path-to-credentials>/credentials.zip
+```
+
+Save the file.
 
 At this point we are finally ready to build the image with:
 
@@ -68,7 +89,7 @@ bitbake core-image-minimal
 
 When the image finishes building meta-updater will sign and upload it to Airbotics. You'll then be able to see it in the [images](https://dashboard.airbotics.io/images) page on the dashboard. Click into the image and change its description to something like _Quickstart image v1 - does not contain vim_.
 
-> More: You can read a more detailed tutorial about building images [here](#) including how to pin images to certain compatible boards.
+> More: You can read a more detailed tutorial about building images [here](../platform/images.md) including how to pin images to certain compatible boards.
 
 
 ## 3. Flash your image to a robot
@@ -117,7 +138,7 @@ After it builds we can see it in the [images](https://dashboard.airbotics.io/ima
 
 So our engineers have been busy at work improving our codebase and we now have a brand new image that includes vim. Let's roll it out to our fleet.
 
-We'll head to the [rollouts page](https://dashboard.airbotics.io/rollouts) on the dashboard and create a [rollout](../components/rollouts.md). We'll target the rollout at selected robots (just one for now) and we'll specify we want to update ECUs with the `qemu86-64` hardware id to update to the update to our new image with vim. You should see a summary showing how our robot will be affected by the rollout, then you can confirm the creation of the rollout.
+We'll head to the [rollouts page](https://dashboard.airbotics.io/rollouts) on the dashboard and create a [rollout](../platform/rollouts.md). We'll target the rollout at selected robots (just one for now) and we'll specify we want to update ECUs with the `qemu86-64` hardware id to update to the update to our new image with vim. You should see a summary showing how our robot will be affected by the rollout, then you can confirm the creation of the rollout.
 
 The final step to get the robot to update is to launch the rollout. You can do that from the Rollout Details page. At this point our robot should begin to download and install the new update. We can monitor the status of the rollout from the dashboard.
 
@@ -129,7 +150,11 @@ ostree admin status
 
 We can also confirm vim isn't on the robot yet.
 
-Now Let's reboot qemu and confirm the update was applied: `sudo reboot`. Once it boots you should now be able to use vim. You'll see the ECU, Robot and Rollout status has changed. Nice 😎
+Now Let's reboot qemu and confirm the update was applied: 
+```
+sudo reboot
+```
+Once it boots you should now be able to use vim. You'll see the ECU, Robot and Rollout status has changed. Nice 😎
 
 ## 7. Cleaning up
 

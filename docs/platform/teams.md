@@ -46,6 +46,6 @@ It is not currently possible to transfer resources (robots, software images, cre
 
 You can delete a team at the bottom of the general tab of the team [page](https://dashboard.airbotics.io/team/general). This action will permanently delete all sources associated with the team (including robots, certificates, signing keys, software images, etc.).
 
-After this, robots in the field will continue to attempt to interact with Airbotics and will be denied, they will need to be reflashed to begin interacting successfully again.
+After this, robots in the field will continue to attempt to interact with Airbotics and will be denied, they will need to be re-flashed to begin interacting successfully again.
 
 > Note: This action may affect robots in the field.

@@ -6,7 +6,7 @@ A _robot_ is a networked machine for which Airbotics could update software. It c
 
 IDs are automatically created by the robot when it provisions itself and cannot be changed.
 
-The name of a robot is initiliased to be the same as the ID, but this can be changed. You can also optionally give a robot a description, by default a robot will not have a description.
+The name of a robot is initialised to be the same as the ID, but this can be changed. You can also optionally give a robot a description, by default a robot will not have a description.
 
 Robots will report various information which can be viewed from the dashboard:
 - The version of the agent.
@@ -22,7 +22,7 @@ This image contains our agent and provisioning credentials which will be used by
 2. A certificate and private key contained in the provisioning credentials will be used to establish a mutual TLS connection with our backend. This credential is used to provision multiple robots.
 3. Assuming authentication and business logic checks pass, the provisioning credential is exchanged for a credential that is unique to the robot and will be used for the remainder of the robot's lifetime.
 4. On our backend, a key pair and X.509 certificate is generated for the robot, both of these are returned to the robot over the TLS connection. The private portion of the key is not stored on our system, the public portion is.
-5. The robot then stores its key and certicate and discards the provisioning credential.
+5. The robot then stores its key and certificate and discards the provisioning credential.
 6. Thereafter it uses own key and certificate for establishing a secure connection and verifying the integrity of software images.
 
  
@@ -65,6 +65,6 @@ You can view a full history of all rollouts each robot has been apart of. Each r
 
 ## Deleting a robot
 
-Robots can be deleted at any time, this will permanentely remove all records of the robot in our database and revoke the certificate it uses to communicate. The agent on the robot will continue to attempt communicating with the backend unless it is removed or reconfigured.
+Robots can be deleted at any time, this will permanently remove all records of the robot in our database and revoke the certificate it uses to communicate. The agent on the robot will continue to attempt communicating with the backend unless it is removed or reconfigured.
 
 ![Deleting a robot.](../../imgs/delete-robot.png)

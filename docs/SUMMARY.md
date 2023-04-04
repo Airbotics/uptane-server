@@ -15,6 +15,7 @@
 * [Quickstart](guides/quickstart.md)
 * [Deploying Airbotics](guides/deploying-airbotics.md)
 * [Self-hosting](guides/self-hosting.md)
+* [Yocto & ROS](guides/ros-noetic-dunfell.md)
 
 ## Platform
 

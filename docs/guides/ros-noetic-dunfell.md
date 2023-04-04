@@ -1,12 +1,13 @@
 # Yocto & ROS Intro 
 
 In this guide we'll learn how to:
-- Build a full system image using Yocto with open embedded release Dunfell that includes ROS 1 Noetic.
+- Build a full system image using Yocto with open embedded release Dunfell that includes ROS 1 Noetic for the QEMU emulator.
 - Boot the image and ensure ROS is installed correctly and we can start `roscore`.
 
 In a later guides we'll learn:
 - How to add some ROS nodes to our previously image.
 - How to use containers with Yocto and ROS.
+- How to build images for other hardware boards.
 - How to put it all together and ship a full ROS application with Airbotics.
 
 ## Prerequisites
@@ -78,10 +79,10 @@ A build produces many (large) build artifacts, some of which can be shared betwe
 mkdir -p <abs-path-to-shared-directory>
 ```
 
-We'll need this path again very soon when update are configuration. Open the `local.conf` from the `conf` directory
+We'll need this path again very soon when update our configuration. Open the `local.conf` from the `conf` directory.
 
 ```
-vim air-ros-demo/conf/local.conf
+air-ros-demo/conf/local.conf
 ```
 
 Add the following to the end of the `local.conf` file, this includes all the ROS specific configuration we need. Don't forget to change the `ROS_COMMON_ARTIFACTS` to point to your absolute path from the previous step.
@@ -123,9 +124,6 @@ IMAGE_INSTALL_append= " bash "
 
 Save the file. You can adjust this file to include any other additions. Feel free to look at [yocto docs glossary](https://docs.yoctoproject.org/ref-manual/variables.html?highlight=glossary#term-EXTRA_IMAGE_FEATURES) more information.
 
-From the 
-
-
 ## 2. Build the image
 
 We are finally ready to build the image with bitbake. This may take anywhere from 30 mins to several hours on the initial build depending on the specs of your host machine.
@@ -133,6 +131,11 @@ We are finally ready to build the image with bitbake. This may take anywhere fro
 Start the build with:
 ```
 bitbake ros-image-core
+```
+
+If the build was successful you will be able to see the finished built images in
+```
+ROS_COMMON_ARTIFACTS/BUILD-ros1-noetic-dunfell/deploy/images/qemux86/
 ```
 
 ## 3. Boot the image

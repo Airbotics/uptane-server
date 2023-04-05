@@ -3,9 +3,10 @@
 In this guide we'll learn how to:
 - Build a full system image using Yocto with open embedded release Dunfell that includes ROS 1 Noetic for the QEMU emulator.
 - Boot the image and ensure ROS is installed correctly and we can start `roscore`.
+- Install the `roscpp-tutorials` and rebuild the image and we can start `talker` and `listener`.
 
 In a later guides we'll learn:
-- How to add some ROS nodes to our previously image.
+- How to add some ROS nodes to our previously built image.
 - How to use containers with Yocto and ROS.
 - How to build images for other hardware boards.
 - How to put it all together and ship a full ROS application with Airbotics.
@@ -164,6 +165,71 @@ And finally check that you can start `roscore`
 ```
 roscore
 ```
+
+## 4. Adding more packages 
+
+Our initial image wasn't very exciting, now we're going to build a new version of our image that includes the `roscpp_tutorials` package. We won't dive into how to build individual packages in this tutorial but we can get a list of available packages in our current environment by running:
+```
+bitbake-layers show-recipes | roscpp
+```
+Notice we're grepping the result to filter on results that include *roscpp*. You should see `roscpp-tutorials` as one of the lines in the output. 
+
+Add the following line to the `conf/local.conf`.
+
+```
+IMAGE_INSTALL_append_pn-ros-image-core = " roscpp-tutorials "
+```
+
+Now if we build the image again with `bitbake` and reboot the image, we should be able ro run some of the tutorials. 
+
+```
+bitake ros-image-core
+```
+
+> Note: This should take a fraction of the time that it did on the first build as Yocto caches as it build.
+
+Now lets start the boot the image again:
+```
+runqemu
+```
+
+This time we'll run `roscore` in the background.
+```
+source /opt/ros/noetic/setup.sh
+roscore > core.log 2>&1 &
+```
+
+You can check if `roscore` started correctly by taking a look at the `core.log` file or check `top`
+
+```
+cat core.log
+```
+
+Now we should be able to start the talker in the background:
+
+```
+rosrun roscpp_tutorials talker > talker.log 2>&1 &
+```
+
+And start the listener in the foreground:
+```
+rosrun roscpp_tutorials listener
+```
+
+You should see a steady stream of:
+
+```
+I head [hello world 1]
+I head [hello world 2]
+I head [hello world 3]
+....
+```
+
+## 5. Cleaning up
+Great work if you made it this far. To clean up you stop the nodes manually or just quit the emulator. You may want to `rm -rf air-ros-demo` if you want to reclaim the disk space on your host. 
+
+We will be building on this through the rest of the guides in this series so be sure to keep it around if you plan to follow the rest of the series, unless you love really long build times or maybe you just need an excuse not to work for an hour!
+
 
 ## References
 

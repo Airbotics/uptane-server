@@ -224,6 +224,7 @@ export const launchRollout = async (req: Request, res: Response) => {
                 }
             }
         });
+        
         auditEvent.emit({
             resource: EEventResource.Rollout,
             action: EEventAction.Launched,

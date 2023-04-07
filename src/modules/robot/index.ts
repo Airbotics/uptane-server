@@ -114,7 +114,7 @@ router.post('/devices', async (req: Request, res) => {
 
     // bundle into pcks12, no encryption password set
     const p12 = forge.pkcs12.toPkcs12Asn1(forge.pki.privateKeyFromPem(robotKeyPair.privateKey),
-        [forge.pki.certificateFromPem(robotCert.cert), forge.pki.certificateFromPem(rootCACert)],
+        [forge.pki.certificateFromPem(robotCert), forge.pki.certificateFromPem(rootCACert)],
         null,
         { algorithm: 'aes256' });
 

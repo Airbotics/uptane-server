@@ -11,7 +11,7 @@ In this guide we'll take Airbotics Cloud for a spin, we will:
 - A Linux-based machine with plenty of storage, compute and memory.
     - ~100GB disk space
     - At least 8GB of RAM
-- An account with Airbotics, you can create one [here](https://dashboard.airbotics.io/register).
+- An account with Airbotics, you can create one [here](https://dashboard.airbotics.io/registration).
 - QEMU - `sudo apt install qemu`
 - Androids [repo](https://source.android.com/docs/setup/download#installing-repo) tool -  `sudo apt install repo` or follow the instructions from repo link if an official package available from your Linux distribution isn't avaiable.
 - Yocto dependencies - `sudo apt install gawk wget git diffstat unzip texinfo gcc-multilib build-essential chrpath socat cpio python python3 python3-pip python3-pexpect python-dev xz-utils debianutils iputils-ping cpu-checker default-jre parted`

@@ -184,8 +184,6 @@ export const createTeam = async (req: Request, res: Response, next: NextFunction
                 privateKey: directorTimestampKeyPair.privateKey
             });
 
-            console.log(getKeyStorageRepoKeyId(team.id, TUFRepo.image, TUFRole.root))
-
 
             // now store a record of them in the db
             await tx.tufKey.createMany({

@@ -11,7 +11,7 @@
         "build": "tsc && tsc-alias",
         "generate": "npx prisma generate --schema ./src/prisma/schema.prisma",
         "helper": "npx ts-node ./scripts/dev-helper.ts",
-        "test": "jest -i --detectOpenHandles"
+        "test": "jest -i --detectOpenHandles --coverage"
     },
     "dependencies": {
         "@aws-sdk/client-acm-pca": "^3.254.0",

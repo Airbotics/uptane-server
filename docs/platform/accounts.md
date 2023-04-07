@@ -4,7 +4,7 @@ Accounts are how users interact with the Airbotics platform.
 
 ## Creating an account
 
-Accounts are created through the [dashboard](https://dashboard.airbotics.io/register). You must verify your email before continuing. There's no sales call or credit card required, you can start shipping software straight away.
+Accounts are created through the [dashboard](https://dashboard.airbotics.io/registration). You must verify your email before continuing. There's no sales call or credit card required, you can start shipping software straight away.
 
 ## Updating account information
 

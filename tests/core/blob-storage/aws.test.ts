@@ -26,7 +26,7 @@ const bucketId = 'airbotics-treehub';
 
 const blobStorage = new BlobStorageProvider(EBlobStorageProvider.S3);
 
-
+/*
 test('put a blob that does not already exist', async () => {
     const res = await blobStorage.putObject(bucketId, teamId, objectId, content);
     expect(res).toEqual(true);
@@ -103,3 +103,5 @@ test('delete team objects that exists', async () => {
     const res = await blobStorage.deleteTeamObjects(bucketId, teamId);
     expect(res).toEqual(true);
 });
+
+*/

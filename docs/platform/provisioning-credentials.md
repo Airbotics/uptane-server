@@ -8,7 +8,7 @@ Provisioning credentials are zip files that contain various secrets that allow c
 
 ## Creating a provisioning credential
 
-You can create a credential on the provisioing credentials tab of the team [page](https://dashboard.airbotics.io/team/provisioning-credentials). 
+You can create a credential on the provisioning credentials tab of the team [page](https://dashboard.airbotics.io/team/provisioning-credentials). 
 
 You will need to specify a date in the future for when the credential expires, after this date a credential will not be able to authenticate with Airbotics. It is not possible to modify the expiry date after a credential has been created.
 
@@ -21,7 +21,7 @@ Once you choose an expiry date the credential will start to be issued, this may 
 
 ## Viewing provisioning credentials issued to your team
 
-You can view all credentials that have been issued to members of your team on the provisioing credentials tab of the team [page](https://dashboard.airbotics.io/team/provisioning-credentials).
+You can view all credentials that have been issued to members of your team on the provisioning credentials tab of the team [page](https://dashboard.airbotics.io/team/provisioning-credentials).
 
 Each credential will have a status that are explained below:
 

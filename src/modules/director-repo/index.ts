@@ -446,16 +446,8 @@ router.get('/:role.json', mustBeRobot, updateRobotMeta, async (req: Request, res
         return new NotFoundResponse(res);
     }
 
-    console.log('5');
-
-
     const mostRecentMetadata = metadata[0].value as Prisma.JsonObject;
-
-    console.log('6');
-
-    // check it hasnt expired
-    // TODO
-
+   
     logger.debug(`a robot has fetched ${role} metdata`);
     return new SuccessJsonResponse(res, mostRecentMetadata);
 

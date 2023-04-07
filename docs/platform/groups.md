@@ -12,7 +12,7 @@ Groups can have many uses cases depending on your application. For example:
 - Group robots by model or type.
 
 Some considerations for working with groups:
-- Robots can belong to zero or multiplle groups.
+- Robots can belong to zero or multiple groups.
 - A group can have zero or multiple robots in it.
 - Groups can optionally be given a description.
 
@@ -31,4 +31,4 @@ You can remove a robot from the robots tab on the group detail page. If you remo
 
 ## Deleting a group
 
-If you delete a group it will still show up in rollouts that have targetted it, but you won't be able to click through to see the group. If you delete a group that is the target of a rollout while it is underway, the rollout will still proceed to the robots that were in the group.
+If you delete a group it will still show up in rollouts that have targeted it, but you won't be able to click through to see the group. If you delete a group that is the target of a rollout while it is underway, the rollout will still proceed to the robots that were in the group.

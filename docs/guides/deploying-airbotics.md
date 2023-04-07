@@ -1,6 +1,6 @@
 # Deploying Airbotics
 
-Implenting a solution for over-the-air updates can be an involved process, below are the approximate stages to go from zero to a full-scale deployment of Airbotics on your production fleet. 
+Implementing a solution for over-the-air updates can be an involved process, below are the approximate stages to go from zero to a full-scale deployment of Airbotics on your production fleet. 
 
 Depending on your circumstances this can take anywhere from a few days to 6 months.
 
@@ -12,7 +12,7 @@ Pretty straightforward - you'll need an account to use Airbotics. You can regist
 ### 2. Consideration - complete the quickstart guide
 In this stage an engineer will follow the [quickstart](./quickstart.md) guide to build a basic image using Yocto that includes the meta-updater layer used to communicate with Airbotics. They'll then "flash" this to an emulated robot on their local machine using QEMU. 
 
-The purose of this stage is to gain an understanding of the concepts and workings of Airbotics.
+The purpose of this stage is to gain an understanding of the concepts and workings of Airbotics.
 
 
 ### 3. Development - build a custom image and run it on a real board

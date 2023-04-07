@@ -45,7 +45,7 @@ The first step is to get the core backend infrastructure up and running. This in
 Before we can get this core infrastructure running we need to create a root CA, generate some key pairs and x.509 certificates. You can dive into more detail about why these are need in the developers guide.
 
 ### Create a Root CA and gateway cert
-Execute `npm run helper` and choose `[1] Create root and gateway cert`. When the prompot for `CN` is shown, enter `localhost`. This will create a pair of keys for the Root CA and gateway cert and use them to create a certificate for both. Keys will be stored in the keyserver and certs in blob storage. In development this will store the keys and certificates in the local file system. Your root project directory should contain the following:
+Execute `npm run helper` and choose `[1] Create root and gateway cert`. When the prompt for `CN` is shown, enter `localhost`. This will create a pair of keys for the Root CA and gateway cert and use them to create a certificate for both. Keys will be stored in the keyserver and certs in blob storage. In development this will store the keys and certificates in the local file system. Your root project directory should contain the following:
 
 ```
 ├── .blobs

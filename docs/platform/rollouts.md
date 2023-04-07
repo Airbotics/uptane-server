@@ -42,7 +42,7 @@ A rollout status can be one of the following:
 
 
 ## Robot and ECU status
-You can also dive deeper and verify the status of each of the affected robots and their associated ECUs in the rollout. Please refer to [robot status](../components/robots/overview.md) and [ECU status](../components/robots/ecus.md) for more information.
+You can also dive deeper and verify the status of each of the affected robots and their associated ECUs in the rollout. Please refer to [robot status](../platform/robots/overview.md) and [ECU status](../platform/robots/ecus.md) for more information.
 
 
 

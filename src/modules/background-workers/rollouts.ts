@@ -26,9 +26,9 @@ import { getKeyStorageRepoKeyId } from '@airbotics-core/utils';
  *          a) mark oldest n will be marked as 'skipped', and only the latest will be processed
  *          b) create a n new targets.jsons for each rollout and mark them as scheduled
  * 
- * 2) An image assoicated with a rollout has been deleted. In the images delete endpoint logic should be:
+ * 2) An image associated with a rollout has been deleted. In the images delete endpoint logic should be:
  *      
- *      It can be deleted if all assocaited RolloutRobot.status = 'successful' | 'cancelled' | 'failed'
+ *      It can be deleted if all associated RolloutRobot.status = 'successful' | 'cancelled' | 'failed'
  *      
  *      It cannot be deleted if any associated RolloutRobot.status =  'pending' | 'scheduled' | 'accepted'
  * 
@@ -106,12 +106,17 @@ const processPending = async (teamIds: string[]) => {
                     const rolloutImage = rolloutImages.find(img => img.hw_id === botEcu.hwid);
 
                     if (rolloutImage) {
+                        
                         //This should never happen as images should not be deleted while a rolloutRobot.status = pending
                         if (!rolloutImage.image) {
                             logger.error(`image with hwid: ${rolloutImage.hw_id} may have been deleted `);
                             continue;
                         }
-                        affectedEcus.push({ ecu: botEcu, image: rolloutImage.image });
+
+                        // The ECU doesnt already have this image installed
+                        if(botEcu.image_id !== rolloutImage.image_id) {
+                            affectedEcus.push({ ecu: botEcu, image: rolloutImage.image });
+                        }
                     }
                 }
 
@@ -132,7 +137,7 @@ const processPending = async (teamIds: string[]) => {
 
 
 /**
- * Responseible for processing the following status'
+ * Responsible for processing the following status'
  * - RolloutRobot.status (overall robot status, aggregate of all RolloutRobotEcu.status)
  * - Rollout.status  (overall rollout status, aggregate of all RolloutRobot.status)
  * 

@@ -25,7 +25,7 @@ Airbotics is focusing its energy on making shipping software to robots as good a
 Software images are stored on AWS s3 in the EU.
 
 ### Is Airbotics compliant?
-Airbotics is currently not complaint but we plan to be SOC 2 Type II complaint at general availablity.
+Airbotics is currently not complaint but we plan to be SOC 2 Type II complaint at general availability.
 
 ### Do I need to manage signing / Uptane keys?
 Airbotics manages keys used in Uptane to sign and verify software images.

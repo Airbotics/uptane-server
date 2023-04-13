@@ -1,4 +1,4 @@
-# Yocto & ROS Intro 
+# Yocto Mini-Series: I - Working with ROS
 
 In this guide we'll learn how to:
 - Build a full system image using Yocto with open embedded release Dunfell that includes ROS 1 Noetic for the QEMU emulator.
@@ -125,7 +125,7 @@ IMAGE_INSTALL_append= " bash "
 
 Save the file. You can adjust this file to include any other additions. Feel free to look at [yocto docs glossary](https://docs.yoctoproject.org/ref-manual/variables.html?highlight=glossary#term-EXTRA_IMAGE_FEATURES) more information.
 
-## 2. Build the image
+## 3. Build the image
 
 We are finally ready to build the image with bitbake. This may take anywhere from 30 mins to several hours on the initial build depending on the specs of your host machine.
 
@@ -139,7 +139,7 @@ If the build was successful you will be able to see the finished built images in
 ROS_COMMON_ARTIFACTS/BUILD-ros1-noetic-dunfell/deploy/images/qemux86/
 ```
 
-## 3. Boot the image
+## 4. Boot the image
 We  can utilise the Quick EMUlator (part of the Yocto project tool set and built on top of QEMU) to test our built image.
 
 ```
@@ -166,7 +166,7 @@ And finally check that you can start `roscore`
 roscore
 ```
 
-## 4. Adding more packages 
+## 5. Adding more packages 
 
 Our initial image wasn't very exciting, now we're going to build a new version of our image that includes the `roscpp_tutorials` package. We won't dive into how to build individual packages in this tutorial but we can get a list of available packages in our current environment by running:
 ```
@@ -188,7 +188,7 @@ bitake ros-image-core
 
 > Note: This should take a fraction of the time that it did on the first build as Yocto caches as it build.
 
-Now lets start the boot the image again:
+Now lets boot the updated image:
 ```
 runqemu
 ```
@@ -219,14 +219,14 @@ rosrun roscpp_tutorials listener
 You should see a steady stream of:
 
 ```
-I head [hello world 1]
-I head [hello world 2]
-I head [hello world 3]
+I heard [hello world 1]
+I heard [hello world 2]
+I heard [hello world 3]
 ....
 ```
 
-## 5. Cleaning up
-Great work if you made it this far. To clean up you stop the nodes manually or just quit the emulator. You may want to `rm -rf air-ros-demo` if you want to reclaim the disk space on your host. 
+## 6. Cleaning up
+Great work if you made it this far. To clean up you can stop the nodes manually or just quit the emulator. You may want to `rm -rf air-ros-demo` if you want to reclaim the disk space on your host. 
 
 We will be building on this through the rest of the guides in this series so be sure to keep it around if you plan to follow the rest of the series, unless you love really long build times or maybe you just need an excuse not to work for an hour!
 

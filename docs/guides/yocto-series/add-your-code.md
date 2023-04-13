@@ -62,14 +62,14 @@ The `conf/layer.conf` file tells yocto to pick up any recipes the layer root dir
 Let's create a new recipe which we'll call `recipes-hello-air`.
 ```
 mkdir -p ../meta-air-demo/recipes-hello-air/hello/files
-touch ../meta-air-demo/recipes-hello-air/hello_1.0.bb
+touch ../meta-air-demo/recipes-hello-air/hello/hello_1.0.bb
 ```
 
 Next we'll add our source code. Often source code will be pulled in from a remote but in this example, our recipe uses a locally available source code. Following yocto conventions you should put this source code in a directory named `files`.
 
 Create a new file for our source code:
 ```
-touch ../meta-air-demo/recipes-hello-air/files/air-hello.c
+touch ../meta-air-demo/recipes-hello-air/hello/files/air-hello.c
 ```
 
 Copy the following into `air-hello.c` with our hello world code:
@@ -109,20 +109,19 @@ do_install() {
 
 If you've followed all the steps in this section, your directory tree for the new layer should look like this:
 ```
-meta-air-demo/
+../meta-air-demo/
 ├── conf
 │   └── layer.conf
 ├── COPYING.MIT
 ├── README
 ├── recipes-example
 │   └── example
-│   	└── example_0.1.bb
+│       └── example_0.1.bb
 └── recipes-hello-air
-	└── hello
-    	├── files
-    	│   └── air-hello.c
-    	└── hello_1.0.bb
-
+    └── hello
+        ├── files
+        │   └── air-hello.c
+        └── hello_1.0.bbl
 ```
 
 ## 3. Include the new recipe in the build

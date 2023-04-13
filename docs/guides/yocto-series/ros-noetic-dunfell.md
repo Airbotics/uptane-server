@@ -1,8 +1,4 @@
-<<<<<<< HEAD:docs/guides/ros-noetic-dunfell.md
 # Yocto Mini-Series: I - Working with ROS
-=======
-# Adding ROS 1
->>>>>>> 03ae3224c5499d48aa3522bfb924dec7f547b7bc:docs/guides/yocto-and-robotics-series/ros-noetic-dunfell.md
 
 In this guide we'll learn how to:
 - Build a full system image using Yocto with open embedded release Dunfell that includes ROS 1 Noetic for the QEMU emulator.

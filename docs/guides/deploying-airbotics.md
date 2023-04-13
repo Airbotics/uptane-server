@@ -7,7 +7,7 @@ Depending on your circumstances this can take anywhere from a few days to 6 mont
 At any stage feel free to hop on a [call](https://calendly.com/airbotics/30-min-meeting) with us.
 
 ### 1. Registration - sign up to Airbotics
-Pretty straightforward - you'll need an account to use Airbotics. You can register one [here](https://dashboard.airbotics.io/register). While we're in Closed Beta you'll also need an invitation code.
+Pretty straightforward - you'll need an account to use Airbotics. You can register one [here](https://dashboard.airbotics.io/registration). While we're in Closed Beta you'll also need an invitation code.
 
 ### 2. Consideration - complete the quickstart guide
 In this stage an engineer will follow the [quickstart](./quickstart.md) guide to build a basic image using Yocto that includes the meta-updater layer used to communicate with Airbotics. They'll then "flash" this to an emulated robot on their local machine using QEMU. 

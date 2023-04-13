@@ -1,15 +1,19 @@
+<<<<<<< HEAD:docs/guides/ros-noetic-dunfell.md
 # Yocto Mini-Series: I - Working with ROS
+=======
+# Adding ROS 1
+>>>>>>> 03ae3224c5499d48aa3522bfb924dec7f547b7bc:docs/guides/yocto-and-robotics-series/ros-noetic-dunfell.md
 
 In this guide we'll learn how to:
 - Build a full system image using Yocto with open embedded release Dunfell that includes ROS 1 Noetic for the QEMU emulator.
 - Boot the image and ensure ROS is installed correctly and we can start `roscore`.
 - Install the `roscpp-tutorials` and rebuild the image and we can start `talker` and `listener`.
 
-In a later guides we'll learn:
+<!-- In a later guides we'll learn:
 - How to add some ROS nodes to our previously built image.
 - How to use containers with Yocto and ROS.
 - How to build images for other hardware boards.
-- How to put it all together and ship a full ROS application with Airbotics.
+- How to put it all together and ship a full ROS application with Airbotics. -->
 
 ## Prerequisites
 - A Linux-based machine with plenty of storage, compute and memory.

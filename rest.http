@@ -74,7 +74,8 @@ x-session-token: {{SESSION_TOKEN}}
 Content-Type: application/json
 
 {
-    "name": "Acme Robotics"
+    "name": "Acme Robotics",
+    "invite_code": "123"
 }
 
 

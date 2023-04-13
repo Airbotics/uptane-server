@@ -11,7 +11,7 @@ In this guide we'll take Airbotics Cloud for a spin, we will:
 - A Linux-based machine with plenty of storage, compute and memory.
     - ~100GB disk space
     - At least 8GB of RAM
-- An account with Airbotics, you can create one [here](https://dashboard.airbotics.io/register).
+- An account with Airbotics, you can create one [here](https://dashboard.airbotics.io/registration).
 - The following packages which include:
     - The QEMU emulator
     - Androids [repo](https://source.android.com/docs/setup/download#installing-repo) tool.  If an official package is not available for your Linux distribution, follow the install instructions from the link.

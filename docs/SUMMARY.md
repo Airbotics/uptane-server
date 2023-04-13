@@ -15,7 +15,10 @@
 * [Quickstart](guides/quickstart.md)
 * [Deploying Airbotics](guides/deploying-airbotics.md)
 * [Self-hosting](guides/self-hosting.md)
-* [Yocto Miniseries](guides/ros-noetic-dunfell.md)
+* Yocto Series
+    * [Adding ROS 1](guides/yocto-series/ros-noetic-dunfell.md)
+    * [Adding your own code](guides/yocto-series/add-your-code.md)
+
 
 ## Platform
 

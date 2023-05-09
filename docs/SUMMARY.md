@@ -13,12 +13,19 @@
 ## Guides
 
 * [Quickstart](guides/quickstart.md)
-* [Deploying Airbotics](guides/deploying-airbotics.md)
-* [Self-hosting](guides/self-hosting.md)
 * Yocto Series
     * [Adding ROS 1](guides/yocto-series/ros-noetic-dunfell.md)
     * [Adding your own code](guides/yocto-series/add-your-code.md)
 
+
+## AirOS
+
+* [Overview](airos/overview.md)
+* [Anatomy](airos/anatomy.md)
+* [Enabling OTA updates](airos/enable-ota.md)
+* [Adding your application](airos/add-app.md)
+* [Supporting your hardware](airos/hardware.md)
+* [FAQ](airos/faq.md)
 
 ## Platform
 

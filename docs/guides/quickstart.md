@@ -1,4 +1,4 @@
-## Quickstart
+# Quickstart
 In this guide we'll take Airbotics Cloud for a spin by building an OS image based on [AirOS](../airos/overview.md)
 
 ## Prerequisites
@@ -16,11 +16,15 @@ In this guide we'll take Airbotics Cloud for a spin by building an OS image base
 ```
 .scripts/install-yocto-deps.sh
 ```
-5. Set `SOTA_PACKED_CREDENTIALS` in `build/conf/local.conf` to the absolute path of your `credentials.zip`
-6. Initialise all the required git submodules:
+5. Initialise all the required git submodules:
 
 ```
 make init
+```
+
+6. Open `build/conf/local.conf` and set: 
+```
+SOTA_PACKED_CREDENTIALS = "<absolute-path-to-your-credentials.zip>"
 ```
 
 7. Initialise the build envirnoment and start the build:

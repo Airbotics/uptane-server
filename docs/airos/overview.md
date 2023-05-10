@@ -15,10 +15,11 @@ To get started with [AirOS repo](https://github.com/Airbotics/AirOS) you can com
 2. Clone the forked repo to your development machine.
 3. Run `make init` to fetch the required git submodules.
 4. Run `source ./poky/oe-init-build-env build` to set up your build envirnoment. 
+5. Enable [OTA updates](./enable-ota.md)
 
 After completing these steps you should now have the bare minimum you need to start building your own OS image. 
 
-You should note that minimum really means minimum, if you make no further changes from this point, an image you build will contain only a basic set of packages, no OTA functionally and none of your application code.
+You should note that minimum really means minimum, if you make no further changes from this point, an image you build will contain only a basic set of packages.
 
 
 ## Next steps

@@ -22,9 +22,9 @@
 
 * [Overview](airos/overview.md)
 * [Anatomy](airos/anatomy.md)
-* [Enabling OTA updates](airos/enable-ota.md)
-* [Adding your application](airos/add-app.md)
-* [Supporting your hardware](airos/hardware.md)
+* [Configuring OTA](airos/configure-ota.md)
+* [Configuring hardware](airos/hardware.md)
+* [Configuring application](airos/add-app.md)
 * [FAQ](airos/faq.md)
 
 ## Platform

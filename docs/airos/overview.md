@@ -2,29 +2,33 @@
 
 [AirOS](https://github.com/Airbotics/AirOS) is a template for building full OS images that work out of the box with Airbotics cloud. It includes all the necessary [yocto layers](https://docs.yoctoproject.org/dev/dev-manual/layers.html) required to build a bootable OS image with OTA capabilities. 
 
-[AirOS](https://github.com/Airbotics/AirOS)  is our recommended starting point for anyone wanting to try out Airbotics, however if you want to roll your own OS you are more than free to do so.    
-
-If you're looking for the quickest way to take AirOs and Airbotics for a spin check out the [quickstart guide](../guides/quickstart.md).
+AirOS is our recommended starting point for anyone wanting to try out Airbotics, however if you want to roll your own OS you are more than free to do so.
 
 ## Getting started
 
-To get started with [AirOS repo](https://github.com/Airbotics/AirOS) you can complete the following steps:
+The [AirOS repo](https://github.com/Airbotics/AirOS) is designed to be forked into either your personal or your organisations Github account. From there you can clone the forked repo onto your development machine and begin read more about:
+- How to configure the build for [secure OTA](./configure-ota.md). 
+- How to configure the build for your [hardware](./configure-hardware.md).
+- How to configure the build to integrate your [application](./configure-app.md).
 
+## Quickstart
+If you're looking for the quickest way to take AirOs and Airbotics for a spin check out the [quickstart guide](../guides/quickstart.md).
 
-1. Fork the [AirOS repo](https://github.com/Airbotics/AirOS) to either your personal or your organisations Github account.
-2. Clone the forked repo to your development machine.
-3. Run `make init` to fetch the required git submodules.
-4. Run `source ./poky/oe-init-build-env build` to set up your build envirnoment. 
-5. Enable [OTA updates](./enable-ota.md)
+## Supported hardware
 
-After completing these steps you should now have the bare minimum you need to start building your own OS image. 
+Due to the way OTA updates work with Airbotics it requires us to add support on a per board basis. We are working hard to support as many boards as possible. Please open an issue if you want to see support for your board.
 
-You should note that minimum really means minimum, if you make no further changes from this point, an image you build will contain only a basic set of packages.
+As of now we have support for:
 
+- The QEMU emulator
+- Raspberry Pi 3
+- Raspberry Pi 4
 
-## Next steps
+In progress:
 
-We recommend you read the [anatomy of AirOS](./anatomy.md) to gain a better understanding of the components of AirOS. After that you can move on to:
+- Rockpi 4B
 
-1. How to [enable OTA functionality.](../airos/enable-ota.md) 
-2. How to [adding your application code](./add-app.md) into an image. 
+## Features
+ - Fully bootable OS with minimal set of utilities including [busybox](https://busybox.net/about.html) and [systemd](https://systemd.io/).
+ - Highly secure OTA updates with Airbotics. 
+ - Ability to install your your application artefacts into a built image. 

@@ -1,4 +1,4 @@
-# Adding your application code
+# Configuring build app integration
 
 AirOS makes it easier for you to integrate your application code into an OS image by doing the work of copying your application artefacts into the root filesystem automatically. When we say *application artefacts* we are specifically talking about:
 

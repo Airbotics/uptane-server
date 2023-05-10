@@ -1,5 +1,5 @@
 # Quickstart
-In this guide we'll take Airbotics Cloud for a spin by building an OS image based on [AirOS](../airos/overview.md)
+In this guide we'll take Airbotics Cloud for a spin by building an OS image based on [AirOS](../airos/overview.md) that you can run in [QEMU](https://www.qemu.org/).
 
 ## Prerequisites
 - A Linux-based machine with plenty of storage, compute and memory.
@@ -33,9 +33,11 @@ SOTA_PACKED_CREDENTIALS = "<absolute-path-to-your-credentials.zip>"
 make build
 ```
 
-> This could take upwards of 1 hour on the first run depending on the specifications of your build machine.
+> This could take upwards of 1 hour on the first run depending on the specifications of your build machine. 
 
-8. When the build is finally complete you should be able run the image with the [QEMU](https://www.qemu.org/) emulator:
+> When the build finished you should now see it on the [images](https://dashboard.airbotics.io/images) page of the Airbotics dashboard.
+
+8. Boot the image and provision your 'robot'. using the [QEMU](https://www.qemu.org/) emulator:
 
 ```
 make emulate
@@ -43,7 +45,8 @@ make emulate
 
 > The default username is `root` and is passwordless.
 
-You should now see your built image on the [images](https://dashboard.airbotics.io/images) page of the Airbotics dashboard.
+> You should now see your provisioned robot on the [robots](https://dashboard.airbotics.io/robots) page of the Airbotics dashboard.
+
 
 ## Rollout an OTA update
 

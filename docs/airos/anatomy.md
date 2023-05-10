@@ -1,4 +1,4 @@
-## Anatomy of AirOS
+# Anatomy of AirOS
 
 In this section we'll explain the structure of the AirOs repo and the responsibility for each component. 
 

@@ -1,4 +1,4 @@
-## Enabling OTA updates with Airbotics
+# Configuring build for OTA updates
 
 You will need to include a credentials zip in your image. You can read more about provisioning credentials in the [Airbotics docs](https://docs.airbotics.io/platform/provisioning-credentials). You can create and download your `credentials.zip` from the [dashboard](https://dashboard.airbotics.io/team/provisioning-credentials).
 

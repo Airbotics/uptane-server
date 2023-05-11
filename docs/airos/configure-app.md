@@ -54,7 +54,7 @@ Here is an example of a valid `airbotics.yaml` file:
 
 ```
 containers:
-  private:
+  local:
     - 
       dockerfile: cpp_package/Dockerfile
       name: talker
@@ -63,7 +63,7 @@ containers:
       dockerfile: py_package/Dockerfile
       name: listener
       tag: latest
-  public: 
+  remote: 
     -
       repo: registry.hub.docker.com/library
       name: ros
@@ -80,10 +80,10 @@ scripts:
 ```
 
 This file will do the following
-* Build and copy 2 container images
+* Build and copy 2 local container images
     - `talker:latest` from a dockerfile located at `/app/cpp_package/Dockerfile`
     - `listener:latest` from a dockerfile located at `/app/py_package/Dockerfile`
-* Pull, build and copy 1 container image:
+* Pull, build and copy 1 remote container image:
     - `ros:noetic-ros-core` from the official dockerhub registry
 * Copy 5 systemd unit files from `app/systemd_units/containers.service`
 * Copy 2 scripts from `app/scripts/container-run.sh`
@@ -99,7 +99,12 @@ The currently supported artifacts are:
 
 ### OCI Container Images
 
-These will be built using `docker` on your build machine and installed onto the rootfs of your image in the `/usr/share/container-images` directory. When the image is booted you can use these images like any other image. We use podman for container management.
+We support installing OCI images that are built locally or that are fetched from a remote container registry. In both cases once the container image is build or pulled, we will save the tar archive into the rootfs. You can then use a combination of scripts and systemd to control the container lifecycle. See our sample application for a real implementation.
+
+1. `local`: These will be built using `docker` on your build machine and installed on the rootfs.
+2. `remote`: These will be pulled from the remote registry on your build machine and installed on the rootfs.
+
+All of the installed image tars will be located in the `/usr/share/container-images` directory. 
 
 ### Systemd units
 
@@ -108,4 +113,4 @@ These can be used as a process manager for your containers. All services will be
 
 ### Scripts
 
-These can be called by a systemd unit to load and start containers, or any other usecase you see fit. Scripts are written to the `/usr/bin/` directory on the rootfs.
+These can be called by a systemd unit to load and start containers, or any other use case you see fit. Scripts are written to the `/usr/bin/` directory on the rootfs.

@@ -13,9 +13,9 @@
 ## Guides
 
 * [Quickstart](guides/quickstart.md)
-* Yocto Series
+<!-- * AirOS Series
     * [Adding ROS 1](guides/yocto-series/ros-noetic-dunfell.md)
-    * [Adding your own code](guides/yocto-series/add-your-code.md)
+    * [Adding your own code](guides/yocto-series/add-your-code.md) -->
 
 
 ## AirOS

@@ -123,11 +123,11 @@ export const downloadProvisioningCredential = async (req: Request, res: Response
         return new BadResponse(res, 'Could not create provisioning credentials.');
     }
 
-    // const clientCert = await certificateManager.downloadCertificate(teamID, provisioningCredentials.client_cert_id);
+    const clientCert = await certificateManager.downloadCertificate(teamID, provisioningCredentials.client_cert_id);
 
-    // if(!clientCert) {
-        // return new BadResponse(res, 'Could not create provisioning credentials.');
-    // }
+    if(!clientCert) {
+        return new BadResponse(res, 'Could not create provisioning credentials.');
+    }
 
     // get provisioning and client key pairs
     const provisioningKeyPair = await keyStorage.getKeyPair(provisioningCredentials.provisioning_cert_id);
@@ -147,10 +147,10 @@ export const downloadProvisioningCredential = async (req: Request, res: Response
         null,
         { algorithm: 'aes256' });
 
-    // const clientp12 = forge.pkcs12.toPkcs12Asn1(forge.pki.privateKeyFromPem(clientKeyPair.privateKey),
-    //     [forge.pki.certificateFromPem(clientCert), forge.pki.certificateFromPem(rootCACertStr)],
-    //     null,
-    //     { algorithm: 'aes256' });
+    const clientp12 = forge.pkcs12.toPkcs12Asn1(forge.pki.privateKeyFromPem(clientKeyPair.privateKey),
+        [forge.pki.certificateFromPem(clientCert), forge.pki.certificateFromPem(rootCACertStr)],
+        null,
+        { algorithm: 'aes256' });
 
     // get initial root metadata from image repo
     const rootMetadata = await getTufMetadata(teamID, TUFRepo.image, TUFRole.root, TUF_METADATA_INITIAL);
@@ -168,8 +168,7 @@ export const downloadProvisioningCredential = async (req: Request, res: Response
     const treehubJson = {
         no_auth: true,
         ostree: {
-            // server: `${config.GATEWAY_ORIGIN}/api/v0/robot/treehub`
-            server: `${config.API_ORIGIN}/api/v0/robot/treehub/${teamID}`
+            server: `${config.GATEWAY_ORIGIN}/api/v0/robot/treehub`
         }
     };
 
@@ -181,12 +180,12 @@ export const downloadProvisioningCredential = async (req: Request, res: Response
     const archive = archiver('zip');
     archive.append(Buffer.from(toCanonical(targetsTufKeyPublic), 'ascii'), { name: 'targets.pub' });
     archive.append(Buffer.from(toCanonical(targetsTufKeyPrivate), 'ascii'), { name: 'targets.sec' });
-    // archive.append(Buffer.from(`${config.GATEWAY_ORIGIN}/api/v0/robot/repo`, 'ascii'), { name: 'tufrepo.url' });
+    archive.append(Buffer.from(`${config.GATEWAY_ORIGIN}/api/v0/robot/repo`, 'ascii'), { name: 'tufrepo.url' });
     archive.append(Buffer.from(`${config.API_ORIGIN}/api/v0/robot/repo/${teamID}`, 'ascii'), { name: 'tufrepo.url' });
     archive.append(Buffer.from(toCanonical(rootMetadata), 'ascii'), { name: 'root.json' });
     archive.append(Buffer.from(JSON.stringify(treehubJson), 'ascii'), { name: 'treehub.json' });
     archive.append(Buffer.from(`${config.GATEWAY_ORIGIN}/api/v0/robot`, 'ascii'), { name: 'autoprov.url' });
-    // archive.append(Buffer.from(forge.asn1.toDer(clientp12).getBytes(), 'binary'), { name: 'client_auth.p12' });
+    archive.append(Buffer.from(forge.asn1.toDer(clientp12).getBytes(), 'binary'), { name: 'client_auth.p12' });
     archive.append(Buffer.from(forge.asn1.toDer(provisioningp12).getBytes(), 'binary'), { name: 'autoprov_credentials.p12' });
     archive.finalize();
 

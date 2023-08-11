@@ -10,7 +10,7 @@ const router = express.Router();
 
 const getConfig = async (req: Request, res: Response) => {
 
-    const team_id = req.params.team_id || req.robotGatewayPayload!.team_id;
+    const team_id = req.robotGatewayPayload!.team_id;
 
     const teamCount = await prisma.team.count({
         where: {
@@ -36,7 +36,6 @@ const getConfig = async (req: Request, res: Response) => {
  */
 router.get('/config', mustBeRobot, updateRobotMeta, getConfig);
 
-router.get('/:team_id/config', getConfig);
 
 
 export default router;

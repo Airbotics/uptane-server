@@ -35,10 +35,9 @@ const getRef = async (req: Request, res: Response) => {
 
 
 // create a ref
-router.post('/:team_id/refs/heads/:name', express.text({ type: '*/*', limit: config.MAX_TREEHUB_REQUEST_SIZE}), async (req: Request, res: Response) => {
+router.post('/refs/heads/:name', express.text({ type: '*/*', limit: config.MAX_TREEHUB_REQUEST_SIZE}), async (req: Request, res: Response) => {
 
-    // const teamID = req.headers['air-team-id']!;
-    const team_id = req.params.team_id;
+    const teamID = req.headers['air-team-id']!;
     const name = req.params.name;
 
     const commit = req.body;
@@ -48,7 +47,7 @@ router.post('/:team_id/refs/heads/:name', express.text({ type: '*/*', limit: con
     // check team exists
     const teamCount = await prisma.team.count({
         where: {
-            id: team_id
+            id: teamID
         }
     });
 
@@ -71,7 +70,7 @@ router.post('/:team_id/refs/heads/:name', express.text({ type: '*/*', limit: con
 
     await prisma.ref.upsert({
         create: {
-            team_id: team_id,
+            team_id: teamID,
             name,
             object_id,
             commit
@@ -82,7 +81,7 @@ router.post('/:team_id/refs/heads/:name', express.text({ type: '*/*', limit: con
         },
         where: {
             team_id_name: {
-                team_id: team_id,
+                team_id: teamID,
                 name
             }
         }
@@ -92,8 +91,6 @@ router.post('/:team_id/refs/heads/:name', express.text({ type: '*/*', limit: con
     return res.status(200).end();
 });
 
-// get a ref
-router.get('/:team_id/refs/heads/:name', getRef);
 
 // get a ref
 router.get('/refs/heads/:name', mustBeRobot, updateRobotMeta, getRef);

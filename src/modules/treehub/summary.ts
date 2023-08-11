@@ -13,7 +13,7 @@ const router = express.Router();
 
 const downloadSummary = async (req: Request, res: Response) => {
 
-    const team_id = req.params.team_id || req.robotGatewayPayload!.team_id;
+    const team_id = req.robotGatewayPayload!.team_id;
 
     try {
         const content = await blobStorage.getObject(config.TREEHUB_BUCKET_NAME!, team_id, 'summary');
@@ -36,9 +36,9 @@ const downloadSummary = async (req: Request, res: Response) => {
  * - check size in header matches size of request body.
  * - restrict allowable mime-types
  */
-router.put('/:team_id/summary', express.raw({ type: '*/*', limit: config.MAX_TREEHUB_REQUEST_SIZE }), async (req: Request, res: Response) => {
+router.put('/summary', express.raw({ type: '*/*', limit: config.MAX_TREEHUB_REQUEST_SIZE }), async (req: Request, res: Response) => {
 
-    const teamID = req.params.team_id;
+    const teamId = req.robotGatewayPayload!.team_id;
     const content = req.body;
 
     const size = parseInt(req.get('content-length')!);
@@ -51,7 +51,7 @@ router.put('/:team_id/summary', express.raw({ type: '*/*', limit: config.MAX_TRE
 
     const teamCount = await prisma.team.count({
         where: {
-            id: teamID
+            id: teamId
         }
     });
 
@@ -60,15 +60,13 @@ router.put('/:team_id/summary', express.raw({ type: '*/*', limit: config.MAX_TRE
         return res.status(400).end();
     }
 
-    await blobStorage.putObject(config.TREEHUB_BUCKET_NAME!,  teamID, 'summary', content);
+    await blobStorage.putObject(config.TREEHUB_BUCKET_NAME!,  teamId, 'summary', content);
 
     logger.info('uploaded ostree summary');
     return res.status(200).end();
 
 });
 
-// download summary
-router.get('/:team_id/summary', downloadSummary);
 
 // download summary
 router.get('/summary', mustBeRobot, updateRobotMeta, downloadSummary);

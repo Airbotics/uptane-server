@@ -170,7 +170,7 @@ roscore
 
 Our initial image wasn't very exciting, now we're going to build a new version of our image that includes the `roscpp_tutorials` package. We won't dive into how to build individual packages in this tutorial but we can get a list of available packages in our current environment by running:
 ```
-bitbake-layers show-recipes | roscpp
+grep bitbake-layers show-recipes | roscpp
 ```
 Notice we're grepping the result to filter on results that include *roscpp*. You should see `roscpp-tutorials` as one of the lines in the output. 
 
@@ -183,7 +183,7 @@ IMAGE_INSTALL_append_pn-ros-image-core = " roscpp-tutorials "
 Now if we build the image again with `bitbake` and reboot the image, we should be able ro run some of the tutorials. 
 
 ```
-bitake ros-image-core
+bitbake ros-image-core
 ```
 
 > Note: This should take a fraction of the time that it did on the first build as Yocto caches as it build.
